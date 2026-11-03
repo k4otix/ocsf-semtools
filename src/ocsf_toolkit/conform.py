@@ -12,7 +12,8 @@ from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
 from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, dotted
 
 UNMAPPED = "unmapped"  # the class attribute that holds what the schema has no place for
-_INT = re.compile(r"[+-]?[0-9]+")
+# long_t is 64-bit: 19 digits covers it, and caps int() well below its 4300-digit limit.
+_INT = re.compile(r"[+-]?[0-9]{1,19}")
 _BOOLS = {"true": True, "false": False}
 _MISSING = {
     Requirement.REQUIRED: Kind.MISSING_REQUIRED,

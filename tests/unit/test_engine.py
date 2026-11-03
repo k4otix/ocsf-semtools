@@ -160,6 +160,13 @@ def test_coercion_is_limited_to_the_four_allowed_forms(
     assert (Kind.TYPE_MISMATCH, (attr,)) in {(f.kind, f.path) for f in report.errors()}
 
 
+def test_an_overlong_integer_string_is_reported_not_raised(schema: ResolvedSchema) -> None:
+    for digits in ("9" * 20, "9" * 5000):
+        out, report = repair(base_detection_finding(schema) | {"severity_id": digits})
+        assert out["severity_id"] == digits
+        assert (Kind.TYPE_MISMATCH, ("severity_id",)) in {(f.kind, f.path) for f in report.errors()}
+
+
 def test_repair_coerces_array_elements_and_datetimes(schema: ResolvedSchema) -> None:
     event = base_detection_finding(schema) | {
         "observables": [{"name": "a", "type_id": "4"}],

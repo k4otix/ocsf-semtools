@@ -84,3 +84,17 @@ def test_bad_selection_fails_once(
     argv = ["check", "--version", "1.9.0", *option, str(events)]
     assert main(argv) == 1
     assert message in capsys.readouterr().err
+
+
+def test_control_characters_from_the_input_are_escaped(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    event = base_detection_finding(load("1.9.0")) | {"\x1b[2J\x9bx": 1}
+    path = tmp_path / "evil.jsonl"
+    path.write_text(json.dumps(event) + "\n")
+    main(["check", "--version", "1.9.0", str(path)])
+    main(["check", "--version", "1.9.0", "--json", str(path)])
+    out = capsys.readouterr().out
+    assert "\x1b" not in out
+    assert "\x9b" not in out
+    assert "\\x1b[2J" in out

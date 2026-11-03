@@ -63,12 +63,18 @@ def run(args: argparse.Namespace) -> int:
         )
         failed += not report.ok()
         if args.json:
-            print(json.dumps({"source": where, **report.to_dict()}, ensure_ascii=False))
+            print(json.dumps({"source": where, **report.to_dict()}))  # ASCII: no raw controls
             continue
         for f in report.findings:
             if f.severity != "info":
-                print(f"{where}: {f.severity} {f.kind.value} {dotted(f.path) or '.'}: {f.message}")
+                path = dotted(f.path) or "."
+                print(_printable(f"{where}: {f.severity} {f.kind.value} {path}: {f.message}"))
     return 1 if failed else 0
+
+
+def _printable(text: str) -> str:
+    """Escape control characters: paths and messages carry keys taken from the input."""
+    return "".join(c if c.isprintable() else repr(c)[1:-1] for c in text)
 
 
 def _lines(files: list[str]) -> Iterator[tuple[str, int, str]]:
