@@ -1,5 +1,6 @@
 """render() and generate(): the tree for 1.9.0 and the synthetic schema, and safe replacement."""
 
+import dataclasses
 import os
 import subprocess
 import sys
@@ -104,6 +105,21 @@ def test_a_non_shipped_ir_is_bundled(synthetic_ir: SchemaIR) -> None:
     assert "    method: FindingMethod | None = None" in finding  # a StrEnum
     assert "class FindingMethod(StrEnum):" in finding
     assert "    old: str | None = None" in finding  # deprecated: never required
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"version": "1.9.0\nimport os"}, "not a plain version number"),
+        ({"profiles": {"x\nimport os": IR.profiles["cloud"]}}, "profile name"),
+        ({"extensions": {"Win #": IR.extensions["win"]}}, "extension name"),
+    ],
+)
+def test_names_that_would_reach_code_unquoted_are_refused(
+    change: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        render(dataclasses.replace(IR, **change), package="pkg")  # type: ignore[arg-type]
 
 
 def test_bad_package_name() -> None:

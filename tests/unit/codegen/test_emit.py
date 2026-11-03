@@ -1,5 +1,7 @@
 """Text emission: literals, docstrings and fields come out the way ruff format leaves them."""
 
+import ast
+
 import pytest
 
 from ocsf_toolkit.codegen.emit import WIDTH, Field, Imports, docstring, string, struct_class
@@ -65,3 +67,19 @@ def test_long_fields_wrap_as_ruff_does() -> None:
         f'        default_factory=lambda: "{"y" * 40}"',
         "    )",
     ]
+
+
+@pytest.mark.parametrize(
+    "text", ['a"\nimport os', "b'\r\nx", 'c"\\', "\x00\x1c" + chr(0x2028), "\"'\n"]
+)
+def test_string_literals_hold_any_text(text: str) -> None:
+    """Schema text is data: whatever it holds, the literal evaluates back to it."""
+    literal = string(text)
+    assert "\n" not in literal
+    assert "\r" not in literal
+    assert ast.literal_eval(literal) == text
+
+
+def test_docstrings_hold_no_line_breaking_characters() -> None:
+    [line] = docstring("caption\rimport os", "    ")
+    assert line == '    """caption import os"""'

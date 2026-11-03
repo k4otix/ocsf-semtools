@@ -64,14 +64,17 @@ def header(version: str, digest: str) -> list[str]:
 
 
 def string(text: str) -> str:
-    """A Python string literal in the quote style ruff format prefers."""
+    """A Python string literal in the quote style ruff format prefers; every control character
+    is escaped, so no input text can end the literal."""
     if '"' in text and "'" not in text:
-        return "'" + text.replace("\\", "\\\\") + "'"
+        return repr(text)  # single-quoted, since text has no single quote
     return json.dumps(text, ensure_ascii=False)
 
 
 def docstring(text: str, indent: str) -> list[str]:
     """A docstring as ruff leaves it: one line if it fits, else wrapped paragraphs."""
+    # schema text is data: control characters (a \r would end a line) become spaces
+    text = "".join(c if c.isprintable() or c == "\n" else " " for c in text)
     text = text.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').rstrip()
     if text.endswith('"'):
         text += " "

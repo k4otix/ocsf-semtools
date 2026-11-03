@@ -38,6 +38,8 @@ IR_FILE = "ir.json"  # bundled only when the IR is not one this library ships
 _IDENTITY = ("class_uid", "class_name", "category_uid", "category_name")
 _ANY = re.compile(r"\bAny\b")
 _FIXED = "identity: fixed by the class"
+_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?")
+_NAME = re.compile(r"[a-z0-9_]+(/[a-z0-9_]+)?")  # "cloud", "linux/linux_users"
 
 
 def generate(
@@ -120,6 +122,7 @@ def render(
     """Relative path -> file bytes; a pure function of the IR, the arguments and this version."""
     if not package.isidentifier() or keyword.iskeyword(package):
         raise ValueError(f"package name {package!r} is not a single Python identifier")
+    _check_names(ir)
     active = frozenset(ir.extensions) if extensions is None else frozenset(extensions)
     if profiles is None:
         usable = [k for k, p in ir.profiles.items() if p.extension in (None, *active)]
@@ -128,6 +131,17 @@ def render(
         schema = resolve(ir, profiles=profiles, extensions=active)
     gen = _Generator(ir, schema, exact=profiles is not None)
     return {path: text.encode() for path, text in gen.files(package).items()}
+
+
+def _check_names(ir: SchemaIR) -> None:
+    """Refuse IR names that would be written into comments or code unquoted: a custom
+    extension's IR is input, and a newline in a profile name would end a comment."""
+    if not _VERSION.fullmatch(ir.version):
+        raise ValueError(f"OCSF version {ir.version!r} is not a plain version number")
+    for what, names in (("profile", ir.profiles), ("extension", ir.extensions)):
+        for name in names:
+            if not _NAME.fullmatch(name):
+                raise ValueError(f"{what} name {name!r} cannot appear in generated code")
 
 
 class _Generator:
