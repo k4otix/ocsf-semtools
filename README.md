@@ -5,9 +5,10 @@ upstream `ocsf/ocsf-schema` at a pinned commit, with derivation, conformance rep
 schema diff, and generated [msgspec](https://github.com/msgspec/msgspec) models as a projection of that
 substrate.
 
-**Status: pre-alpha (milestone M0).** Nothing here is usable as a library yet. What exists today is the
-reproducible schema pipeline: `ocsf.lock` pins each OCSF release by upstream commit, and
-`ocsf-toolkit compile` rebuilds the compiled schema and checks it against the lockfile hash.
+**Status: pre-alpha (milestone M1).** What exists today is the reproducible schema pipeline and the
+schema IR: `ocsf.lock` pins each OCSF release by upstream commit, `ocsf-toolkit compile` rebuilds the
+compiled schema and checks it against the lockfile hash, and the package ships the IR for OCSF 1.9.0,
+readable with `ocsf_toolkit.load_ir`.
 
 ```shell
 uv sync
