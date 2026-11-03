@@ -68,11 +68,11 @@ def run(args: argparse.Namespace) -> int:
         for f in report.findings:
             if f.severity != "info":
                 path = dotted(f.path) or "."
-                print(_printable(f"{where}: {f.severity} {f.kind.value} {path}: {f.message}"))
+                print(printable(f"{where}: {f.severity} {f.kind.value} {path}: {f.message}"))
     return 1 if failed else 0
 
 
-def _printable(text: str) -> str:
+def printable(text: str) -> str:
     """Escape control characters: paths and messages carry keys taken from the input."""
     return "".join(c if c.isprintable() else repr(c)[1:-1] for c in text)
 
