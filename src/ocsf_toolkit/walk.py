@@ -1,0 +1,153 @@
+"""The one traversal of an event against a schema, with the vocabulary of findings it yields."""
+
+from collections.abc import Iterator, Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any, Literal, cast, final
+
+from ocsf_toolkit.ir import Requirement
+from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
+
+type Path = tuple[str | int, ...]
+type Severity = Literal["error", "warning", "info"]
+type Action = Literal["fill", "coerce", "overwrite", "relocate", "migrate"]
+
+# object_t attributes typed `object` hold free-form JSON: there is no schema below them.
+OPEN_OBJECT = "object"
+
+
+class Kind(StrEnum):
+    MISSING_REQUIRED = "missing_required"
+    MISSING_RECOMMENDED = "missing_recommended"
+    UNKNOWN_ATTRIBUTE = "unknown_attribute"
+    TYPE_MISMATCH = "type_mismatch"
+    ENUM_OUT_OF_RANGE = "enum_out_of_range"
+    SIBLING_CONFLICT = "sibling_conflict"
+    SEMANTICALLY_EMPTY_ENUM = "semantically_empty_enum"
+    IDENTITY_CONFLICT = "identity_conflict"
+    PROFILE_MISMATCH = "profile_mismatch"
+    CONSTRAINT_VIOLATED = "constraint_violated"
+    DEPRECATED = "deprecated"
+    OBSERVABLE_MISMATCH = "observable_mismatch"
+    MAX_NODES_EXCEEDED = "max_nodes_exceeded"
+    FILLED = "filled"
+    COERCED = "coerced"
+    RELOCATED = "relocated"
+
+
+_SEVERITY: Mapping[Kind, Severity] = {
+    Kind.MISSING_REQUIRED: "error",
+    Kind.TYPE_MISMATCH: "error",
+    Kind.ENUM_OUT_OF_RANGE: "error",
+    Kind.SIBLING_CONFLICT: "error",
+    Kind.IDENTITY_CONFLICT: "error",
+    Kind.CONSTRAINT_VIOLATED: "error",
+    Kind.UNKNOWN_ATTRIBUTE: "error",
+    Kind.MISSING_RECOMMENDED: "warning",
+    Kind.PROFILE_MISMATCH: "warning",
+    Kind.DEPRECATED: "warning",
+    Kind.OBSERVABLE_MISMATCH: "warning",
+}
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RepairAction:
+    """One change repair() made to the event, at the finding's path."""
+
+    action: Action
+    before: object
+    after: object
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Finding:
+    """One deviation of an event from its schema, located by an indexed path."""
+
+    kind: Kind
+    path: Path  # ("evidences", 0, "process", "file", "name")
+    owner: str  # key of the class or object whose rule produced it
+    message: str
+    tier: Requirement | None = None
+    profiles: frozenset[str] = frozenset()  # the active profiles that admitted the attribute
+    expected: object = None
+    actual: object = None
+    repair: RepairAction | None = None
+
+    @property
+    def severity(self) -> Severity:
+        """error, warning or info: a pure function of kind; a repaired finding is info."""
+        return "info" if self.repair is not None else _SEVERITY.get(self.kind, "info")
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Visit:
+    """An attribute of an object node (attr set), or the close of that node (attr None).
+
+    ``node`` is the dict that holds ``attr``, or for a close the node itself. A visitor may change
+    the node at an attribute visit, and the walk descends into what the attribute holds afterwards.
+    A node's close comes after all its attribute visits and before any visit below it.
+    """
+
+    owner: ResolvedItem
+    attr: str | None
+    value: object
+    path: Path
+    node: dict[str, Any]
+
+
+def walk(
+    event: dict[str, Any],
+    item: ResolvedItem,
+    schema: ResolvedSchema,
+    *,
+    max_nodes: int | None = None,
+) -> Iterator[Visit | Finding]:
+    """Visit every attribute of the event depth-first; stops with a finding past max_nodes."""
+    stack: list[tuple[ResolvedItem, dict[str, Any], Path]] = [(item, event, ())]
+    count = 0
+    while stack:
+        owner, node, path = stack.pop()
+        children: list[tuple[ResolvedItem, dict[str, Any], Path]] = []
+        for attr in list(node):
+            if attr not in node:
+                continue  # a visitor moved it while visiting an earlier attribute
+            count += 1
+            if max_nodes is not None and count > max_nodes:
+                yield Finding(
+                    kind=Kind.MAX_NODES_EXCEEDED,
+                    path=path,
+                    owner=owner.key,
+                    message=f"walk stopped after {max_nodes} attribute visits",
+                    expected=max_nodes,
+                )
+                return
+            yield Visit(owner, attr, node[attr], (*path, attr), node)
+            children.extend(_children(owner, attr, node, path, schema))
+        yield Visit(owner, None, node, path, node)
+        stack.extend(reversed(children))
+
+
+def dotted(path: Path) -> str:
+    """An indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
+    return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
+
+
+def _children(
+    owner: ResolvedItem, attr: str, node: dict[str, Any], path: Path, schema: ResolvedSchema
+) -> Iterator[tuple[ResolvedItem, dict[str, Any], Path]]:
+    ra = owner.attributes.get(attr)
+    if ra is None or ra.object_type is None or ra.object_type == OPEN_OBJECT or attr not in node:
+        return
+    child = schema.objects.get(ra.object_type)
+    if child is None:
+        return
+    value: object = node[attr]
+    if isinstance(value, dict):
+        yield child, cast(dict[str, Any], value), (*path, attr)
+    elif isinstance(value, list) and ra.is_array:
+        for i, element in enumerate(cast(list[object], value)):
+            if isinstance(element, dict):
+                yield child, cast(dict[str, Any], element), (*path, attr, i)
