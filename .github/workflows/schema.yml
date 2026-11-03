@@ -1,0 +1,59 @@
+# Schema reproducibility gates. M0: gate 1 only, for every ocsf.lock entry:
+# clone the pinned commit, compile on Python 3.14, assert the compiled version equals the declared
+# one and the canonical sha256 equals compiled_sha256. IR (gate 2) and regeneration (gate 3) gates
+# join in M1 and M6.
+name: schema
+
+on:
+  pull_request:
+    paths:
+      - ocsf.lock
+      - src/ocsf_toolkit/cli/**
+      - .github/workflows/schema.yml
+  schedule:
+    - cron: "17 4 * * *" # nightly: catches compiler/uvx drift with no repo change
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  entries:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.lock.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: lock
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, tomllib
+          with open("ocsf.lock", "rb") as f:
+              schemas = tomllib.load(f)["schemas"]
+          entries = [{"version": s["version"], "commit": s["commit"]} for s in schemas]
+          print("matrix=" + json.dumps(entries))
+          EOF
+
+  compile:
+    needs: entries
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.entries.outputs.matrix) }}
+    name: compile ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from git tags
+      - uses: astral-sh/setup-uv@v7
+      - name: Cache upstream checkout (keyed on the pinned commit)
+        uses: actions/cache@v6
+        with:
+          path: build/ocsf-schema/${{ matrix.commit }}
+          key: ocsf-schema-${{ matrix.commit }}
+      - run: uv sync --locked
+      - name: Compile and verify
+        env:
+          VERSION: ${{ matrix.version }}
+        run: uv run ocsf-toolkit compile "$VERSION"
