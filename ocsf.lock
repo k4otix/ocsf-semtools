@@ -1,0 +1,23 @@
+# ocsf.lock: schema pins. Written by `ocsf-toolkit lock`.
+# Edit [toolchain] by hand; add schemas with `ocsf-toolkit lock --add <version>`.
+#   version  declared OCSF version; `compile` asserts the compiled schema's "version" equals it
+#   ref      upstream tag or branch as spelled upstream (informational); commit is the pin
+#   compiled_sha256  sha256 of build/compiled/schema-<version>.json, which is the compiler output
+#                    re-serialized as canonical JSON (raw output key order varies by filesystem)
+#   ir_sha256, models_tree_sha256  the IR JSON and the generated tree (filled from M1 / M6)
+
+[toolchain]
+ocsf-schema-compiler = "1.1.1"
+python-compile = "3.14"
+msgspec = "0.22.0"
+ir_version = "1.0"
+
+[[schemas]]
+version = "1.9.0"
+repo = "https://github.com/ocsf/ocsf-schema"
+ref = "1.9.0"
+commit = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
+compiled_sha256 = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
+ir_sha256 = ""
+models_tree_sha256 = ""
+ship_models = true
