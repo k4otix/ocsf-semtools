@@ -9,7 +9,7 @@ from typing import Any, Literal, cast, final
 
 from ocsf_toolkit.conform import Checks, check
 from ocsf_toolkit.derive import derive
-from ocsf_toolkit.ir import Requirement
+from ocsf_toolkit.ir import Requirement, SchemaIR
 from ocsf_toolkit.observables import Observable, observe, unfounded
 from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
@@ -68,10 +68,13 @@ class Report:
 
 
 class ConformanceError(Exception):
-    """Raised by build() only, carrying the whole report rather than the first problem."""
+    """Raised by build() only, carrying the whole report rather than the first problem.
 
-    def __init__(self, report: Report) -> None:
-        errors = report.errors()
+    ``fatal`` names the findings that made the event unbuildable; it defaults to the errors.
+    """
+
+    def __init__(self, report: Report, fatal: tuple[Finding, ...] | None = None) -> None:
+        errors = report.errors() if fatal is None else fatal
         shown = "; ".join(f.message for f in errors[:5])
         more = f"; and {len(errors) - 5} more" if len(errors) > 5 else ""
         super().__init__(f"{len(errors)} conformance error(s) in {report.class_key}: {shown}{more}")
@@ -140,21 +143,31 @@ def select(
     metadata.profiles that the version doesn't define are skipped here; derivation then reports
     metadata.profiles as a profile_mismatch.
     """
-    metadata = event.get("metadata")
-    meta: Mapping[str, Any] = (
-        cast(Mapping[str, Any], metadata) if isinstance(metadata, dict) else {}
-    )
-    version = version if version is not None else meta.get("version")
+    version = version if version is not None else _metadata(event).get("version")
     if not isinstance(version, str):
         raise ValueError("no OCSF version: pass version= or set metadata.version")
     if profiles is None:
-        declared = meta.get("profiles")
-        names = cast(list[object], declared) if isinstance(declared, list) else []
-        defined = load(version).ir.profiles
-        profiles = [
-            p for p in names if isinstance(p, str) and p in defined and not defined[p].extension
-        ]
+        profiles = declared_profiles(event, load(version).ir, frozenset())
     return load(version, profiles=profiles)
+
+
+def declared_profiles(
+    event: Mapping[str, Any], ir: SchemaIR, extensions: frozenset[str]
+) -> frozenset[str]:
+    """The names in metadata.profiles that the IR defines under these extensions."""
+    declared = _metadata(event).get("profiles")
+    names = cast(list[object], declared) if isinstance(declared, list) else []
+    defined = ir.profiles
+    return frozenset(
+        p
+        for p in names
+        if isinstance(p, str) and p in defined and defined[p].extension in (None, *extensions)
+    )
+
+
+def _metadata(event: Mapping[str, Any]) -> Mapping[str, Any]:
+    metadata = event.get("metadata")
+    return cast(Mapping[str, Any], metadata) if isinstance(metadata, dict) else {}
 
 
 def _root_class(
