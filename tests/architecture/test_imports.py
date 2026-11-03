@@ -1,7 +1,9 @@
 """Architecture rules (architecture §0.2) that can be checked mechanically over the core source."""
 
 import ast
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from importlinter.cli import lint_imports
@@ -64,3 +66,52 @@ def test_no_exception_types_beyond_conformance_error(path: Path) -> None:
         )
     }
     assert defined <= {"ConformanceError"}
+
+
+# Modules that work over events: none of them may traverse one itself (rule 1).
+VISITORS = ("derive", "conform", "observables", "engine", "models")
+
+
+@pytest.mark.parametrize("name", VISITORS)
+def test_only_walk_traverses_an_event(name: str) -> None:
+    """Rule 1, statically: no while loop and no self-recursive function outside walk.py."""
+    path = PACKAGE / f"{name}.py"
+    if not path.is_file():
+        pytest.skip(f"{name}.py arrives in a later milestone")
+    tree = _tree(path)
+    assert not [n.lineno for n in ast.walk(tree) if isinstance(n, ast.While)]
+    recursive = [
+        f.name
+        for f in ast.walk(tree)
+        if isinstance(f, ast.FunctionDef)
+        and any(
+            isinstance(c, ast.Call) and isinstance(c.func, ast.Name) and c.func.id == f.name
+            for c in ast.walk(f)
+        )
+    ]
+    assert recursive == []
+
+
+def test_engine_run_is_exactly_one_walk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rule 1, at runtime: one run is one walk, and each attribute is visited once."""
+    from ocsf_toolkit import engine
+    from ocsf_toolkit.schema import load
+    from tests.fixtures.events import multi_error_fixture
+
+    calls: list[list[object]] = []
+    real = vars(engine)["walk"]
+
+    def counting(*args: Any, **kwargs: Any) -> Iterator[object]:
+        visits: list[object] = []
+        calls.append(visits)
+        for visit in real(*args, **kwargs):
+            visits.append((getattr(visit, "attr", None), getattr(visit, "path", None)))
+            yield visit
+
+    monkeypatch.setattr(engine, "walk", counting)
+    schema = load("1.9.0")
+    for policy in (engine.STRICT, engine.LENIENT, engine.REPAIR):
+        calls.clear()
+        engine.run(multi_error_fixture(schema), schema, "detection_finding", policy)
+        assert len(calls) == 1
+        assert len(calls[0]) == len(set(map(repr, calls[0])))
