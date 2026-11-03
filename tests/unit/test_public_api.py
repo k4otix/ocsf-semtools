@@ -20,9 +20,11 @@ def test_all_is_exact() -> None:
         "ResolvedItem",
         "ResolvedSchema",
         "STRICT",
+        "SchemaDiff",
         "SchemaIR",
         "__version__",
         "build",
+        "diff",
         "extract",
         "load",
         "load_ir",
@@ -86,3 +88,9 @@ def test_extract_and_merge() -> None:
     assert {"name": "device.hostname", "type_id": 1, "type": "Hostname", "value": "ws-01"} in (
         merged["observables"]
     )
+
+
+def test_diff_compares_shipped_irs() -> None:
+    result = ocsf_toolkit.diff(ocsf_toolkit.load("1.1.0").ir, ocsf_toolkit.load("1.3.0").ir)
+    assert isinstance(result, ocsf_toolkit.SchemaDiff)
+    assert sum(c.kind == "renamed" for c in result.changes) == 3
