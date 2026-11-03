@@ -1,7 +1,9 @@
-# Schema reproducibility gates. M0: gate 1 only, for every ocsf.lock entry:
-# clone the pinned commit, compile on Python 3.14, assert the compiled version equals the declared
-# one and the canonical sha256 equals compiled_sha256. IR (gate 2) and regeneration (gate 3) gates
-# join in M1 and M6.
+# Schema reproducibility gates, for every ocsf.lock entry:
+#   gate 1: clone the pinned commit, compile on Python 3.14, assert the compiled version equals the
+#           declared one and the canonical sha256 equals compiled_sha256;
+#   gate 2: rebuild the IR, assert it matches ir_sha256 and data/ir-<ver>.json (entries that ship
+#           an IR), and run the loader's key-accounting and round-trip tests on the compiled schema.
+# The regeneration gate (3) joins in M6.
 name: schema
 
 on:
@@ -9,6 +11,12 @@ on:
     paths:
       - ocsf.lock
       - src/ocsf_toolkit/cli/**
+      - src/ocsf_toolkit/data/**
+      - src/ocsf_toolkit/ir.py
+      - src/ocsf_toolkit/loader.py
+      - src/ocsf_toolkit/export.py
+      - tests/unit/test_ir_loader.py
+      - tests/unit/test_export.py
       - .github/workflows/schema.yaml
   schedule:
     - cron: "17 4 * * *" # nightly: catches compiler/uvx drift with no repo change
@@ -30,7 +38,10 @@ jobs:
           import json, tomllib
           with open("ocsf.lock", "rb") as f:
               schemas = tomllib.load(f)["schemas"]
-          entries = [{"version": s["version"], "commit": s["commit"]} for s in schemas]
+          entries = [
+              {"version": s["version"], "commit": s["commit"], "ir": bool(s["ir_sha256"])}
+              for s in schemas
+          ]
           print("matrix=" + json.dumps(entries))
           EOF
 
@@ -53,7 +64,14 @@ jobs:
           path: build/ocsf-schema/${{ matrix.commit }}
           key: ocsf-schema-${{ matrix.commit }}
       - run: uv sync --locked
-      - name: Compile and verify
+      - name: Compile and verify (gate 1)
         env:
           VERSION: ${{ matrix.version }}
         run: uv run ocsf-toolkit compile "$VERSION"
+      - name: IR matches ir_sha256 and data/ (gate 2)
+        if: matrix.ir
+        env:
+          VERSION: ${{ matrix.version }}
+        run: uv run ocsf-toolkit ir check "$VERSION"
+      - name: Loader key accounting and IR round-trip (gate 2)
+        run: uv run pytest tests/unit/test_ir_loader.py tests/unit/test_export.py
