@@ -50,7 +50,7 @@ def test_round_trip() -> None:
 
 @given(st.text())
 def test_any_string_survives_emission(value: str) -> None:
-    changed = replace(LOCK, schemas=(replace(ENTRY, repo=value, ref=value),))
+    changed = replace(LOCK, schemas=(replace(ENTRY, ref=value),))
     assert lock.loads(lock.dumps(changed)) == changed
 
 
@@ -74,6 +74,10 @@ def _broken(old: str, new: str) -> str:
         (lock.dumps(replace(LOCK, schemas=(ENTRY, ENTRY))), "duplicate"),
         (_broken("[[schemas]]", "[schemas]"), "array of tables"),
         (lock.dumps(LOCK).split("[[schemas]]")[0], "missing keys"),
+        (_broken(lock.UPSTREAM_REPO, "--upload-pack=touch /tmp/x"), "https:// or file://"),
+        (_broken(lock.UPSTREAM_REPO, "ext::sh -c touch% /tmp/x"), "https:// or file://"),
+        (_broken('python-compile = "3.14"', 'python-compile = "-c"'), "plain version"),
+        (_broken('"1.1.1"', '"1.1.1 --with evil"'), "plain version"),
     ],
 )
 def test_loads_rejects(text: str, message: str) -> None:
@@ -195,7 +199,14 @@ def test_add_with_explicit_branch(tmp_path: Path, upstream: Upstream, compiler_c
     assert (entry.ref, entry.commit) == ("v1.5.0", upstream.commits["branch v1.5.0"])
 
 
-@pytest.mark.parametrize(("version", "message"), [("1.9.0", "already in"), ("1.9", "x.y.z")])
-def test_add_rejects(tmp_path: Path, version: str, message: str) -> None:
+@pytest.mark.parametrize(
+    ("version", "repo", "message"),
+    [
+        ("1.9.0", lock.UPSTREAM_REPO, "already in"),
+        ("1.9", lock.UPSTREAM_REPO, "x.y.z"),
+        ("1.8.0", "--upload-pack=evil", "https:// or file://"),
+    ],
+)
+def test_add_rejects(tmp_path: Path, version: str, repo: str, message: str) -> None:
     with pytest.raises(ValueError, match=message):
-        lock.add(LOCK, version, repo="unused", ref=None, build_dir=tmp_path, compiler_cmd=None)
+        lock.add(LOCK, version, repo=repo, ref=None, build_dir=tmp_path, compiler_cmd=None)

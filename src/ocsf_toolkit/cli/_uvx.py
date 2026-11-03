@@ -46,7 +46,7 @@ def checkout(repo: str, commit: str, cache_dir: Path) -> Path:
     tmp = Path(tempfile.mkdtemp(dir=cache_dir, prefix=f".{commit[:12]}-"))
     try:
         _git("init", "--quiet", cwd=tmp)
-        _git("fetch", "--quiet", "--depth", "1", repo, commit, cwd=tmp)
+        _git("fetch", "--quiet", "--depth", "1", "--", repo, commit, cwd=tmp)
         _git("-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD", cwd=tmp)
         tmp.rename(dest)
     finally:
