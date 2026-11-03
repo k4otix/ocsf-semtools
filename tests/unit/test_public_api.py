@@ -12,6 +12,7 @@ def test_all_is_exact() -> None:
         "Finding",
         "Kind",
         "LENIENT",
+        "Observable",
         "Policy",
         "REPAIR",
         "Report",
@@ -22,8 +23,10 @@ def test_all_is_exact() -> None:
         "SchemaIR",
         "__version__",
         "build",
+        "extract",
         "load",
         "load_ir",
+        "merge",
         "parse",
         "repair",
         "resolve",
@@ -71,3 +74,15 @@ def test_policies_and_the_one_exception() -> None:
     with pytest.raises(ocsf_toolkit.ConformanceError) as raised:
         ocsf_toolkit.build((schema, "detection_finding"))
     assert isinstance(raised.value.report, ocsf_toolkit.Report)
+
+
+def test_extract_and_merge() -> None:
+    schema = ocsf_toolkit.load("1.9.0")
+    event = {"class_uid": 2004, "device": {"hostname": "ws-01"}}
+    found, report = ocsf_toolkit.extract(event, schema)
+    assert all(isinstance(o, ocsf_toolkit.Observable) for o in found)
+    assert isinstance(report, ocsf_toolkit.Report)
+    merged = ocsf_toolkit.merge(event, found)
+    assert {"name": "device.hostname", "type_id": 1, "type": "Hostname", "value": "ws-01"} in (
+        merged["observables"]
+    )

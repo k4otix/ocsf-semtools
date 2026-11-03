@@ -10,9 +10,11 @@ from ocsf_toolkit.engine import (
     Kind,
     Policy,
     Report,
+    extract,
 )
 from ocsf_toolkit.ir import SchemaIR
 from ocsf_toolkit.models import build, parse, repair
+from ocsf_toolkit.observables import Observable, merge
 from ocsf_toolkit.schema import (
     ResolvedAttribute,
     ResolvedItem,
@@ -29,6 +31,7 @@ __all__ = [
     "ConformanceError",
     "Finding",
     "Kind",
+    "Observable",
     "Policy",
     "Report",
     "ResolvedAttribute",
@@ -37,8 +40,10 @@ __all__ = [
     "SchemaIR",
     "__version__",
     "build",
+    "extract",
     "load",
     "load_ir",
+    "merge",
     "parse",
     "repair",
     "resolve",
