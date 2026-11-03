@@ -28,7 +28,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "v1.1.0"
 commit = "8ea34523a316c4bad7e360e870a23a8e5cb29bd5"
 compiled_sha256 = "831225ead5af1c1aec5b036608f6fbfdf3439a0b198fbd641064cb3c14e8a1ad"
-ir_sha256 = ""
+ir_sha256 = "b95d8889456ae1703fa2bd69c24d9d59580287be71dd2e3a82efef91b14cac82"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -48,7 +48,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.3.0"
 commit = "c8bde8c4cc7e93bb4a36e873623bbe099da22fb5"
 compiled_sha256 = "68f3b5e6db5dbffde72baf0a1b83607d47cadb875db7baf74fe2fb4dde458aed"
-ir_sha256 = ""
+ir_sha256 = "4048ff2ce95ccd5f2d9aaa00dc95888c283fa5b07f61f40e5f07dc08af9a2d72"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -88,7 +88,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.7.0"
 commit = "dc6359b49cd3c8f9e84dd657ec4524ab244c12ca"
 compiled_sha256 = "30e83d74801d2e31b2914706043a5700c3c9512726ada6f4fc5cf32908edb6ec"
-ir_sha256 = ""
+ir_sha256 = "3234e2cfcd0ebec4bad20069aad588ce8dfde821943a6a439656b5274476bbaf"
 models_tree_sha256 = ""
 ship_models = false
 
