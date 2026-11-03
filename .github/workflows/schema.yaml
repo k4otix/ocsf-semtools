@@ -9,7 +9,7 @@ on:
     paths:
       - ocsf.lock
       - src/ocsf_toolkit/cli/**
-      - .github/workflows/schema.yml
+      - .github/workflows/schema.yaml
   schedule:
     - cron: "17 4 * * *" # nightly: catches compiler/uvx drift with no repo change
   workflow_dispatch:

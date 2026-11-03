@@ -2,7 +2,7 @@
 
 Version-pinned [OCSF](https://schema.ocsf.io/) semantics for Python: a schema substrate compiled from
 upstream `ocsf/ocsf-schema` at a pinned commit, with derivation, conformance reporting, observables,
-schema diff, and generated [msgspec](https://jcristharif.com/msgspec/) models as a projection of that
+schema diff, and generated [msgspec](https://github.com/msgspec/msgspec) models as a projection of that
 substrate.
 
 **Status: pre-alpha (milestone M0).** Nothing here is usable as a library yet. What exists today is the
