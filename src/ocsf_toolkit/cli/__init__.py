@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 from ocsf_toolkit import __version__
 from ocsf_toolkit.cli import compile as compile_command
+from ocsf_toolkit.cli import ir as ir_command
 from ocsf_toolkit.cli import lock as lock_command
 
 
@@ -44,6 +45,14 @@ def build_parser() -> argparse.ArgumentParser:
             description="Resolve an upstream ref, pin its commit, compile it, "
             "and record compiled_sha256.",
         )
+    )
+    ir_command.register(
+        sub.add_parser(
+            "ir",
+            help="export or check canonical IR JSON",
+            description="Build the IR from build/compiled and write or check data/ir-<ver>.json.",
+        ),
+        common,
     )
     return parser
 

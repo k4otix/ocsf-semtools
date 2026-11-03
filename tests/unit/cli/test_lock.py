@@ -15,6 +15,7 @@ from tests.unit.cli.support import Upstream
 ROOT = Path(__file__).parents[3]
 COMMIT = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 SHA = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
+IR_SHA = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
 
 TOOLCHAIN = lock.Toolchain(
     ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0"
@@ -61,7 +62,7 @@ def test_committed_lockfile_pins() -> None:
     assert {e.version: (e.ref, e.commit) for e in committed.schemas} == PINS
     assert [e.version for e in committed.schemas if e.ship_models] == ["1.9.0"]
     entry = lock.find(committed, "1.9.0")
-    assert entry.compiled_sha256 == SHA
+    assert (entry.compiled_sha256, entry.ir_sha256) == (SHA, IR_SHA)
 
 
 def test_round_trip() -> None:

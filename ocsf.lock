@@ -108,6 +108,6 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.9.0"
 commit = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 compiled_sha256 = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
-ir_sha256 = ""
+ir_sha256 = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
 models_tree_sha256 = ""
 ship_models = true
