@@ -1,0 +1,48 @@
+# Import contracts: the core layering, the msgspec boundary, and no imports of generated packages.
+# Modules arrive milestone by milestone (M1–M6); until then these contracts are vacuous.
+# Layers in parentheses are optional: absent today, enforced as soon as the module exists.
+# (A `forbidden` contract errors on a missing source module, so per-module rules are expressed
+# as layers or anchored on the root package.)
+
+[importlinter]
+root_package = ocsf_toolkit
+include_external_packages = True
+
+# ir <- loader/export <- schema <- walk <- derive/conform/observables <- engine <- models,
+# with codegen and diff beside walk: they may use schema and below, nothing above, not each other.
+# cli is the outermost layer; nothing in core imports it.
+[importlinter:contract:layers]
+name = Core layering (codegen and diff depend on schema only)
+type = layers
+containers = ocsf_toolkit
+layers =
+    (cli)
+    (models)
+    (engine)
+    (derive) | (conform) | (observables)
+    (walk) | (codegen) | (diff)
+    (schema)
+    (loader) | (export)
+    (ir)
+
+[importlinter:contract:msgspec-boundary]
+name = Only models and codegen import msgspec
+type = forbidden
+source_modules =
+    ocsf_toolkit
+forbidden_modules =
+    msgspec
+allow_indirect_imports = True
+ignore_imports =
+    ocsf_toolkit.models -> msgspec
+    ocsf_toolkit.codegen -> msgspec
+    ocsf_toolkit.codegen.** -> msgspec
+unmatched_ignore_imports_alerting = none
+
+[importlinter:contract:no-generated-packages]
+name = Nothing in ocsf_toolkit imports a generated version package (ocsf_toolkit_v*)
+type = forbidden
+source_modules =
+    ocsf_toolkit
+forbidden_modules =
+    ocsf_toolkit_v1_9_0

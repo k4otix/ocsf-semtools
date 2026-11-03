@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ocsf-toolkit"
+dynamic = ["version"]
+description = "Version-pinned OCSF schema semantics: substrate, derivation, conformance, observables, diff, and generated msgspec models."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "Eddie Allan" }]
+keywords = ["ocsf", "security", "schema", "msgspec"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
+dependencies = ["msgspec>=0.22,<1"]
+
+[project.urls]
+Repository = "https://github.com/k4otix/ocsf-toolkit"
+Changelog = "https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md"
+
+[project.scripts]
+ocsf-toolkit = "ocsf_toolkit.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "hypothesis",
+    "pyright",
+    "ruff",
+    "mypy",
+    "import-linter",
+    "pytest-cov",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/ocsf_toolkit/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ocsf_toolkit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["src/ocsf_toolkit/_version.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "C4", "PIE", "RET"]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["src/ocsf_toolkit/_version.py"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+exclude = ["src/ocsf_toolkit/_version\\.py$"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-markers"]
