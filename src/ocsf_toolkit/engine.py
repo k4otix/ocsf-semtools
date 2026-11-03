@@ -10,6 +10,7 @@ from typing import Any, Literal, cast, final
 from ocsf_toolkit.conform import Checks, check
 from ocsf_toolkit.derive import derive
 from ocsf_toolkit.ir import Requirement
+from ocsf_toolkit.observables import Observable, observe, unfounded
 from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
 from ocsf_toolkit.walk import Kind as Kind
@@ -93,6 +94,7 @@ def run(
         relocate=policy.unknown == "relocate",
         migrate=policy.overwrite,
     )
+    found: list[Observable] = []
     for visit in walk(out, item, schema):
         if isinstance(visit, Finding):
             findings.append(visit)
@@ -101,7 +103,32 @@ def run(
             visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity
         )
         findings += check(visit, checks)
+        found += observe(visit, schema, item)  # after check: values as coerced or relocated
+    findings += unfounded(out, found)
     return out, Report(schema=schema, class_key=item.key, findings=tuple(findings))
+
+
+def extract(
+    event: dict[str, Any],
+    schema: ResolvedSchema,
+    class_key: str | None = None,
+    *,
+    max_nodes: int | None = None,
+) -> tuple[tuple[Observable, ...], Report]:
+    """The observables the schema derives from the event, in walk order; the event is unchanged.
+
+    The report holds observable_mismatch for caller entries nothing backs, and max_nodes_exceeded
+    (with a partial result) when the walk passes max_nodes attribute visits.
+    """
+    item, _, findings = _root_class(event, schema, class_key)
+    found: list[Observable] = []
+    for visit in walk(event, item, schema, max_nodes=max_nodes):
+        if isinstance(visit, Finding):
+            findings.append(visit)
+        else:
+            found += observe(visit, schema, item)
+    findings += unfounded(event, found)
+    return tuple(found), Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
 
 def select(

@@ -1,5 +1,6 @@
 """The one traversal of an event against a schema, with the vocabulary of findings it yields."""
 
+import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -14,6 +15,7 @@ type Action = Literal["fill", "coerce", "overwrite", "relocate", "migrate"]
 
 # object_t attributes typed `object` hold free-form JSON: there is no schema below them.
 OPEN_OBJECT = "object"
+_INDEX = re.compile(r"\[[^\]]*\]")
 
 
 class Kind(StrEnum):
@@ -133,6 +135,17 @@ def walk(
 def dotted(path: Path) -> str:
     """An indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
     return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
+
+
+def canonical(name: str | Path) -> str:
+    """The dotted form a path is matched by, in any upstream notation or as an indexed path.
+
+    Leading ``$`` and ``.`` go, as do ``[]``, ``[n]`` and ``[*]`` segments: ``$.resources[*].uid``,
+    ``resources[0].uid`` and ``("resources", 0, "uid")`` are all ``resources.uid``.
+    """
+    if not isinstance(name, str):
+        return ".".join(p for p in name if isinstance(p, str))
+    return _INDEX.sub("", name.lstrip("$").lstrip("."))
 
 
 def _children(
