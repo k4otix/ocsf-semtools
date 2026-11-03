@@ -74,4 +74,5 @@ exclude = ["src/ocsf_toolkit/_version\\.py$"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = ["--import-mode=importlib", "--strict-markers"]
