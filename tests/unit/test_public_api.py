@@ -1,18 +1,31 @@
 """The public surface is exactly ``__all__``; a name enters it only with tests behind it."""
 
+import pytest
+
 import ocsf_toolkit
 from tests.conftest import DATA_DIR
 
 
 def test_all_is_exact() -> None:
     assert sorted(ocsf_toolkit.__all__) == [
+        "ConformanceError",
+        "Finding",
+        "Kind",
+        "LENIENT",
+        "Policy",
+        "REPAIR",
+        "Report",
         "ResolvedAttribute",
         "ResolvedItem",
         "ResolvedSchema",
+        "STRICT",
         "SchemaIR",
         "__version__",
+        "build",
         "load",
         "load_ir",
+        "parse",
+        "repair",
         "resolve",
     ]
 
@@ -30,3 +43,31 @@ def test_load_and_resolve_return_resolved_schemas() -> None:
     item = schema.classes["detection_finding"]
     assert isinstance(item, ocsf_toolkit.ResolvedItem)
     assert isinstance(item.attributes["cloud"], ocsf_toolkit.ResolvedAttribute)
+
+
+def test_build_parse_and_repair_share_one_report_type() -> None:
+    schema = ocsf_toolkit.load("1.9.0")
+    fields = {
+        "activity_id": 1,
+        "severity_id": 4,
+        "time": 1,
+        "metadata": {"product": {"name": "p"}},
+        "finding_info": {"uid": "f"},
+    }
+    event = ocsf_toolkit.build((schema, "detection_finding"), **fields)
+    assert event["type_uid"] == 200401
+    for entry in (ocsf_toolkit.parse, ocsf_toolkit.repair):
+        _, report = entry(event)
+        assert isinstance(report, ocsf_toolkit.Report)
+        assert report.ok()
+        assert all(isinstance(f, ocsf_toolkit.Finding) for f in report.findings)
+
+
+def test_policies_and_the_one_exception() -> None:
+    presets = (ocsf_toolkit.STRICT, ocsf_toolkit.LENIENT, ocsf_toolkit.REPAIR)
+    assert all(isinstance(p, ocsf_toolkit.Policy) for p in presets)
+    assert ocsf_toolkit.Kind("sibling_conflict") is ocsf_toolkit.Kind.SIBLING_CONFLICT
+    schema = ocsf_toolkit.load("1.9.0")
+    with pytest.raises(ocsf_toolkit.ConformanceError) as raised:
+        ocsf_toolkit.build((schema, "detection_finding"))
+    assert isinstance(raised.value.report, ocsf_toolkit.Report)
