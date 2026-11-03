@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 
 from ocsf_toolkit import __version__
+from ocsf_toolkit.cli import check as check_command
 from ocsf_toolkit.cli import compile as compile_command
 from ocsf_toolkit.cli import ir as ir_command
 from ocsf_toolkit.cli import lock as lock_command
@@ -53,6 +54,14 @@ def build_parser() -> argparse.ArgumentParser:
             description="Build the IR from build/compiled and write or check data/ir-<ver>.json.",
         ),
         common,
+    )
+    check_command.register(
+        sub.add_parser(
+            "check",
+            help="report how events deviate from an OCSF version",
+            description="Check each event in JSON Lines files against an OCSF version and print "
+            "its findings; exit 1 if any event has an error.",
+        )
     )
     return parser
 
