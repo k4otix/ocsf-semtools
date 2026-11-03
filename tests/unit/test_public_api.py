@@ -26,6 +26,7 @@ def test_all_is_exact() -> None:
         "build",
         "diff",
         "extract",
+        "generate",
         "load",
         "load_ir",
         "merge",

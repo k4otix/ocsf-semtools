@@ -1,6 +1,7 @@
 """Public API of ocsf-toolkit; every exported name is listed in ``__all__``."""
 
 from ocsf_toolkit._version import __version__
+from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.diff import SchemaDiff, diff
 from ocsf_toolkit.engine import (
     LENIENT,
@@ -44,6 +45,7 @@ __all__ = [
     "build",
     "diff",
     "extract",
+    "generate",
     "load",
     "load_ir",
     "merge",
