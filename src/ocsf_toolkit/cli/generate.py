@@ -1,0 +1,98 @@
+"""The ``generate`` subcommand: a typed model package from an OCSF version or IR (D#5)."""
+
+import argparse
+import hashlib
+from pathlib import Path
+
+from ocsf_toolkit.cli import _uvx, lock
+from ocsf_toolkit.cli.diff import source_ir
+from ocsf_toolkit.codegen import generate
+from ocsf_toolkit.ir import Provenance, SchemaIR
+from ocsf_toolkit.loader import load_compiled
+
+
+def register(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "source",
+        metavar="SOURCE",
+        help="a shipped OCSF version or an IR file; with --ext, a lockfile version to compile",
+    )
+    parser.add_argument("--package", required=True, help="import name of the generated package")
+    parser.add_argument("--out", required=True, help="directory to write <package>/ into")
+    parser.add_argument(
+        "--profiles",
+        help="comma-separated profiles: emit exact classes for this set (default: superset)",
+    )
+    parser.add_argument(
+        "--extensions",
+        help="comma-separated extensions to include (default: all; empty for none)",
+    )
+    parser.add_argument(
+        "--ext",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="a directory of custom extensions to compile SOURCE with (repeatable; needs 3.14)",
+    )
+    parser.set_defaults(run=run)
+
+
+def run(args: argparse.Namespace) -> int:
+    ir = _extended(args) if args.ext else source_ir(args.source)
+    try:
+        path = generate(
+            ir,
+            package=args.package,
+            out=Path(args.out),
+            profiles=_names(args.profiles),
+            extensions=_names(args.extensions),
+        )
+    except KeyError as exc:  # an unknown profile or extension name
+        raise ValueError(exc.args[0]) from exc
+    modules = sum(1 for _ in path.rglob("*.py"))
+    mode = f"exact for profiles {args.profiles}" if args.profiles is not None else "superset"
+    print(f"{path}: OCSF {ir.version}, {mode}, {modules} modules")
+    return 0
+
+
+def _names(value: str | None) -> list[str] | None:
+    return None if value is None else [n.strip() for n in value.split(",") if n.strip()]
+
+
+def _extended(args: argparse.Namespace) -> SchemaIR:
+    """Compile a lockfile version with custom extension directories into an IR."""
+    lockfile = lock.read(Path(args.lock))
+    entry = lock.find(lockfile, args.source)
+    paths = [Path(p) for p in args.ext]
+    for path in paths:
+        if not path.is_dir():
+            raise ValueError(f"--ext {path}: not a directory")
+    data, digest = _uvx.compiled_output(
+        repo=entry.repo,
+        commit=entry.commit,
+        version=entry.version,
+        sha256=None,  # extensions change the output; the declared version is still checked
+        compiler_version=lockfile.toolchain.ocsf_schema_compiler,
+        python=lockfile.toolchain.python_compile,
+        build_dir=Path(args.build_dir),
+        compiler_cmd=args.compiler_cmd,
+        extensions=paths,
+    )
+    provenance = Provenance(
+        schema_repo=entry.repo,
+        ref=entry.ref,
+        commit=entry.commit,
+        compiler_version=lockfile.toolchain.ocsf_schema_compiler,
+        compiler_output_sha256=digest,
+        extensions=tuple((p.resolve().name, "local", tree_sha256(p)) for p in paths),
+    )
+    return load_compiled(data, provenance)
+
+
+def tree_sha256(root: Path) -> str:
+    """sha256 over the sorted (relative path, bytes) of every file under root."""
+    h = hashlib.sha256()
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        h.update(path.relative_to(root).as_posix().encode() + b"\0")
+        h.update(path.read_bytes() + b"\0")
+    return h.hexdigest()

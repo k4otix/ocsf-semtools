@@ -21,7 +21,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 def run(args: argparse.Namespace) -> int:
     """Exit 0 when the IRs are equal, 1 when they differ, 2 when one can't be read."""
     try:
-        a, b = _ir(args.a), _ir(args.b)
+        a, b = source_ir(args.a), source_ir(args.b)
     except (ValueError, OSError) as exc:
         print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
         return 2
@@ -34,7 +34,8 @@ def run(args: argparse.Namespace) -> int:
     return 1 if result.changes else 0
 
 
-def _ir(source: str) -> SchemaIR:
+def source_ir(source: str) -> SchemaIR:
+    """A shipped OCSF version by number, or an IR JSON file by path."""
     path = Path(source)
     if source.endswith(".json") or path.is_file():
         return load_ir(path)

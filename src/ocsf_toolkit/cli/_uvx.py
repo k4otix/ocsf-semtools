@@ -7,19 +7,27 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
 
 def compiler_argv(
-    src: Path, *, compiler_version: str, python: str, compiler_cmd: str | None = None
+    src: Path,
+    *,
+    compiler_version: str,
+    python: str,
+    compiler_cmd: str | None = None,
+    extensions: Sequence[Path] = (),
 ) -> list[str]:
     """Command line that compiles the schema checkout at ``src`` to JSON on stdout.
 
     ``compiler_cmd`` replaces the ``uvx`` invocation (air-gapped builds); ``src`` is appended to it.
+    Each of ``extensions`` is a directory of custom extensions, passed as ``-e PATH``.
     """
+    ext_args = [arg for path in extensions for arg in ("-e", str(path))]
     if compiler_cmd is not None:
-        return [*shlex.split(compiler_cmd), str(src)]
+        return [*shlex.split(compiler_cmd), str(src), *ext_args]
     return [
         "uvx",
         "--quiet",
@@ -31,6 +39,7 @@ def compiler_argv(
         "-m",
         "ocsf_schema_compiler",
         str(src),
+        *ext_args,
     ]
 
 
@@ -103,20 +112,50 @@ def compile_commit(
 
     Returns the output path and its sha256. Nothing is written unless verification passes.
     """
-    print(f"{version}: checkout {repo} @ {commit}", file=sys.stderr)
-    src = checkout(repo, commit, build_dir / "ocsf-schema")
-    argv = compiler_argv(
-        src, compiler_version=compiler_version, python=python, compiler_cmd=compiler_cmd
+    data, digest = compiled_output(
+        repo=repo,
+        commit=commit,
+        version=version,
+        sha256=sha256,
+        compiler_version=compiler_version,
+        python=python,
+        build_dir=build_dir,
+        compiler_cmd=compiler_cmd,
     )
-    print(f"{version}: {shlex.join(argv)}", file=sys.stderr)
-    output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
-    data, digest = verify(output, version=version, sha256=sha256)
     out = build_dir / "compiled" / f"schema-{version}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     partial = out.with_suffix(".json.partial")
     partial.write_bytes(data)
     partial.replace(out)
     return out, digest
+
+
+def compiled_output(
+    *,
+    repo: str,
+    commit: str,
+    version: str,
+    sha256: str | None,
+    compiler_version: str,
+    python: str,
+    build_dir: Path,
+    compiler_cmd: str | None = None,
+    extensions: Sequence[Path] = (),
+) -> tuple[bytes, str]:
+    """Check out and compile one pinned schema, with any custom extensions; return the verified
+    canonical bytes and their sha256 without writing them anywhere."""
+    print(f"{version}: checkout {repo} @ {commit}", file=sys.stderr)
+    src = checkout(repo, commit, build_dir / "ocsf-schema")
+    argv = compiler_argv(
+        src,
+        compiler_version=compiler_version,
+        python=python,
+        compiler_cmd=compiler_cmd,
+        extensions=extensions,
+    )
+    print(f"{version}: {shlex.join(argv)}", file=sys.stderr)
+    output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
+    return verify(output, version=version, sha256=sha256)
 
 
 def _git(*args: str, cwd: Path) -> str:

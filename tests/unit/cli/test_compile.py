@@ -82,6 +82,17 @@ def test_compiler_argv_uses_pinned_uvx() -> None:
     ]
 
 
+def test_compiler_argv_passes_extension_directories() -> None:
+    argv = _uvx.compiler_argv(
+        Path("src"),
+        compiler_version="1.1.1",
+        python="3.14",
+        compiler_cmd="compile",
+        extensions=[Path("a"), Path("b c")],
+    )
+    assert argv == ["compile", "src", "-e", "a", "-e", "b c"]
+
+
 def test_compiler_cmd_override_appends_checkout() -> None:
     argv = _uvx.compiler_argv(
         Path("build/src"),
