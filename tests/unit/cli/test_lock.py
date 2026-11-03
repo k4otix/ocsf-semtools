@@ -40,8 +40,28 @@ def test_committed_lockfile_is_canonical() -> None:
     assert lock.dumps(lock.loads(text)) == text
 
 
-def test_committed_lockfile_pins_1_9_0() -> None:
-    assert lock.read(ROOT / "ocsf.lock") == LOCK
+# Commits verified independently in the design spikes (S2 and prior-art PROVENANCE.txt).
+PINS = {
+    "1.0.0": ("v1.0.0", "9608805fe0b61035cb821bb9068096fe47fed12d"),
+    "1.1.0": ("v1.1.0", "8ea34523a316c4bad7e360e870a23a8e5cb29bd5"),
+    "1.2.0": ("v1.2.0", "7234a336ddcd5a2359e1afa79f9651150061e0dc"),
+    "1.3.0": ("1.3.0", "c8bde8c4cc7e93bb4a36e873623bbe099da22fb5"),
+    "1.4.0": ("1.4.0", "6109cc5e834c1adfee67dda6c9bcfa5e37f79012"),
+    "1.5.0": ("v1.5.0", "f0c227b4383ba64f223c3c9d82a2936ee96e7f04"),  # branch, not the 1.5.0 tag
+    "1.6.0": ("1.6.0", "d0cd8a0fef198bf93086044e33fda6d80c74b9ef"),
+    "1.7.0": ("1.7.0", "dc6359b49cd3c8f9e84dd657ec4524ab244c12ca"),
+    "1.8.0": ("1.8.0", "6fa6499a0f8c9f449d342816e90e5f687c224b0a"),
+    "1.9.0": ("1.9.0", COMMIT),
+}
+
+
+def test_committed_lockfile_pins() -> None:
+    committed = lock.read(ROOT / "ocsf.lock")
+    assert committed.toolchain == TOOLCHAIN
+    assert {e.version: (e.ref, e.commit) for e in committed.schemas} == PINS
+    assert [e.version for e in committed.schemas if e.ship_models] == ["1.9.0"]
+    entry = lock.find(committed, "1.9.0")
+    assert entry.compiled_sha256 == SHA
 
 
 def test_round_trip() -> None:
@@ -99,15 +119,13 @@ def test_version_key_orders_numerically() -> None:
     ]
 
 
-def test_every_locked_version_is_in_the_generated_package_contract() -> None:
+def test_every_shipped_version_is_in_the_generated_package_contract() -> None:
     """Rule 2: nothing imports ocsf_toolkit_v*; import-linter needs each name listed explicitly."""
     config = configparser.ConfigParser()
     config.read(ROOT / ".importlinter")
     forbidden = config["importlinter:contract:no-generated-packages"]["forbidden_modules"].split()
-    expected = {
-        "ocsf_toolkit_v" + e.version.replace(".", "_")
-        for e in lock.read(ROOT / "ocsf.lock").schemas
-    }
+    shipped = [e for e in lock.read(ROOT / "ocsf.lock").schemas if e.ship_models]
+    expected = {"ocsf_toolkit_v" + e.version.replace(".", "_") for e in shipped}
     assert expected <= set(forbidden)
 
 
