@@ -1,0 +1,125 @@
+# Release: on a v* tag, run the schema gates, build core and every model-window dist twice
+# (byte-identical, SOURCE_DATE_EPOCH), check each wheel holds the tree ocsf.lock pins, publish core
+# plus the dists PyPI lacks (a new tree, or a core outside the published dist's range) through
+# trusted publishing, and attach ocsf.lock and SHA256SUMS to a GitHub release.
+# workflow_dispatch runs everything up to the publish step and publishes nothing.
+#
+# PyPI setup (once per project): a trusted publisher for ocsf-toolkit and each
+# ocsf-toolkit-v<x>-<y>-<z>, bound to this repository, workflow release.yaml, environment pypi.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  schema:
+    uses: ./.github/workflows/schema.yaml # gates 1 and 2 for every lockfile entry
+
+  build:
+    needs: schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from the tag
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --locked
+      - name: Version
+        id: version
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          version=$(uvx --quiet --with hatch-vcs hatchling version)
+          if [ -n "$TAG" ] && [ "v$version" != "$TAG" ]; then
+            echo "tag $TAG builds version $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Lint, types and tests
+        run: |
+          make lint
+          uv run pyright
+          uv run pytest
+      - name: Build (gate 3, wheels checked against ocsf.lock)
+        run: make wheels
+      - name: Build again and compare (reproducible from the lockfile)
+        run: |
+          make wheels WHEELS=build/wheels-again
+          diff <(cd build/wheels && sha256sum ./*) <(cd build/wheels-again && sha256sum ./*)
+      - name: Typed use of the dists
+        run: uv run pytest tests/generated
+      - name: Choose the files to publish
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p upload
+          cp build/wheels/ocsf_toolkit-* upload/
+          dists=$(uv run python packaging/version_dist/dist.py unpublished --version "$VERSION")
+          for v in $dists; do
+            cp build/wheels/ocsf_toolkit_v"${v//./_}"-* upload/
+          done
+          (cd upload && sha256sum ./* | sed 's| \./| |') > SHA256SUMS
+          {
+            echo "### ocsf-toolkit $VERSION"
+            echo "model dists to publish: ${dists:-none (every published tree is current)}"
+            echo '```'
+            cat SHA256SUMS
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dists
+          path: upload/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: manifest
+          path: |
+            SHA256SUMS
+            ocsf.lock
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ocsf-toolkit/
+    permissions:
+      id-token: write # trusted publishing; no API token exists
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dists
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: assets/
+          merge-multiple: true
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --title "$TAG" \
+            --notes "See CHANGELOG.md. Files published to PyPI and their sha256 are in SHA256SUMS." \
+            assets/*

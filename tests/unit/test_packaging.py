@@ -71,6 +71,40 @@ def test_wheel_tree_is_the_package_only() -> None:
     assert dist.wheel_tree(buffer.getvalue(), "pkg") == {"__init__.py": b"a", "sub/m.py": b"b"}
 
 
+def _wheel(requires: str, files: dict[str, bytes]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        for name, data in files.items():
+            z.writestr(f"pkg/{name}", data)
+        z.writestr("pkg-0.1.0.dist-info/METADATA", f"Name: pkg\nRequires-Dist: {requires}\n")
+    return buffer.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("requires", "core", "admitted"),
+    [
+        ("ocsf-toolkit<0.2,>=0.1.0", "0.1.5", True),
+        ("ocsf-toolkit<0.2,>=0.1.0", "0.2.0", False),  # pre-1.0: the next minor may break
+        ("ocsf-toolkit>=1.2.0,<2", "1.9.0", True),
+        ("ocsf-toolkit>=1.2.0,<2", "2.0.0", False),
+        ("ocsf-toolkit<2,>=1.2.0", "1.10.0", True),  # numeric, not text, comparison
+        ("ocsf-toolkit==0.1.0", "0.1.0", False),  # an exact pin always means republish
+    ],
+)
+def test_admits(requires: str, core: str, admitted: bool) -> None:
+    assert dist.admits(_wheel(requires, {}), core) is admitted
+
+
+def test_needs_release() -> None:
+    files = {"__init__.py": b"x"}
+    tree = dist.files_sha256(files)
+    current = _wheel("ocsf-toolkit<0.2,>=0.1.0", files)
+    assert dist.needs_release(None, "pkg", tree, "0.1.1")  # never published
+    assert not dist.needs_release(current, "pkg", tree, "0.1.1")  # same tree, core admitted
+    assert dist.needs_release(current, "pkg", "0" * 64, "0.1.1")  # the tree changed
+    assert dist.needs_release(current, "pkg", tree, "0.2.0")  # core outside its range
+
+
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_sdist_holds_only_the_allowlist(tmp_path: Path) -> None:
     """Files kept out of git only through .git/info/exclude must never reach an sdist."""

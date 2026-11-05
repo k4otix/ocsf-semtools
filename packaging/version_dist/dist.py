@@ -1,5 +1,5 @@
 """Release tooling for the model dists: render a dist's project files, check built wheels against
-the lockfile, and list the dists whose generated tree is not on PyPI yet.
+the lockfile, and list the dists a core release has to publish again.
 
 Run from the repository root with ``uv run python packaging/version_dist/dist.py ACTION``.
 """
@@ -84,27 +84,67 @@ def check_wheels(wheels: list[Path]) -> None:
         print(f"{found[0].name}: ok  tree == models_tree_sha256 {entry.models_tree_sha256}")
 
 
-def unpublished() -> list[str]:
-    """Model-window versions whose latest wheel on PyPI holds a different tree (or none)."""
-    out: list[str] = []
-    for entry in _window():
-        package = package_name(entry.version)
-        try:
-            with urllib.request.urlopen(PYPI.format(dist_name(entry.version))) as response:
-                info = json.load(response)
-        except urllib.error.HTTPError as exc:
-            if exc.code != 404:
-                raise
-            out.append(entry.version)  # never published
-            continue
-        urls = [u["url"] for u in info["urls"] if u["packagetype"] == "bdist_wheel"]
-        if len(urls) != 1:
-            raise ValueError(f"{dist_name(entry.version)} {info['info']['version']}: {urls}")
-        with urllib.request.urlopen(urls[0]) as response:
-            published = files_sha256(wheel_tree(response.read(), package))
-        if published != entry.models_tree_sha256:
-            out.append(entry.version)
-    return out
+def _release(version: str) -> tuple[int, ...]:
+    match = re.match(r"\d+(\.\d+)*", version)
+    if match is None:
+        raise ValueError(f"not a version: {version!r}")
+    return tuple(int(p) for p in match[0].split("."))
+
+
+def admits(wheel: bytes, core: str) -> bool:
+    """Whether a published dist wheel's ``ocsf-toolkit`` requirement allows core version ``core``
+    (only the upper bound can exclude a newer core; the lower bound was met when it shipped)."""
+    with zipfile.ZipFile(io.BytesIO(wheel)) as z:
+        (metadata,) = [n for n in z.namelist() if n.endswith(".dist-info/METADATA")]
+        text = z.read(metadata).decode()
+    found = re.search(r"^Requires-Dist: ocsf-toolkit\b(.*)$", text, re.MULTILINE)
+    if found is None:
+        raise ValueError(f"{metadata} does not require ocsf-toolkit")
+    upper = re.search(r"<\s*([0-9.]+)", found[1])
+    if upper is None:
+        return False  # an exact pin from before ranges: never admits another core
+    bound, release = _release(upper[1]), _release(core)
+    width = max(len(bound), len(release))
+    return release + (0,) * (width - len(release)) < bound + (0,) * (width - len(bound))
+
+
+def needs_release(published: bytes | None, package: str, tree_sha256: str, core: str) -> bool:
+    """A dist is released again when PyPI has none, holds another tree, or excludes this core."""
+    if published is None:
+        return True
+    return files_sha256(wheel_tree(published, package)) != tree_sha256 or not admits(
+        published, core
+    )
+
+
+def _latest_wheel(dist: str) -> bytes | None:
+    try:
+        with urllib.request.urlopen(PYPI.format(dist)) as response:
+            info = json.load(response)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None  # never published
+        raise
+    urls = [u["url"] for u in info["urls"] if u["packagetype"] == "bdist_wheel"]
+    if len(urls) != 1:
+        raise ValueError(f"{dist} {info['info']['version']}: expected one wheel, got {urls}")
+    with urllib.request.urlopen(urls[0]) as response:
+        data: bytes = response.read()
+    return data
+
+
+def unpublished(core: str) -> list[str]:
+    """Model-window versions to release alongside core version ``core``."""
+    return [
+        e.version
+        for e in _window()
+        if needs_release(
+            _latest_wheel(dist_name(e.version)),
+            package_name(e.version),
+            e.models_tree_sha256,
+            core,
+        )
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -116,14 +156,17 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", required=True, type=Path)
     c = actions.add_parser("check-wheels", help="assert the built wheels hold the pinned trees")
     c.add_argument("wheels", nargs="+", type=Path)
-    actions.add_parser("unpublished", help="print versions whose tree is not on PyPI")
+    u = actions.add_parser(
+        "unpublished", help="print the model-window versions PyPI lacks for this core release"
+    )
+    u.add_argument("--version", required=True, help="the core version being released")
     args = parser.parse_args(argv)
     if args.action == "render":
         render(args.ocsf, args.version, args.out)
     elif args.action == "check-wheels":
         check_wheels(args.wheels)
     else:
-        print(" ".join(unpublished()))
+        print(" ".join(unpublished(args.version)))
     return 0
 
 
