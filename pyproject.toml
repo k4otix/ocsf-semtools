@@ -57,6 +57,12 @@ packages = ["src/ocsf_toolkit"]
 only-include = [
     "src",
     "tests",
+    "docs/cli.md",
+    "docs/diff.md",
+    "docs/events.md",
+    "docs/models.md",
+    "docs/observables.md",
+    "docs/schema.md",
     "packaging",
     "ocsf.lock",
     "uv.lock",
@@ -90,7 +96,15 @@ python_version = "3.12"
 files = ["src", "tests", "packaging"]
 exclude = ["src/ocsf_toolkit/_version\\.py$", "^tests/golden/", "^tests/generated/samples/"]
 
+# README.md and docs/*.md run as doctests (acc. #8): every >>> example in the user docs executes.
+# docs/design and docs/prior-art are maintainer-local and never collected.
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "README.md", "docs"]
 pythonpath = ["."]
-addopts = ["--import-mode=importlib", "--strict-markers"]
+addopts = [
+    "--import-mode=importlib",
+    "--strict-markers",
+    "--doctest-glob=*.md",
+    "--ignore=docs/design",
+    "--ignore=docs/prior-art",
+]
