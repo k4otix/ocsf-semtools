@@ -16,6 +16,11 @@ on:
 permissions:
   contents: read
 
+# explicit, so every step runs as `bash -eo pipefail`: a failure inside a pipe fails the step
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: release
   cancel-in-progress: false
