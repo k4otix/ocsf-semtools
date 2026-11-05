@@ -56,8 +56,11 @@ def test_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_a_closed_pipe_ends_quietly() -> None:
-    """`ocsf-toolkit diff ... | head`: the reader leaving early is not an error to report. The
-    1.0.0 -> 1.9.0 diff (~250 KB) outgrows the pipe buffer, so the writer does hit the closed pipe."""
+    """`ocsf-toolkit diff ... | head`: the reader leaving early is not an error to report.
+
+    The 1.0.0 -> 1.9.0 diff (~250 KB) outgrows the pipe buffer, so the writer does hit the closed
+    pipe; a smaller diff can finish into the buffer and never see it.
+    """
     code = "from ocsf_toolkit.cli import main; raise SystemExit(main(['diff', '1.0.0', '1.9.0']))"
     with subprocess.Popen(
         [sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE
