@@ -4,7 +4,7 @@ import argparse
 import re
 import subprocess
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any, cast
@@ -12,6 +12,7 @@ from typing import Any, cast
 from ocsf_toolkit.cli import _uvx
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
+WINDOW = 3  # model dists ship for the newest WINDOW versions (D#25)
 
 _VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -27,7 +28,9 @@ _HEADER = """\
 #   ref      upstream tag or branch as spelled upstream (informational); commit is the pin
 #   compiled_sha256  sha256 of build/compiled/schema-<version>.json, which is the compiler output
 #                    re-serialized as canonical JSON (raw output key order varies by filesystem)
-#   ir_sha256, models_tree_sha256  the IR JSON and the generated tree (filled from M1 / M6)
+#   ir_sha256  sha256 of src/ocsf_toolkit/data/ir-<version>.json (`ocsf-toolkit ir export --record`)
+#   models_tree_sha256  sha256 of the generated model package (`ocsf-toolkit models record`)
+#   ship_models  in the model window: the newest versions get a model dist (`lock --add` moves it)
 """
 
 
@@ -192,7 +195,23 @@ def add(
         ship_models=False,
     )
     schemas = sorted([*lock.schemas, entry], key=lambda e: version_key(e.version))
-    return replace(lock, schemas=tuple(schemas))
+    return replace(lock, schemas=windowed(schemas))
+
+
+def windowed(schemas: Sequence[SchemaEntry]) -> tuple[SchemaEntry, ...]:
+    """Entries with ship_models on for the newest WINDOW versions and off for the rest; an entry
+    leaving the window drops its models_tree_sha256, which nothing checks any more."""
+    newest = set(sorted((e.version for e in schemas), key=version_key)[-WINDOW:])
+    return tuple(
+        e
+        if e.ship_models == (e.version in newest)
+        else replace(
+            e,
+            ship_models=e.version in newest,
+            models_tree_sha256=e.models_tree_sha256 if e.version in newest else "",
+        )
+        for e in schemas
+    )
 
 
 def register(parser: argparse.ArgumentParser) -> None:
@@ -218,6 +237,8 @@ def run(args: argparse.Namespace) -> int:
     entry = find(updated, args.add)
     print(f"{entry.version}: pinned ref {entry.ref} commit {entry.commit}")
     print(f"{entry.version}: compiled_sha256 {entry.compiled_sha256} -> {path}")
+    window = ", ".join(e.version for e in updated.schemas if e.ship_models)
+    print(f"model window: {window}")
     return 0
 
 

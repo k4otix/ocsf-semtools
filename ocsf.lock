@@ -4,7 +4,9 @@
 #   ref      upstream tag or branch as spelled upstream (informational); commit is the pin
 #   compiled_sha256  sha256 of build/compiled/schema-<version>.json, which is the compiler output
 #                    re-serialized as canonical JSON (raw output key order varies by filesystem)
-#   ir_sha256, models_tree_sha256  the IR JSON and the generated tree (filled from M1 / M6)
+#   ir_sha256  sha256 of src/ocsf_toolkit/data/ir-<version>.json (`ocsf-toolkit ir export --record`)
+#   models_tree_sha256  sha256 of the generated model package (`ocsf-toolkit models record`)
+#   ship_models  in the model window: the newest versions get a model dist (`lock --add` moves it)
 
 [toolchain]
 ocsf-schema-compiler = "1.1.1"
@@ -89,8 +91,8 @@ ref = "1.7.0"
 commit = "dc6359b49cd3c8f9e84dd657ec4524ab244c12ca"
 compiled_sha256 = "30e83d74801d2e31b2914706043a5700c3c9512726ada6f4fc5cf32908edb6ec"
 ir_sha256 = "3234e2cfcd0ebec4bad20069aad588ce8dfde821943a6a439656b5274476bbaf"
-models_tree_sha256 = ""
-ship_models = false
+models_tree_sha256 = "4f9de0afe04eae5d4ac29a39e548ea7afcb941a85ac70499b56017430c8eee4d"
+ship_models = true
 
 [[schemas]]
 version = "1.8.0"
@@ -99,8 +101,8 @@ ref = "1.8.0"
 commit = "6fa6499a0f8c9f449d342816e90e5f687c224b0a"
 compiled_sha256 = "9a5c408782efb36be67627d9f945055caa74d65aa5c36eb758321b45f32800fb"
 ir_sha256 = "a695c715be70f026f2464d016aa39515c26fce615f7a36f0cc10f0c9bb4a7aaa"
-models_tree_sha256 = ""
-ship_models = false
+models_tree_sha256 = "a45db87fad0139058a395466fa6e61292e6b83f19e0ed868fe9b5d788f6dbb11"
+ship_models = true
 
 [[schemas]]
 version = "1.9.0"
@@ -109,5 +111,5 @@ ref = "1.9.0"
 commit = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 compiled_sha256 = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
 ir_sha256 = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
-models_tree_sha256 = ""
+models_tree_sha256 = "582f9e9b98f8f977e9384901e3f44d38282f7918e8a8684d94f67c786c5f9b7c"
 ship_models = true

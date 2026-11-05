@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli import lock, models
 from tests.unit.cli.support import Upstream
 
 ROOT = Path(__file__).parents[3]
@@ -60,7 +60,6 @@ def test_committed_lockfile_pins() -> None:
     committed = lock.read(ROOT / "ocsf.lock")
     assert committed.toolchain == TOOLCHAIN
     assert {e.version: (e.ref, e.commit) for e in committed.schemas} == PINS
-    assert [e.version for e in committed.schemas if e.ship_models] == ["1.9.0"]
     entry = lock.find(committed, "1.9.0")
     assert (entry.compiled_sha256, entry.ir_sha256) == (SHA, IR_SHA)
 
@@ -126,7 +125,7 @@ def test_every_shipped_version_is_in_the_generated_package_contract() -> None:
     config.read(ROOT / ".importlinter")
     forbidden = config["importlinter:contract:no-generated-packages"]["forbidden_modules"].split()
     shipped = [e for e in lock.read(ROOT / "ocsf.lock").schemas if e.ship_models]
-    expected = {"ocsf_toolkit_v" + e.version.replace(".", "_") for e in shipped}
+    expected = {models.package_name(e.version) for e in shipped}
     assert expected <= set(forbidden)
 
 
@@ -204,7 +203,35 @@ def test_add_v_prefixed_release(tmp_path: Path, upstream: Upstream, compiler_cmd
     assert (entry.ref, entry.commit) == ("v1.2.0", upstream.commits["v1.2.0"])
     compiled = (tmp_path / "build" / "compiled" / "schema-1.2.0.json").read_bytes()
     assert entry.compiled_sha256 == hashlib.sha256(compiled).hexdigest()
-    assert (entry.ir_sha256, entry.models_tree_sha256, entry.ship_models) == ("", "", False)
+    # two versions fit the window, so the new one ships models too (IR and tree still to record)
+    assert (entry.ir_sha256, entry.models_tree_sha256, entry.ship_models) == ("", "", True)
+
+
+def test_committed_window_is_the_newest_versions() -> None:
+    committed = lock.read(ROOT / "ocsf.lock")
+    assert lock.windowed(committed.schemas) == committed.schemas
+    shipping = [e for e in committed.schemas if e.ship_models]
+    assert [e.version for e in shipping] == ["1.7.0", "1.8.0", "1.9.0"]
+    assert all(e.ir_sha256 and e.models_tree_sha256 for e in shipping)
+
+
+def test_window_moves_to_the_newest_versions() -> None:
+    def entry(version: str, ship: bool) -> lock.SchemaEntry:
+        return replace(ENTRY, version=version, ship_models=ship, models_tree_sha256="ab" * 32)
+
+    old = [entry("1.6.0", False), entry("1.7.0", True), entry("1.8.0", True)]
+    old += [entry("1.9.0", True), entry("1.10.0", False)]
+    new = lock.windowed(old)
+    assert [(e.version, e.ship_models) for e in new] == [
+        ("1.6.0", False),
+        ("1.7.0", False),
+        ("1.8.0", True),
+        ("1.9.0", True),
+        ("1.10.0", True),  # sorted numerically, not as text
+    ]
+    assert new[1].models_tree_sha256 == ""  # left the window: nothing checks it any more
+    assert new[0] is old[0]  # unchanged entries are kept as they are
+    assert new[2] is old[2]
 
 
 def test_add_refuses_mislabelled_tag(tmp_path: Path, upstream: Upstream, compiler_cmd: str) -> None:

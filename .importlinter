@@ -45,4 +45,6 @@ type = forbidden
 source_modules =
     ocsf_toolkit
 forbidden_modules =
+    ocsf_toolkit_v1_7_0
+    ocsf_toolkit_v1_8_0
     ocsf_toolkit_v1_9_0
