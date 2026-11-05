@@ -1,10 +1,9 @@
 """The ``generate`` subcommand: a typed model package from an OCSF version or IR (D#5)."""
 
 import argparse
-import hashlib
 from pathlib import Path
 
-from ocsf_toolkit.cli import _uvx, lock
+from ocsf_toolkit.cli import _uvx, lock, models
 from ocsf_toolkit.cli.diff import source_ir
 from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.ir import Provenance, SchemaIR
@@ -91,8 +90,4 @@ def _extended(args: argparse.Namespace) -> SchemaIR:
 
 def tree_sha256(root: Path) -> str:
     """sha256 over the sorted (relative path, bytes) of every file under root."""
-    h = hashlib.sha256()
-    for path in sorted(p for p in root.rglob("*") if p.is_file()):
-        h.update(path.relative_to(root).as_posix().encode() + b"\0")
-        h.update(path.read_bytes() + b"\0")
-    return h.hexdigest()
+    return models.files_sha256(models.read_tree(root))

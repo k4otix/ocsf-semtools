@@ -12,6 +12,7 @@ from ocsf_toolkit.cli import diff as diff_command
 from ocsf_toolkit.cli import generate as generate_command
 from ocsf_toolkit.cli import ir as ir_command
 from ocsf_toolkit.cli import lock as lock_command
+from ocsf_toolkit.cli import models as models_command
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,6 +82,15 @@ def build_parser() -> argparse.ArgumentParser:
             description="Project an OCSF version or IR into a typed package of msgspec Structs: "
             "superset classes by default, exact classes for a fixed --profiles set.",
         )
+    )
+    models_command.register(
+        sub.add_parser(
+            "models",
+            help="check or record the generated model trees (regeneration gate)",
+            description="Render each model-window version twice from its shipped IR and assert "
+            "the tree is stable and matches models_tree_sha256 in the lockfile.",
+        ),
+        common,
     )
     return parser
 
