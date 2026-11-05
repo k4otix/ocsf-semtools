@@ -18,7 +18,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "v1.0.0"
 commit = "9608805fe0b61035cb821bb9068096fe47fed12d"
 compiled_sha256 = "98005fb1c57d57cc29713d8696922d06f51660e2c33d100da0257d530a08a4b9"
-ir_sha256 = ""
+ir_sha256 = "0f462f7eb3a985f6704634a5e8acf198f23c953a7fac818adcd97cb84b9d182c"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -38,7 +38,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "v1.2.0"
 commit = "7234a336ddcd5a2359e1afa79f9651150061e0dc"
 compiled_sha256 = "588f4605c0d9e03721ea7372847952d504d4660d6747c224a01fc45a213feb60"
-ir_sha256 = ""
+ir_sha256 = "35fd83329955299acad4925b4e9a7567b31a59f4d7f440ddd4a9e047cf3ffe2a"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -58,7 +58,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.4.0"
 commit = "6109cc5e834c1adfee67dda6c9bcfa5e37f79012"
 compiled_sha256 = "4a9f4610c66e68e8987321fac3e014978aa26696072d70f8c8dc7e44df655a29"
-ir_sha256 = ""
+ir_sha256 = "c30f483ab0c2f194368646425fe71d6825bc5717e6eb20860b445347fb3331bc"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -68,7 +68,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "v1.5.0"
 commit = "f0c227b4383ba64f223c3c9d82a2936ee96e7f04"
 compiled_sha256 = "f05ba647dabbbc07510f46a4d52f0bcb068487fbdbaab681dcefb11d43abae3f"
-ir_sha256 = ""
+ir_sha256 = "cd8ba1034867ebc62a77d47a576b0751582de0bc10b060f6ab3880f7829e2cd3"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -78,7 +78,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.6.0"
 commit = "d0cd8a0fef198bf93086044e33fda6d80c74b9ef"
 compiled_sha256 = "e846c90e0b225976bff2133e54f4f2c764fa7934ab3808bf68079e29fd5fd76c"
-ir_sha256 = ""
+ir_sha256 = "9dd6f688494b3176cfa85df822a403ed7911e49e11beca95a89ada02e8afcd48"
 models_tree_sha256 = ""
 ship_models = false
 
@@ -98,7 +98,7 @@ repo = "https://github.com/ocsf/ocsf-schema"
 ref = "1.8.0"
 commit = "6fa6499a0f8c9f449d342816e90e5f687c224b0a"
 compiled_sha256 = "9a5c408782efb36be67627d9f945055caa74d65aa5c36eb758321b45f32800fb"
-ir_sha256 = ""
+ir_sha256 = "a695c715be70f026f2464d016aa39515c26fce615f7a36f0cc10f0c9bb4a7aaa"
 models_tree_sha256 = ""
 ship_models = false
 
