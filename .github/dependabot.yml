@@ -1,7 +1,10 @@
 version: 2
-# Keeps the commit-SHA pins in .github/workflows current.
+# Keeps the commit-SHA pins in .github/workflows current. A release must be two weeks old before
+# Dependabot proposes it, so a compromised release has time to be caught and pulled first.
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
