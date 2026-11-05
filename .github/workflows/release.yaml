@@ -8,7 +8,8 @@
 # release.yaml, with one GitHub environment per project, because PyPI lets one pending publisher
 # configuration create only one project: ocsf-toolkit -> environment pypi, and each
 # ocsf-toolkit-v<x>-<y>-<z> -> environment pypi-v<x>-<y>-<z>. Each project publishes from its own
-# job in its own environment.
+# job in its own environment, and only after the `approve` job passes the protected `release`
+# environment.
 name: release
 
 on:
@@ -108,9 +109,20 @@ jobs:
             ocsf.lock
           if-no-files-found: error
 
-  publish:
+  # The one approval for a release. The per-project environments below exist to identify each
+  # project to PyPI; GitHub creates a missing environment unprotected on first use, so protection
+  # must not depend on them. Environment `release`: required reviewers, deployments from v* tags.
+  approve:
     if: github.ref_type == 'tag'
     needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - run: echo "release approved"
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: [build, approve]
     strategy:
       fail-fast: false
       matrix:
