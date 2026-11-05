@@ -52,15 +52,20 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest
 
-  # N4 / acc. #1, #9: generate the 1.9.0 dist from the shipped IR (no compile step), then ruff,
-  # pyright strict, the snapshot, laziness and a clean-environment install over it.
+  # Gate 3 (D-7, acc. #6) and N4 / acc. #1, #9: generate every model-window dist from its shipped
+  # IR (no compile step), assert each tree is stable and matches models_tree_sha256, then ruff,
+  # pyright strict, the snapshot, laziness and a clean-environment install over them; finally
+  # build every sdist and wheel and check the wheels hold the pinned trees.
   generated:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # the dist pins the core's hatch-vcs version
+          fetch-depth: 0 # the dists require the core's hatch-vcs version
       - uses: astral-sh/setup-uv@v7
       - run: uv sync --locked
-      - run: make generate
+      - name: Generate the dists (gate 3)
+        run: make dists
       - run: uv run pytest tests/generated -v
+      - name: Build sdists and wheels
+        run: make wheels

@@ -51,6 +51,22 @@ version-file = "src/ocsf_toolkit/_version.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/ocsf_toolkit"]
 
+# An allowlist: hatchling honours .gitignore but not .git/info/exclude, so anything kept out of
+# git only locally would otherwise ship in an sdist built from a working tree.
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "src",
+    "tests",
+    "packaging",
+    "ocsf.lock",
+    "uv.lock",
+    "Makefile",
+    ".importlinter",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -63,7 +79,7 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "C4", "PIE", "RET"]
 # tests/golden and tests/generated/samples import the generated package, which exists only after
 # `make generate`; tests/generated/test_static.py type-checks them against it.
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "packaging"]
 exclude = ["src/ocsf_toolkit/_version.py", "tests/golden", "tests/generated/samples"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
@@ -71,7 +87,7 @@ typeCheckingMode = "strict"
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["src", "tests"]
+files = ["src", "tests", "packaging"]
 exclude = ["src/ocsf_toolkit/_version\\.py$", "^tests/golden/", "^tests/generated/samples/"]
 
 [tool.pytest.ini_options]
