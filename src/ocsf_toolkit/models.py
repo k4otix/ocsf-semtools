@@ -23,7 +23,7 @@ from ocsf_toolkit.engine import (
     run,
     select,
 )
-from ocsf_toolkit.schema import ResolvedSchema, load, load_ir, resolve
+from ocsf_toolkit.schema import ResolvedSchema, load_ir, resolve
 from ocsf_toolkit.walk import Kind
 
 if TYPE_CHECKING:  # imported where used: reading a schema never loads the modelling layer
@@ -32,7 +32,7 @@ if TYPE_CHECKING:  # imported where used: reading a schema never loads the model
 type ClassRef = tuple[ResolvedSchema, str]  # (schema, class key), for building without models
 
 _AS_STRUCT = dataclasses.replace(LENIENT, unknown="relocate")  # a Struct has no field for them
-_BUNDLED_IR = "ir.json"  # written by codegen into a package generated from a non-shipped IR
+_BUNDLED_IR = "ir.json"  # written by codegen into every generated package
 
 
 @overload
@@ -142,19 +142,21 @@ def _target(
 
 @functools.lru_cache(maxsize=32)
 def _schema(package: str, profiles: frozenset[str]) -> ResolvedSchema:
-    """The schema a generated package was made from, checked against its digest."""
+    """The schema a generated package was made from: its bundled IR, checked against its digest.
+
+    The package's own IR, not core's copy of that version, so a core that re-pins an OCSF
+    version never changes what an installed model package means.
+    """
     module: ModuleType = sys.modules[package]
-    version = cast(str, module.__ocsf_version__)
     digest = cast(str, module.__schema_digest__)
     extensions = cast(tuple[str, ...], module.__ocsf_extensions__)
     bundled = resources.files(package).joinpath(_BUNDLED_IR)
-    if bundled.is_file():
-        schema = resolve(load_ir(bundled.read_bytes()), profiles=profiles, extensions=extensions)
-    else:
-        schema = load(version, profiles=profiles, extensions=extensions)
+    if not bundled.is_file():
+        raise ValueError(f"{package} has no {_BUNDLED_IR}; regenerate it with this ocsf-toolkit")
+    schema = resolve(load_ir(bundled.read_bytes()), profiles=profiles, extensions=extensions)
     if schema.digest != digest:
         raise ValueError(
-            f"{package} was generated from IR {digest}, but OCSF {version} here has IR"
+            f"{package} was generated from IR {digest}, but its {_BUNDLED_IR} is IR"
             f" {schema.digest}; regenerate it with this ocsf-toolkit"
         )
     return schema

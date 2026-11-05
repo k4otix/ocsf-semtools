@@ -25,16 +25,9 @@ from ocsf_toolkit.codegen.naming import class_name, field_name
 from ocsf_toolkit.codegen.types import OPEN_OBJECT, annotation
 from ocsf_toolkit.export import export_ir
 from ocsf_toolkit.ir import ItemDef, Requirement, SchemaIR
-from ocsf_toolkit.schema import (
-    ResolvedAttribute,
-    ResolvedItem,
-    ResolvedSchema,
-    load,
-    resolve,
-    shipped_versions,
-)
+from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema, resolve
 
-IR_FILE = "ir.json"  # bundled only when the IR is not one this library ships
+IR_FILE = "ir.json"  # every package carries its IR, so it never depends on core's copy
 _IDENTITY = ("class_uid", "class_name", "category_uid", "category_name")
 _ANY = re.compile(r"\bAny\b")
 _FIXED = "identity: fixed by the class"
@@ -174,13 +167,8 @@ class _Generator:
                 self.header, self._package_doc(pkg), trees.get(pkg, []), pkg, dunders
             )
         out["py.typed"] = ""
-        if not self._shipped():
-            out[IR_FILE] = export_ir(self.ir).decode()
+        out[IR_FILE] = export_ir(self.ir).decode()
         return dict(sorted(out.items()))
-
-    def _shipped(self) -> bool:
-        version = self.schema.version
-        return version in shipped_versions() and load(version).digest == self.schema.digest
 
     def _dunders(self) -> list[str]:
         profiles = "None" if not self.exact else _tuple(sorted(self.schema.profiles))

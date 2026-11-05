@@ -33,7 +33,7 @@ def test_one_module_per_item() -> None:
     modules = {p for p in TREE if p.endswith(".py") and not p.endswith("__init__.py")}
     assert modules - {"enums.py"} == expected
     assert len(expected) == 87 + 193  # every class and object but the open `object`
-    assert IR_FILE not in TREE  # 1.9.0 ships in core: the package loads that IR
+    assert TREE[IR_FILE] == export_ir(IR)  # bundled even though core ships 1.9.0
 
 
 def test_tree_is_ruff_clean(tmp_path: Path) -> None:
@@ -98,7 +98,7 @@ def test_exact_mode_takes_real_requiredness() -> None:
     assert "hosted_services" not in _text(tree, "objects/process.py")
 
 
-def test_a_non_shipped_ir_is_bundled(synthetic_ir: SchemaIR) -> None:
+def test_a_custom_ir_is_bundled(synthetic_ir: SchemaIR) -> None:
     tree = render(synthetic_ir, package="pkg")
     assert tree[IR_FILE] == export_ir(synthetic_ir)
     finding = _text(tree, "classes/finding.py")

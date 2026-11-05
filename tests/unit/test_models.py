@@ -1,4 +1,4 @@
-"""Typed build() and parse() over generated packages: superset, exact and bundled-IR models."""
+"""Typed build() and parse() over generated packages: superset, exact and custom-IR models."""
 
 import importlib
 from datetime import UTC, datetime
@@ -207,4 +207,11 @@ def test_a_package_from_another_ir_is_refused(tmp_path: Path, synthetic_ir: Sche
     module = import_generated(synthetic_ir, "gen_tampered", tmp_path)
     vars(module)["__schema_digest__"] = "0" * 64  # as if generated from a different IR
     with pytest.raises(ValueError, match="regenerate it"):
+        build(module.Finding, severity_id=0)
+
+
+def test_a_package_without_its_ir_is_refused(tmp_path: Path, synthetic_ir: SchemaIR) -> None:
+    module = import_generated(synthetic_ir, "gen_no_ir", tmp_path)
+    (tmp_path / "gen_no_ir" / "ir.json").unlink()  # as if generated before IRs were bundled
+    with pytest.raises(ValueError, match=r"has no ir\.json"):
         build(module.Finding, severity_id=0)
