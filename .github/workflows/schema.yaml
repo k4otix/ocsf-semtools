@@ -3,7 +3,9 @@
 #           declared one and the canonical sha256 equals compiled_sha256;
 #   gate 2: rebuild the IR, assert it matches ir_sha256 and data/ir-<ver>.json (entries that ship
 #           an IR), and run the loader's key-accounting and round-trip tests on the compiled schema.
-# The regeneration gate (3) joins in M6.
+# Gate 3 (regeneration) needs no compile step and runs in ci.yaml on every PR. On a PR that
+# changes a shipped IR, the semver job writes the release category (repo plan §4.1) to the summary.
+# release.yaml calls this workflow before it builds anything.
 name: schema
 
 on:
@@ -21,11 +23,46 @@ on:
   schedule:
     - cron: "17 4 * * *" # nightly: catches compiler/uvx drift with no repo change
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
+  semver:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the base branch's IRs, and hatch-vcs
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --locked
+      - name: Release category for each changed IR (repo plan §4.1)
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: |
+          {
+            echo "### Shipped IR changes"
+            changed=$(git diff --name-only "$BASE"...HEAD -- 'src/ocsf_toolkit/data/ir-*.json')
+            [ -n "$changed" ] || echo "none: patch"
+            for path in $changed; do
+              name=$(basename "$path")
+              if [ ! -f "$path" ]; then
+                echo "- $name: removed from core: major"
+              elif ! git cat-file -e "$BASE:$path" 2>/dev/null; then
+                echo "- $name: new OCSF version: minor"
+              else
+                git show "$BASE:$path" > "$RUNNER_TEMP/$name"
+                status=0
+                category=$(uv run ocsf-toolkit diff --semver "$RUNNER_TEMP/$name" "$path") \
+                  || status=$?
+                [ "$status" -le 1 ] || exit "$status" # 1 only means the IRs differ
+                echo "- $name: $category"
+              fi
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
   entries:
     runs-on: ubuntu-latest
     outputs:

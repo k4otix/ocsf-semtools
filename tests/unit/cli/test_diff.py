@@ -1,7 +1,9 @@
 """The ``diff`` subcommand: text and JSON output, IR files, and diff(1) exit statuses."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -42,3 +44,48 @@ def test_unreadable_input_exits_two(
         main(["diff", "1.9.0", str(tmp_path / source) if source.endswith("json") else source]) == 2
     )
     assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
+
+
+def _unchanged(ir: dict[str, Any]) -> None:
+    pass
+
+
+def _compiler_bump(ir: dict[str, Any]) -> None:
+    ir["provenance"]["compiler_version"] = "9.9.9"
+
+
+def _new_profile(ir: dict[str, Any]) -> None:
+    profiles = ir["schema"]["profiles"]
+    profiles["zz_new"] = {**profiles["cloud"], "name": "zz_new"}
+
+
+def _class_removed(ir: dict[str, Any]) -> None:
+    del ir["schema"]["classes"]["detection_finding"]
+
+
+@pytest.mark.parametrize(
+    ("edit", "expected"),
+    [
+        (_unchanged, "patch (0 change(s) outside provenance)"),
+        (_compiler_bump, "patch (0 change(s) outside provenance)"),
+        (_new_profile, "minor (1 change(s) outside provenance)"),
+        (_class_removed, "major (1 change(s) outside provenance)"),
+    ],
+)
+def test_semver_category(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    edit: Callable[[dict[str, Any]], None],
+    expected: str,
+) -> None:
+    ir = json.loads((DATA_DIR / "ir-1.9.0.json").read_bytes())
+    edit(ir)
+    changed = tmp_path / "ir.json"
+    changed.write_text(json.dumps(ir))
+    main(["diff", "--semver", str(DATA_DIR / "ir-1.9.0.json"), str(changed)])
+    assert capsys.readouterr().out.strip() == expected
+
+
+def test_semver_and_json_are_exclusive() -> None:
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["diff", "--semver", "--json", "1.7.0", "1.9.0"])

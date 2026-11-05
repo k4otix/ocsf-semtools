@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from ocsf_toolkit.cli.check import printable
-from ocsf_toolkit.diff import Change, diff, plain
+from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
 from ocsf_toolkit.ir import SchemaIR
 from ocsf_toolkit.schema import load, load_ir
 
@@ -14,7 +14,13 @@ from ocsf_toolkit.schema import load, load_ir
 def register(parser: argparse.ArgumentParser) -> None:
     for name in ("a", "b"):
         parser.add_argument(name, metavar=name.upper(), help="a shipped OCSF version or an IR file")
-    parser.add_argument("--json", action="store_true", help="print the diff as one JSON object")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--json", action="store_true", help="print the diff as one JSON object")
+    output.add_argument(
+        "--semver",
+        action="store_true",
+        help="print only the release category for re-pinning A as B: patch, minor or major",
+    )
     parser.set_defaults(run=run)
 
 
@@ -26,12 +32,29 @@ def run(args: argparse.Namespace) -> int:
         print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
         return 2
     result = diff(a, b)
-    if args.json:
+    if args.semver:
+        category, counted = semver(result)
+        print(f"{category} ({counted} change(s) outside provenance)")
+    elif args.json:
         print(json.dumps(result.to_dict()))
     else:
         for change in result.changes:
             print(printable(_line(change)))
     return 1 if result.changes else 0
+
+
+def semver(result: SchemaDiff) -> tuple[str, int]:
+    """The library release a changed IR of an already-shipped OCSF version calls for (repo plan
+    §4.1 gray case): nothing -> patch, only additions -> minor, anything else -> major.
+
+    Provenance is left out: a compiler bump rewrites it without changing what the IR says.
+    """
+    changes = [c for c in result.changes if c.path[:1] != ("provenance",)]
+    if not changes:
+        return "patch", 0
+    if all(c.kind == "added" for c in changes):
+        return "minor", len(changes)
+    return "major", len(changes)
 
 
 def source_ir(source: str) -> SchemaIR:
