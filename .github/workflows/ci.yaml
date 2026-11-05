@@ -74,3 +74,17 @@ jobs:
       - run: uv run pytest tests/generated -v
       - name: Build sdists and wheels
         run: make wheels
+      - name: The dists just built run on this core (exercises the compat check)
+        run: make compat LOCAL=1
+
+  # The dists already on PyPI run on this core: what lets a dist require a range of core versions.
+  # Skips each version until its dist is published.
+  compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the core's hatch-vcs version decides which published dists admit it
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - run: uv sync --locked
+      - run: make compat

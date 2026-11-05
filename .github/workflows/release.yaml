@@ -64,6 +64,8 @@ jobs:
           diff <(cd build/wheels && sha256sum ./*) <(cd build/wheels-again && sha256sum ./*)
       - name: Typed use of the dists
         run: uv run pytest tests/generated
+      - name: The dists already on PyPI run on this core
+        run: make compat
       - name: Choose the files to publish
         env:
           VERSION: ${{ steps.version.outputs.version }}

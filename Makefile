@@ -1,4 +1,4 @@
-.PHONY: setup format lint type test schema ir lock generate dists wheels test-generated clean
+.PHONY: setup format lint type test schema ir lock generate dists wheels compat test-generated clean
 
 UV ?= uv
 
@@ -72,6 +72,12 @@ wheels: dists
 			|| exit 1; \
 	done
 	$(UV) run python packaging/version_dist/dist.py check-wheels $(WHEELS)/*.whl
+
+# the released model dists (LOCAL=1: the wheels in build/wheels) run on the core in this checkout
+compat:
+	version=$$($(UV)x --quiet --with hatch-vcs hatchling version) && \
+	$(UV) run python packaging/version_dist/dist.py compat --version "$$version" \
+		$(if $(LOCAL),--wheels $(WHEELS))
 
 # static analysis, snapshot, laziness and a clean-environment install of the generated dist
 test-generated:

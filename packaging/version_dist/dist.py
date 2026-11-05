@@ -1,5 +1,6 @@
 """Release tooling for the model dists: render a dist's project files, check built wheels against
-the lockfile, and list the dists a core release has to publish again.
+the lockfile, list the dists a core release has to publish again, and run released dists
+against the core in this checkout.
 
 Run from the repository root with ``uv run python packaging/version_dist/dist.py ACTION``.
 """
@@ -9,7 +10,9 @@ import io
 import json
 import re
 import shutil
+import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 import zipfile
@@ -117,34 +120,96 @@ def needs_release(published: bytes | None, package: str, tree_sha256: str, core:
     )
 
 
-def _latest_wheel(dist: str) -> bytes | None:
+def _latest_wheel(dist: str) -> tuple[str, bytes] | None:
+    """(file name, bytes) of the newest release's wheel on PyPI, or None if never published."""
     try:
         with urllib.request.urlopen(PYPI.format(dist)) as response:
             info = json.load(response)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            return None  # never published
+            return None
         raise
-    urls = [u["url"] for u in info["urls"] if u["packagetype"] == "bdist_wheel"]
-    if len(urls) != 1:
-        raise ValueError(f"{dist} {info['info']['version']}: expected one wheel, got {urls}")
-    with urllib.request.urlopen(urls[0]) as response:
+    files = [u for u in info["urls"] if u["packagetype"] == "bdist_wheel"]
+    if len(files) != 1:
+        raise ValueError(f"{dist} {info['info']['version']}: expected one wheel, got {files}")
+    with urllib.request.urlopen(files[0]["url"]) as response:
         data: bytes = response.read()
-    return data
+    return files[0]["filename"], data
 
 
 def unpublished(core: str) -> list[str]:
     """Model-window versions to release alongside core version ``core``."""
-    return [
-        e.version
-        for e in _window()
-        if needs_release(
-            _latest_wheel(dist_name(e.version)),
-            package_name(e.version),
-            e.models_tree_sha256,
-            core,
-        )
-    ]
+    out: list[str] = []
+    for e in _window():
+        latest = _latest_wheel(dist_name(e.version))
+        wheel = None if latest is None else latest[1]
+        if needs_release(wheel, package_name(e.version), e.models_tree_sha256, core):
+            out.append(e.version)
+    return out
+
+
+# Builds and parses one event with each released dist against the core under test: the promise
+# that lets a dist require a range of core versions is that newer core still runs older dists.
+SMOKE = """
+import sys
+from datetime import datetime, timezone
+import msgspec
+from ocsf_toolkit import build, parse
+models = __import__(sys.argv[1])
+cls = models.DetectionFinding
+o = models.objects
+event = build(
+    cls,
+    activity_id=models.classes.detection_finding.DetectionFindingActivityId.CREATE,
+    severity_id=models.enums.SeverityId.HIGH,
+    time=1_700_000_000_000,
+    metadata=o.Metadata(product=o.Product(name="p", vendor_name="v")),
+    finding_info={"uid": "f-1", "title": "t"},
+)
+assert event.type_uid == event.class_uid * 100 + 1, event.type_uid
+back, report = parse(msgspec.to_builtins(event), as_=cls)
+assert back == event, report
+print(f"{sys.argv[1]}: build and parse ok against ocsf-toolkit", file=sys.stderr)
+"""
+
+
+def compat(core: str, local: Path | None) -> None:
+    """Install the core at ``ROOT`` (version ``core``) into a fresh venv with each model-window
+    dist as released - from PyPI, or from wheels in ``local`` - and run SMOKE against each."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        python = _venv(work / "venv")
+        for e in _window():
+            package = package_name(e.version)
+            if local is not None:
+                paths = sorted(local.glob(f"{package}-*.whl"))
+                if len(paths) != 1:
+                    raise ValueError(f"expected one {package} wheel in {local}, found {paths}")
+                found: tuple[str, bytes] | None = (paths[0].name, paths[0].read_bytes())
+            else:
+                found = _latest_wheel(dist_name(e.version))
+            if found is None:
+                print(f"{e.version}: not published yet; nothing to check")
+                continue
+            name, data = found
+            if not admits(data, core):
+                print(f"{e.version}: {name} excludes core {core}; it is republished with it")
+                continue
+            (work / name).write_bytes(data)
+            _uv("pip", "install", "--quiet", "--no-deps", "--python", python, str(work / name))
+            subprocess.run([python, "-I", "-c", SMOKE, package], check=True)
+            print(f"{e.version}: {name} runs on core {core}")
+
+
+def _venv(path: Path) -> str:
+    _uv("venv", "--quiet", str(path))
+    python = str(path / "bin" / "python")
+    _uv("pip", "install", "--quiet", "--python", python, str(ROOT))
+    return python
+
+
+def _uv(*args: str) -> None:
+    subprocess.run(["uv", *args], check=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -160,11 +225,16 @@ def main(argv: list[str] | None = None) -> int:
         "unpublished", help="print the model-window versions PyPI lacks for this core release"
     )
     u.add_argument("--version", required=True, help="the core version being released")
+    k = actions.add_parser("compat", help="run each released dist against this core")
+    k.add_argument("--version", required=True, help="the version of the core in this checkout")
+    k.add_argument("--wheels", type=Path, help="use dist wheels from here instead of PyPI")
     args = parser.parse_args(argv)
     if args.action == "render":
         render(args.ocsf, args.version, args.out)
     elif args.action == "check-wheels":
         check_wheels(args.wheels)
+    elif args.action == "compat":
+        compat(args.version, args.wheels)
     else:
         print(" ".join(unpublished(args.version)))
     return 0
