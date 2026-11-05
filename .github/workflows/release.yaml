@@ -4,8 +4,11 @@
 # trusted publishing, and attach ocsf.lock and SHA256SUMS to a GitHub release.
 # workflow_dispatch runs everything up to the publish step and publishes nothing.
 #
-# PyPI setup (once per project): a trusted publisher for ocsf-toolkit and each
-# ocsf-toolkit-v<x>-<y>-<z>, bound to this repository, workflow release.yaml, environment pypi.
+# PyPI setup (once per project): a trusted publisher bound to this repository and workflow
+# release.yaml, with one GitHub environment per project, because PyPI lets one pending publisher
+# configuration create only one project: ocsf-toolkit -> environment pypi, and each
+# ocsf-toolkit-v<x>-<y>-<z> -> environment pypi-v<x>-<y>-<z>. Each project publishes from its own
+# job in its own environment.
 name: release
 
 on:
@@ -32,6 +35,8 @@ jobs:
   build:
     needs: schema
     runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.choose.outputs.projects }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -66,16 +71,22 @@ jobs:
         run: uv run pytest tests/generated
       - name: The dists already on PyPI run on this core
         run: make compat
-      - name: Choose the files to publish
+      - name: Choose the files and projects to publish
+        id: choose
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p upload
           cp build/wheels/ocsf_toolkit-* upload/
+          projects='[{"project":"ocsf-toolkit","prefix":"ocsf_toolkit-","environment":"pypi"}]'
           dists=$(uv run python packaging/version_dist/dist.py unpublished --version "$VERSION")
           for v in $dists; do
             cp build/wheels/ocsf_toolkit_v"${v//./_}"-* upload/
+            projects=$(jq -c --arg d "${v//./-}" --arg u "${v//./_}" \
+              '. + [{project: "ocsf-toolkit-v\($d)", prefix: "ocsf_toolkit_v\($u)-",
+                     environment: "pypi-v\($d)"}]' <<< "$projects")
           done
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
           (cd upload && sha256sum ./* | sed 's| \./| |') > SHA256SUMS
           {
             echo "### ocsf-toolkit $VERSION"
@@ -100,17 +111,29 @@ jobs:
   publish:
     if: github.ref_type == 'tag'
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.build.outputs.projects) }}
+    name: publish ${{ matrix.project }}
     runs-on: ubuntu-latest
     environment:
-      name: pypi
-      url: https://pypi.org/project/ocsf-toolkit/
+      name: ${{ matrix.environment }}
+      url: https://pypi.org/project/${{ matrix.project }}/
     permissions:
       id-token: write # trusted publishing; no API token exists
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dists
-          path: dist/
+          path: all/
+      - name: Select this project's files
+        env:
+          PREFIX: ${{ matrix.prefix }} # a file name prefix set by the build job
+        run: |
+          mkdir dist
+          cp all/"$PREFIX"* dist/
+          ls dist
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
 
   github-release:
