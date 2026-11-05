@@ -1,5 +1,8 @@
 """argparse wiring of the ``ocsf-toolkit`` console script."""
 
+import subprocess
+import sys
+
 import pytest
 
 from ocsf_toolkit import __version__
@@ -50,3 +53,19 @@ def test_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
         build_parser().parse_args(["--version"])
     assert exc.value.code == 0
     assert capsys.readouterr().out.strip() == f"ocsf-toolkit {__version__}"
+
+
+def test_a_closed_pipe_ends_quietly() -> None:
+    """`ocsf-toolkit diff ... | head`: the reader leaving early is not an error to report. The
+    1.0.0 -> 1.9.0 diff (~250 KB) outgrows the pipe buffer, so the writer does hit the closed pipe."""
+    code = "from ocsf_toolkit.cli import main; raise SystemExit(main(['diff', '1.0.0', '1.9.0']))"
+    with subprocess.Popen(
+        [sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ) as process:
+        assert process.stdout is not None
+        assert process.stderr is not None
+        process.stdout.readline()
+        process.stdout.close()  # what `head -1` does
+        stderr = process.stderr.read().decode()
+    assert stderr == ""
+    assert process.returncode == 1
