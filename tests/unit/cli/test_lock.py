@@ -71,7 +71,7 @@ def _broken(old: str, new: str) -> str:
 @pytest.mark.parametrize(
     ("text", "message"),
     [
-        (_broken('msgspec = "0.22.0"', 'msgspec = "0.22.0"\nextra = "x"'), "unknown keys"),
+        (_broken('ir_version = "1.0"\n', 'ir_version = "1.0"\nextra = "x"\n'), "unknown keys"),
         (_broken('ir_version = "1.0"\n', ""), "missing keys"),
         (_broken('ref = "1.9.0"\n', ""), "missing keys"),
         (_broken("ship_models = true", 'ship_models = "yes"'), "must be a bool"),

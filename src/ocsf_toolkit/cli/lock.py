@@ -41,7 +41,6 @@ class Toolchain:
 
     ocsf_schema_compiler: str
     python_compile: str
-    msgspec: str
     ir_version: str
 
 
@@ -71,7 +70,6 @@ class Lockfile:
 _TOOLCHAIN_KEYS = {
     "ocsf-schema-compiler": "ocsf_schema_compiler",
     "python-compile": "python_compile",
-    "msgspec": "msgspec",
     "ir_version": "ir_version",
 }
 _SCHEMA_KEYS = {f.name: f.name for f in fields(SchemaEntry)}

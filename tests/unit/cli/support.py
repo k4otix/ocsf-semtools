@@ -9,7 +9,7 @@ from typing import Any
 from ocsf_toolkit.cli import lock
 
 # The committed ocsf.lock's toolchain (test_lock checks that they agree).
-TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
+TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", ir_version="1.0")
 
 
 def entry(version: str = "1.9.0", **fields: Any) -> lock.SchemaEntry:

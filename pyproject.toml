@@ -39,7 +39,6 @@ dev = [
     "ruff",
     "mypy",
     "import-linter",
-    "pytest-cov",
 ]
 
 [tool.hatch.version]

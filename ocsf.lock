@@ -11,7 +11,6 @@
 [toolchain]
 ocsf-schema-compiler = "1.1.1"
 python-compile = "3.14"
-msgspec = "0.22.0"
 ir_version = "1.0"
 
 [[schemas]]
