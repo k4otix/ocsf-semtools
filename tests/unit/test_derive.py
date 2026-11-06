@@ -240,6 +240,8 @@ def test_rfc3339() -> None:
     assert rfc3339(T0) == "2025-11-01T12:26:40.000Z"
     assert rfc3339(T0 + 7) == "2025-11-01T12:26:40.007Z"
     assert rfc3339(-1) == "1969-12-31T23:59:59.999Z"
+    assert rfc3339(-30_610_224_000_001) == "0999-12-31T23:59:59.999Z"  # four digits on every libc
+    assert rfc3339(-62_135_596_800_000) == "0001-01-01T00:00:00.000Z"
 
 
 def test_dt_twins_derive_only_under_the_datetime_profile() -> None:

@@ -236,8 +236,10 @@ def _twin_table(schema: ResolvedSchema) -> dict[tuple[bool, str], tuple[tuple[st
 
 def rfc3339(ms: int) -> str:
     """Epoch milliseconds as YYYY-MM-DDTHH:MM:SS.mmmZ, the form of OCSF's datetime_t."""
-    moment = _EPOCH + timedelta(milliseconds=ms)
-    return f"{moment:%Y-%m-%dT%H:%M:%S}.{moment.microsecond // 1000:03d}Z"
+    m = _EPOCH + timedelta(milliseconds=ms)
+    # Each field by hand: strftime's %Y is not zero-padded below year 1000 on glibc.
+    date, time = f"{m.year:04d}-{m.month:02d}-{m.day:02d}", f"{m.hour:02d}:{m.minute:02d}:{m.second:02d}"
+    return f"{date}T{time}.{m.microsecond // 1000:03d}Z"
 
 
 def _same_instant(given: object, derived: object) -> bool:
