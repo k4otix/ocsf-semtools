@@ -1,0 +1,45 @@
+# The property tests under the `thorough` Hypothesis profile: 200 examples per class with fresh
+# randomness, weekly and on demand. CI runs the derandomized `ci` profile on every push; this job
+# searches further. The example database is kept between runs, so a failure found once is replayed
+# first on every later run until it is fixed.
+name: property
+
+on:
+  schedule:
+    - cron: "17 5 * * 1" # Mondays 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# explicit, so every step runs as `bash -eo pipefail`: a failure inside a pipe fails the step
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  thorough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"] # libc and stdlib differences surface per version
+    name: thorough (${{ matrix.python }})
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # hatch-vcs derives the version from git tags
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .hypothesis
+          key: hypothesis-${{ matrix.python }}-${{ github.run_id }}
+          restore-keys: hypothesis-${{ matrix.python }}-
+      - name: Property tests, thorough profile
+        env:
+          HYPOTHESIS_PROFILE: thorough
+        run: uv run pytest tests/property -p no:randomly
