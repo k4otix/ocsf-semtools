@@ -1,13 +1,14 @@
 """Conformance visitor: report how each visited value deviates from its attribute's declaration."""
 
+import functools
 import math
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, TypeGuard, cast, final
 
-from ocsf_toolkit.ir import ItemDef, Requirement, Root
+from ocsf_toolkit.ir import Deprecation, ItemDef, Requirement, Root
 from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
 from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, dotted
 
@@ -24,6 +25,15 @@ _IDENTITY = frozenset({"class_uid", "category_uid", "type_uid"})
 
 
 @final
+@dataclass(frozen=True, slots=True)
+class _Plan:
+    """What a node's close checks, from its item alone: worked out once per item and schema."""
+
+    asked: tuple[tuple[str, ResolvedAttribute, Kind, str | None], ...]  # (name, decl, kind if absent, source)
+    deprecated: Deprecation | None  # of the item itself
+
+
+@final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Checks:
     """What the conformance visitor may change while it checks; it reports in every mode."""
@@ -35,21 +45,42 @@ class Checks:
     datetimes: bool  # tz-aware datetime -> epoch ms on timestamp_t (D#17)
     relocate: bool  # unknown attributes move into the root's unmapped
     migrate: bool  # a deprecated attribute's value moves to its one superseding attribute
+    plans: dict[tuple[bool, str], _Plan] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Share the node plans of every run against this schema."""
+        object.__setattr__(self, "plans", _plans(self.schema))
 
 
 def check(visit: Visit, checks: Checks) -> list[Finding]:
     """Check one attribute visit, or at a node's close its absent attributes and constraints."""
     if visit.attr is None:
-        return [*_absent(visit), *_constraints(visit), *_item_deprecated(visit, checks.schema)]
+        plan = _plan(checks, visit.owner)
+        return [*_absent(visit, plan), *_constraints(visit), *_item_deprecated(visit, plan)]
     ra = visit.owner.attributes.get(visit.attr)
     if ra is None:
         return _unknown(visit, visit.attr, checks)
-    if visit.value is None:
+    value = visit.value
+    if value is None:
         return []  # JSON null reads as absent
-    findings = list(_deprecated(visit, ra, checks))
-    if visit.attr not in visit.node:
-        return findings  # migrated to its successor, which is not this attribute's concern
+    if ra.deprecated is None:
+        if _plain(value, ra):
+            return []  # the common case, without the generators below
+        findings: list[Finding] = []
+    else:
+        findings = list(_deprecated(visit, ra, checks))
+        if visit.attr not in visit.node:
+            return findings  # migrated to its successor, which is not this attribute's concern
     return findings + list(_value(visit, ra, checks))
+
+
+def _plain(value: object, ra: ResolvedAttribute) -> bool:
+    """Tell whether a single value needs nothing checked beyond its shape: an object, or a non-enum scalar."""
+    if ra.is_array:
+        return False
+    if ra.object_type is not None:
+        return isinstance(value, dict)
+    return ra.enum is None and ra.root is not None and _conforms(value, ra.root)
 
 
 # --- attribute visits ----------------------------------------------------------------------
@@ -281,15 +312,12 @@ def _mismatch(visit: Visit, ra: ResolvedAttribute, path: Path, value: object, wh
 # --- node closes ---------------------------------------------------------------------------
 
 
-def _absent(visit: Visit) -> Iterator[Finding]:
+def _absent(visit: Visit, plan: _Plan) -> Iterator[Finding]:
     owner, node = visit.owner, visit.node
-    sources = {spec.label: id_attr for id_attr, spec in owner.siblings().items()}
-    for name, ra in owner.attributes.items():
-        kind = _MISSING.get(ra.requirement)
-        if kind is None or ra.deprecated is not None or node.get(name) is not None:
-            continue  # a deprecated attribute is never asked for
+    for name, ra, kind, source in plan.asked:
+        if node.get(name) is not None:
+            continue
         # A derived value whose source is itself absent: the source's finding is the cause.
-        source = "activity_id" if owner.is_class and name == "type_uid" else sources.get(name)
         if source is not None and node.get(source) is None:
             continue
         path = (*visit.path, name)
@@ -321,8 +349,8 @@ def _constraints(visit: Visit) -> Iterator[Finding]:
         )
 
 
-def _item_deprecated(visit: Visit, schema: ResolvedSchema) -> Iterator[Finding]:
-    dep = _item_def(schema, visit.owner).deprecated
+def _item_deprecated(visit: Visit, plan: _Plan) -> Iterator[Finding]:
+    dep = plan.deprecated
     if dep is not None:
         yield Finding(
             kind=Kind.DEPRECATED,
@@ -331,6 +359,25 @@ def _item_deprecated(visit: Visit, schema: ResolvedSchema) -> Iterator[Finding]:
             message=f"{visit.owner.key} is deprecated since {dep.since}: {dep.message}",
             expected=dep.superseded_by,
         )
+
+
+def _plan(checks: Checks, item: ResolvedItem) -> _Plan:
+    key = (item.is_class, item.key)
+    plan = checks.plans.get(key)
+    if plan is None:
+        sources = {spec.label: id_attr for id_attr, spec in item.siblings().items()}
+        asked = tuple(
+            (name, ra, kind, "activity_id" if item.is_class and name == "type_uid" else sources.get(name))
+            for name, ra in item.attributes.items()
+            if (kind := _MISSING.get(ra.requirement)) is not None and ra.deprecated is None  # never asked for
+        )
+        plan = checks.plans[key] = _Plan(asked, _item_def(checks.schema, item).deprecated)
+    return plan
+
+
+@functools.lru_cache(maxsize=32)  # as many as load() keeps
+def _plans(schema: ResolvedSchema) -> dict[tuple[bool, str], _Plan]:
+    return {}
 
 
 def _lookup(node: dict[str, Any], dotted_name: str) -> object:
