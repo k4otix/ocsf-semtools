@@ -1,5 +1,7 @@
-"""acc. #8: the README's typed-model example runs as written against the 1.9.0 dist. (The README's
-dict-level examples run as doctests in every test run; this one needs the built dist.)"""
+"""The README's typed-model example runs as written against the 1.9.0 dist (acc. #8).
+
+The README's dict-level examples run as doctests in every test run; this one needs the built dist.
+"""
 
 import os
 import re

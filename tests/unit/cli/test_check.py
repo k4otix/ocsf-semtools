@@ -46,7 +46,7 @@ def test_clean_input_exits_zero(tmp_path: Path) -> None:
 
 
 def test_json_output(events: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    main(["check", "--version", "1.9.0", "--json", str(events)])
+    assert main(["check", "--version", "1.9.0", "--json", str(events)]) == 1
     reports = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert [(r["source"], r["ok"]) for r in reports] == [
         (f"{events}:1", True),

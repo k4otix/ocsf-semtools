@@ -32,7 +32,7 @@ def test_one_module_per_item() -> None:
     expected |= {f"ext/{k}.py" for k in (*IR.classes, *IR.objects) if "/" in k}
     modules = {p for p in TREE if p.endswith(".py") and not p.endswith("__init__.py")}
     assert modules - {"enums.py"} == expected
-    assert len(expected) == 87 + 193  # every class and object but the open `object`
+    assert len(expected) == 87 + 193  # 87 classes (7 from extensions); 194 objects less the open `object`
     assert TREE[IR_FILE] == export_ir(IR)  # bundled even though core ships 1.9.0
 
 

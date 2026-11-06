@@ -24,15 +24,10 @@ def _names(found: tuple[Observable, ...]) -> list[tuple[str, int, str | None]]:
 # --- the marker table -----------------------------------------------------------------------
 
 
-def test_marker_table_size(schema: ResolvedSchema) -> None:
-    everything = load("1.9.0", profiles=schema.ir.profiles, extensions=schema.ir.extensions)
-    assert (len(schema.observable_markers), len(everything.observable_markers)) == (478, 594)
-
-
 # --- extraction -----------------------------------------------------------------------------
 
 
-def test_nested_objects_inside_arrays_r5(schema: ResolvedSchema) -> None:
+def test_objects_nested_inside_arrays_get_indexed_names(schema: ResolvedSchema) -> None:
     """The prior implementation's verified case: four entries, indexed names, right type ids."""
     event = {"class_uid": 2004, "evidences": [{"process": {"name": "p", "file": {"name": "f"}}}]}
     found, report = extract(event, schema)
@@ -88,8 +83,8 @@ def test_extract_infers_the_class_and_never_changes_the_event(schema: ResolvedSc
     assert ("device.hostname", 1, "h") in _names(found)
 
 
-def test_class_path_map_kind_6() -> None:
-    """Kind 6 is empty in 1.9.0, so it is exercised on the synthetic schema."""
+def test_a_class_can_mark_paths_as_observables() -> None:
+    """A class's own `observables` path map (definition kind 6) is empty in 1.9.0, so this uses the synthetic schema."""
     data = compiled()
     data["classes"]["finding"]["observables"] = {"method": 44, "cloud.hosted": 45}
     schema = resolve(load_compiled(compiled_bytes(data), PROVENANCE), profiles={"cloud"})

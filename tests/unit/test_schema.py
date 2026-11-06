@@ -248,8 +248,10 @@ def test_resolution_is_closed(which: str, request: pytest.FixtureRequest) -> Non
 
 
 def test_marker_table_size(base: ResolvedSchema, everything: ResolvedSchema) -> None:
-    assert len(everything.observable_markers) == 594
+    # (owner, attribute) pairs 1.9.0 marks as observables, without and with every profile and
+    # extension: pinned, so a resolver change that drops or invents markers shows up here
     assert len(base.observable_markers) == 478
+    assert len(everything.observable_markers) == 594
 
 
 def test_type_uid_registry_matches_class_and_activity(everything: ResolvedSchema) -> None:

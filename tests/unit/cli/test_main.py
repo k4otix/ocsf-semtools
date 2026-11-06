@@ -1,4 +1,4 @@
-"""argparse wiring of the ``ocsf-toolkit`` console script."""
+"""The ``ocsf-toolkit`` console script as a whole: usage errors, --version, and a closed stdout."""
 
 import subprocess
 import sys
@@ -6,39 +6,7 @@ import sys
 import pytest
 
 from ocsf_toolkit import __version__
-from ocsf_toolkit.cli import build_parser, compile, lock
-
-
-def test_compile_defaults() -> None:
-    args = build_parser().parse_args(["compile"])
-    assert args.run is compile.run
-    assert args.versions == []
-    assert (args.lock, args.build_dir, args.compiler_cmd) == ("ocsf.lock", "build", None)
-
-
-def test_compile_options() -> None:
-    args = build_parser().parse_args(
-        [
-            "compile",
-            "1.9.0",
-            "1.8.0",
-            "--lock",
-            "x.lock",
-            "--build-dir",
-            "out",
-            "--compiler-cmd",
-            "py -m c",
-        ]
-    )
-    assert args.versions == ["1.9.0", "1.8.0"]
-    assert (args.lock, args.build_dir, args.compiler_cmd) == ("x.lock", "out", "py -m c")
-
-
-def test_lock_add() -> None:
-    args = build_parser().parse_args(["lock", "--add", "1.5.0", "--ref", "v1.5.0"])
-    assert args.run is lock.run
-    assert (args.add, args.ref, args.repo) == ("1.5.0", "v1.5.0", lock.UPSTREAM_REPO)
-    assert (args.lock, args.build_dir, args.compiler_cmd) == ("ocsf.lock", "build", None)
+from ocsf_toolkit.cli import build_parser
 
 
 @pytest.mark.parametrize("argv", [[], ["lock"], ["compile", "--bogus"], ["frobnicate"]])

@@ -1,4 +1,4 @@
-"""``ocsf-toolkit models check`` / ``models record``: regeneration gate 3 (D-7, acc. #6)."""
+"""``ocsf-toolkit models check`` / ``models record``: regeneration gate 3, the generated trees against the lockfile."""
 
 import shutil
 from dataclasses import replace
@@ -45,7 +45,7 @@ def test_record_then_check(lockfile: Path, capsys: pytest.CaptureFixture[str]) -
     assert f"1.9.0: ok  models_tree_sha256 {digest}" in capsys.readouterr().out
 
 
-def test_check_fails_on_a_changed_tree(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_check_fails_when_no_hash_is_recorded(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(lockfile, "check") == 1
     assert "lockfile has none; review the change" in capsys.readouterr().err
 

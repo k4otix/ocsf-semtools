@@ -15,7 +15,6 @@ from ocsf_toolkit.engine import (
     STRICT,
     ConformanceError,
     Policy,
-    Report,
     run,
     select,
 )
@@ -25,6 +24,7 @@ from ocsf_toolkit.walk import (
     _SEVERITY,  # pyright: ignore[reportPrivateUsage]
     Finding,
     Kind,
+    RepairAction,
 )
 from tests.fixtures.events import (
     CLASS,
@@ -36,17 +36,9 @@ from tests.fixtures.events import (
 
 
 def test_the_three_presets() -> None:
-    assert [dataclasses.astuple(p) for p in (STRICT, LENIENT, REPAIR)] == [
-        (True, False, False, "error"),
-        (False, False, False, "report"),
-        (True, True, True, "relocate"),
-    ]
-    assert [f.name for f in dataclasses.fields(Policy)] == [
-        "fill",
-        "overwrite",
-        "coerce",
-        "unknown",
-    ]
+    assert Policy(fill=True, overwrite=False, coerce=False, unknown="error") == STRICT
+    assert Policy(fill=False, overwrite=False, coerce=False, unknown="report") == LENIENT
+    assert Policy(fill=True, overwrite=True, coerce=True, unknown="relocate") == REPAIR
 
 
 @pytest.mark.parametrize("policy", [STRICT, REPAIR])
@@ -79,7 +71,7 @@ def _fields(**extra: Any) -> dict[str, Any]:
     }
 
 
-def test_build_raises_with_the_whole_report(schema: ResolvedSchema) -> None:
+def test_build_by_reference_raises_with_the_whole_report(schema: ResolvedSchema) -> None:
     with pytest.raises(ConformanceError) as raised:
         build((schema, CLASS), **_fields(severity_id=42, time="yesterday", bogus=1))
     report = raised.value.report
@@ -98,7 +90,7 @@ def test_build_does_not_raise_on_warnings(schema: ResolvedSchema) -> None:
     assert event["comment"] == "old"
 
 
-def test_build_warns_per_deprecated_attribute(schema: ResolvedSchema) -> None:
+def test_build_by_reference_warns_per_deprecated_attribute(schema: ResolvedSchema) -> None:
     with pytest.warns(DeprecationWarning, match="comment is deprecated"):
         build((schema, CLASS), **_fields(comment="old"))
 
@@ -311,29 +303,30 @@ def test_report_to_dict_is_json(schema: ResolvedSchema) -> None:
     }
 
 
-@pytest.mark.parametrize(
-    ("kind", "severity"),
-    [
-        *((k, "error") for k in ("missing_required", "type_mismatch", "enum_out_of_range")),
-        *((k, "error") for k in ("sibling_conflict", "identity_conflict", "unknown_attribute")),
-        ("constraint_violated", "error"),
-        *((k, "warning") for k in ("missing_recommended", "profile_mismatch", "deprecated")),
-        ("observable_mismatch", "warning"),
-        *((k, "info") for k in ("semantically_empty_enum", "max_nodes_exceeded")),
-        *((k, "info") for k in ("filled", "coerced", "relocated")),
-    ],
-)
-def test_severity_is_a_function_of_kind(kind: str, severity: str) -> None:
-    assert Finding(kind=Kind(kind), path=(), owner="o", message="m").severity == severity
+@pytest.mark.parametrize("kind", list(Kind))
+def test_severity_is_a_function_of_kind(kind: Kind) -> None:
+    finding = Finding(kind=kind, path=(), owner="o", message="m")
+    assert finding.severity == _SEVERITY.get(kind, "info")
+    repaired = dataclasses.replace(finding, repair=RepairAction(action="fill", before=None, after=1))
+    assert repaired.severity == "info"
+
+
+def test_the_severity_table() -> None:
+    errors = {k for k, s in _SEVERITY.items() if s == "error"}
+    warnings_ = {k for k, s in _SEVERITY.items() if s == "warning"}
+    assert errors == {
+        Kind.MISSING_REQUIRED,
+        Kind.TYPE_MISMATCH,
+        Kind.ENUM_OUT_OF_RANGE,
+        Kind.SIBLING_CONFLICT,
+        Kind.IDENTITY_CONFLICT,
+        Kind.CONSTRAINT_VIOLATED,
+        Kind.UNKNOWN_ATTRIBUTE,
+    }
+    assert warnings_ == {Kind.MISSING_RECOMMENDED, Kind.PROFILE_MISMATCH, Kind.DEPRECATED, Kind.OBSERVABLE_MISMATCH}
 
 
 def test_every_kind_has_a_severity() -> None:
     # The table names every warning and error; the rest are info by design.
     info = {Kind.FILLED, Kind.COERCED, Kind.RELOCATED, Kind.SEMANTICALLY_EMPTY_ENUM, Kind.MAX_NODES_EXCEEDED}
     assert set(Kind) - _SEVERITY.keys() == info
-
-
-def test_report_is_frozen(schema: ResolvedSchema) -> None:
-    report = Report(schema=schema, class_key=CLASS, findings=())
-    with pytest.raises(dataclasses.FrozenInstanceError):
-        report.class_key = "x"  # type: ignore[misc]

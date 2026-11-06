@@ -36,7 +36,7 @@ def _kinds(found: Any) -> list[tuple[str, tuple[str | int, ...]]]:
 
 
 def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -> None:
-    """acc. #12 on a generated class."""
+    """Identity, type_uid and sibling labels are derived on a generated class too (acc. #12)."""
     finding: Any = build(v1_9_0.DetectionFinding, **_fields(v1_9_0))
     assert isinstance(finding, v1_9_0.DetectionFinding)
     assert (finding.type_uid, finding.type_name) == (200401, "Detection Finding: Create")
@@ -56,7 +56,7 @@ def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -
 
 
 def test_enum_members_are_their_values(v1_9_0: ModuleType) -> None:
-    """acc. #5."""
+    """Members are the schema's values, named from their captions (acc. #5)."""
     severity = v1_9_0.enums.SeverityId
     assert severity.HIGH is severity(4)
     packet = importlib.import_module(f"{v1_9_0.__name__}.objects.packet")
@@ -81,7 +81,7 @@ def test_build_accepts_datetimes_and_keyword_aliases(v1_9_0: ModuleType) -> None
     assert (wire["from"], wire["email"]["from"]) == ("b@example.com", "a@example.com")
 
 
-def test_build_raises_with_the_whole_report(v1_9_0: ModuleType) -> None:
+def test_build_of_a_generated_class_raises_with_the_whole_report(v1_9_0: ModuleType) -> None:
     with pytest.raises(ConformanceError) as caught:
         build(v1_9_0.DetectionFinding, time="soon")
     assert set(_kinds(caught.value.report.errors())) >= {
@@ -94,13 +94,13 @@ def test_build_raises_with_the_whole_report(v1_9_0: ModuleType) -> None:
 
 
 def test_a_supplied_type_uid_that_disagrees_is_an_identity_conflict(v1_9_0: ModuleType) -> None:
-    """acc. #12: 200499 is a valid type_uid, but not for activity 1."""
+    """200499 is a valid type_uid, but not for activity 1 (acc. #12)."""
     with pytest.raises(ConformanceError) as caught:
         build(v1_9_0.DetectionFinding, **_fields(v1_9_0, type_uid=200499))
     assert _kinds(caught.value.report.errors()) == [("identity_conflict", ("type_uid",))]
 
 
-def test_deprecated_attributes_warn(v1_9_0: ModuleType) -> None:
+def test_build_of_a_generated_class_warns_per_deprecated_attribute(v1_9_0: ModuleType) -> None:
     with pytest.warns(DeprecationWarning, match="comment"):
         build(v1_9_0.DetectionFinding, **_fields(v1_9_0, comment="old"))
 

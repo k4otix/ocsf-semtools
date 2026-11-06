@@ -25,7 +25,8 @@ def test_generate_a_shipped_version(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert main(["generate", "1.9.0", "--package", "models", "--out", str(tmp_path)]) == 0
     assert (tmp_path / "models" / "classes" / "detection_finding.py").is_file()
     out = capsys.readouterr().out
-    assert out.startswith(f"{tmp_path / 'models'}: OCSF 1.9.0, superset, 2")
+    modules = len(list((tmp_path / "models").rglob("*.py")))
+    assert out == f"{tmp_path / 'models'}: OCSF 1.9.0, superset, {modules} modules\n"
 
 
 def test_generate_exact_from_an_ir_file(tmp_path: Path) -> None:

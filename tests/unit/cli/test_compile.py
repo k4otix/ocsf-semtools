@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import _upstream, main
+from ocsf_toolkit.cli import _upstream, build_parser, compile, main
 from ocsf_toolkit.cli._upstream import Compiler
 from tests.unit.cli.support import Upstream, entry, git, write_lockfile
 
@@ -179,3 +179,28 @@ def test_compile_command_unknown_version(
     path = _lockfile(tmp_path, upstream, FAKE_SHA)
     assert main(["compile", "1.8.0", "--lock", str(path)]) == 1
     assert "1.8.0 is not in the lockfile" in capsys.readouterr().err
+
+
+def test_parser_defaults() -> None:
+    args = build_parser().parse_args(["compile"])
+    assert args.run is compile.run
+    assert args.versions == []
+    assert (args.lock, args.build_dir, args.compiler_cmd) == ("ocsf.lock", "build", None)
+
+
+def test_parser_options() -> None:
+    args = build_parser().parse_args(
+        [
+            "compile",
+            "1.9.0",
+            "1.8.0",
+            "--lock",
+            "x.lock",
+            "--build-dir",
+            "out",
+            "--compiler-cmd",
+            "py -m c",
+        ]
+    )
+    assert args.versions == ["1.9.0", "1.8.0"]
+    assert (args.lock, args.build_dir, args.compiler_cmd) == ("x.lock", "out", "py -m c")

@@ -53,11 +53,11 @@ def test_members_that_still_collide_are_an_error() -> None:
 
 
 def test_every_1_9_0_enum_names_cleanly() -> None:
-    """acc. #5: caption-named members everywhere; no integer_4-style fallbacks."""
+    """Every 1.9.0 enum member is named from its caption, with no integer_4-style fallbacks (acc. #5)."""
     ir = load("1.9.0").ir
     attrs = [a for t in (ir.classes, ir.objects) for i in t.values() for a in i.attributes.values()]
     enums = [a.enum for a in (*attrs, *ir.dictionary.values()) if a.enum]
-    assert len(enums) == 1071 + 71
+    assert len(enums) == 1071 + 71  # attribute enums on classes and objects, then dictionary enums
     for enum in enums:
         names = list(member_names(enum).values())
         assert len(set(names)) == len(names)
@@ -88,4 +88,7 @@ def test_module_names_that_would_shadow_or_break_are_refused(name: str) -> None:
 def test_class_name() -> None:
     assert class_name("detection_finding") == "DetectionFinding"
     assert class_name("cis_csc") == "CisCsc"
+
+
+def test_module_name() -> None:
     assert module_name("process") == "process"

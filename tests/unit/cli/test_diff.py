@@ -36,9 +36,13 @@ def test_equal_irs_exit_zero(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out == ""
 
 
-@pytest.mark.parametrize("source", ["0.0.1", "missing.json"])
-def test_unreadable_input_exits_two(tmp_path: Path, capsys: pytest.CaptureFixture[str], source: str) -> None:
-    assert main(["diff", "1.9.0", str(tmp_path / source) if source.endswith("json") else source]) == 2
+def test_an_unshipped_version_exits_two(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["diff", "1.9.0", "0.0.1"]) == 2
+    assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
+
+
+def test_a_missing_ir_file_exits_two(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["diff", "1.9.0", str(tmp_path / "missing.json")]) == 2
     assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
 
 

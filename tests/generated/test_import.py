@@ -43,7 +43,7 @@ def test_classes_load_on_demand(dist: Dist) -> None:
 
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_installs_into_a_clean_environment(dist: Dist, tmp_path: Path) -> None:
-    """acc. #1: install the dist and the core into a fresh venv; msgspec comes as a declared dep."""
+    """Install the dist and the core into a fresh venv; msgspec comes as a declared dependency (acc. #1)."""
     requires = tomllib.loads((dist.root / "pyproject.toml").read_text())["project"]["dependencies"]
     venv = tmp_path / "venv"
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, str(venv)], check=True)

@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit.cli import lock, trees
+from ocsf_toolkit.cli import build_parser, lock, trees
 from tests.conftest import ROOT
 from tests.unit.cli.support import TOOLCHAIN, Upstream, entry
 
@@ -196,7 +196,7 @@ def test_committed_window_is_the_newest_versions() -> None:
     committed = lock.read(ROOT / "ocsf.lock")
     assert lock.windowed(committed.schemas) == committed.schemas
     shipping = [e for e in committed.schemas if e.ship_models]
-    assert [e.version for e in shipping] == ["1.7.0", "1.8.0", "1.9.0"]
+    assert [e.version for e in shipping] == [e.version for e in committed.schemas[-lock.WINDOW :]]
     assert all(e.ir_sha256 and e.models_tree_sha256 for e in shipping)
 
 
@@ -241,3 +241,10 @@ def test_add_with_explicit_branch(tmp_path: Path, upstream: Upstream, compiler_c
 def test_add_rejects(tmp_path: Path, version: str, repo: str, message: str) -> None:
     with pytest.raises(ValueError, match=message):
         lock.add(LOCK, version, repo=repo, ref=None, build_dir=tmp_path, compiler_cmd=None)
+
+
+def test_parser() -> None:
+    args = build_parser().parse_args(["lock", "--add", "1.5.0", "--ref", "v1.5.0"])
+    assert args.run is lock.run
+    assert (args.add, args.ref, args.repo) == ("1.5.0", "v1.5.0", lock.UPSTREAM_REPO)
+    assert (args.lock, args.build_dir, args.compiler_cmd) == ("ocsf.lock", "build", None)
