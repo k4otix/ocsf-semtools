@@ -10,7 +10,7 @@ from typing import Any, Literal, cast, final
 from ocsf_toolkit.conform import Checks, as_integer, check
 from ocsf_toolkit.derive import derive
 from ocsf_toolkit.ir import Requirement, SchemaIR
-from ocsf_toolkit.observables import Observable, observe, unfounded
+from ocsf_toolkit.observables import Observable, markers, observe, unfounded
 from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
 from ocsf_toolkit.walk import Kind as Kind
@@ -100,14 +100,17 @@ def run(
         relocate=policy.unknown == "relocate",
         migrate=policy.overwrite,
     )
+    marks = markers(schema, item)
     found: list[Observable] = []
     for visit in walk(out, item, schema):
         if isinstance(visit, Finding):
             findings.append(visit)
-            continue
-        findings += derive(visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity)
-        findings += check(visit, checks)
-        found += observe(visit, schema, item)  # after check: values as coerced or relocated
+        elif visit.attr is None:  # a node's close: derivation runs on whole nodes
+            findings += derive(visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity)
+            findings += check(visit, checks)
+        else:
+            findings += check(visit, checks)
+            found += observe(visit, marks)  # after check: values as coerced or relocated
     findings += unfounded(out, found)
     return out, Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
@@ -125,12 +128,13 @@ def extract(
     (with a partial result) when the walk passes max_nodes attribute visits.
     """
     item, _, findings = _root_class(event, schema, class_key)
+    marks = markers(schema, item)
     found: list[Observable] = []
     for visit in walk(event, item, schema, max_nodes=max_nodes):
         if isinstance(visit, Finding):
             findings.append(visit)
         else:
-            found += observe(visit, schema, item)
+            found += observe(visit, marks)
     findings += unfounded(event, found)
     return tuple(found), Report(schema=schema, class_key=item.key, findings=tuple(findings))
 

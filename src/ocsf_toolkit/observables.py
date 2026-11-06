@@ -1,10 +1,12 @@
 """Observables visitor: which visited values the schema marks as observables, and their entries."""
 
 import copy
+import functools
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any, cast, final
 
+from ocsf_toolkit.ir import EnumMember, EnumValue
 from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
 from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted
 
@@ -32,19 +34,47 @@ class Observable:
         return entry
 
 
-def observe(visit: Visit, schema: ResolvedSchema, root: ResolvedItem) -> list[Observable]:
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Markers:
+    """What makes a visited attribute an observable, for one schema and root class; built once per pair."""
+
+    by_attr: Mapping[tuple[str, str], int]  # (owner key, attribute) -> type_id: kinds 1-5
+    by_path: Mapping[str, int]  # canonical path -> type_id: kind 6, the root class's own map
+    tails: frozenset[str]  # the last segment of each by_path key, to skip canonical() for the rest
+    captions: Mapping[int, str]  # type_id -> caption, for the ids the schema defines
+
+
+def markers(schema: ResolvedSchema, root: ResolvedItem) -> Markers:
+    """Return the observable markers for events of root under schema."""
+    built = _markers(schema)
+    found = built.get(root.key)
+    if found is None:
+        item = schema.ir.classes.get(root.key)
+        paths: Mapping[str, int] = item.class_observables if item is not None else {}
+        found = built[root.key] = Markers(
+            by_attr=schema.observable_markers(),
+            by_path=paths,
+            tails=frozenset(p.rpartition(".")[2] for p in paths),
+            captions=_captions(schema),
+        )
+    return found
+
+
+def observe(visit: Visit, marks: Markers) -> list[Observable]:
     """Return the observables one attribute visit yields; none for a close or an undeclared attribute."""
-    if visit.attr is None or visit.value is None:
+    attr = visit.attr
+    if attr is None or visit.value is None:
         return []
-    ra = visit.owner.attributes.get(visit.attr)
-    if ra is None:
-        return []
-    type_id = schema.observable_markers().get((visit.owner.key, visit.attr))
-    if type_id is None:  # kind 6: the root class's own path map
-        type_id = _class_paths(schema, root).get(canonical(visit.path))
+    type_id = marks.by_attr.get((visit.owner.key, attr))
+    if type_id is None and attr in marks.tails:  # kind 6: the root class's own path map
+        type_id = marks.by_path.get(canonical(visit.path))
     if type_id is None:
         return []
-    caption = _caption(schema, type_id)
+    ra = visit.owner.attributes.get(attr)
+    if ra is None:
+        return []
+    caption = marks.captions.get(type_id)
     found: list[Observable] = []
     for path, value in _elements(visit.path, visit.value, ra.is_array):
         if ra.object_type is not None:
@@ -147,13 +177,13 @@ def _elements(path: Path, value: object, is_array: bool) -> Iterator[tuple[Path,
                 yield (*path, i), element
 
 
-def _class_paths(schema: ResolvedSchema, root: ResolvedItem) -> Mapping[str, int]:
-    item = schema.ir.classes.get(root.key)
-    return item.class_observables if item is not None else {}
+@functools.lru_cache(maxsize=32)  # as many as load() keeps
+def _markers(schema: ResolvedSchema) -> dict[str, Markers]:
+    return {}
 
 
-def _caption(schema: ResolvedSchema, type_id: int) -> str | None:
+def _captions(schema: ResolvedSchema) -> Mapping[int, str]:
     item = schema.objects.get(_OBSERVABLE)
     ra = item.attributes.get("type_id") if item else None
-    member = ra.enum.get(type_id) if ra and ra.enum else None
-    return member.caption if member else None
+    enum: Mapping[EnumValue, EnumMember] = ra.enum if ra and ra.enum else {}
+    return {int(value): member.caption for value, member in enum.items()}
