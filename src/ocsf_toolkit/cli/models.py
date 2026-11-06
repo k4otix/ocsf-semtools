@@ -5,6 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli._common import AddParser, Options
 from ocsf_toolkit.cli.trees import files_sha256, package_name, read_tree
 from ocsf_toolkit.codegen import render
 from ocsf_toolkit.schema import load
@@ -12,8 +13,15 @@ from ocsf_toolkit.schema import load
 DISTS_DIR = "build/dists"
 
 
-def register(parser: argparse.ArgumentParser, parents: list[argparse.ArgumentParser]) -> None:
+def register(add_parser: AddParser, shared: Options) -> None:
     """Add the ``models check`` and ``models record`` subcommands."""
+    parser = add_parser(
+        "models",
+        help="check or record the generated model trees (regeneration gate)",
+        description="Render each model-window version twice from its shipped IR. check asserts the "
+        "tree is stable and matches models_tree_sha256 in the lockfile; record writes that hash.",
+    )
+    parents = [shared.lockfile]
     actions = parser.add_subparsers(dest="models_action", required=True, metavar="ACTION")
     run: Callable[[argparse.Namespace], int]
     for name, help_text, run in (

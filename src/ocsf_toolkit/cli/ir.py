@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli._common import AddParser, Options
 from ocsf_toolkit.cli._upstream import atomic_write
 from ocsf_toolkit.export import IR_VERSION, export_ir
 from ocsf_toolkit.ir import Provenance
@@ -14,8 +15,14 @@ from ocsf_toolkit.loader import load_compiled
 DATA_DIR = "src/ocsf_toolkit/data"
 
 
-def register(parser: argparse.ArgumentParser, parents: list[argparse.ArgumentParser]) -> None:
+def register(add_parser: AddParser, shared: Options) -> None:
     """Add the ``ir export`` and ``ir check`` subcommands."""
+    parser = add_parser(
+        "ir",
+        help="export or check canonical IR JSON",
+        description="Build the IR from build/compiled and write or check data/ir-<ver>.json.",
+    )
+    parents = [shared.lockfile, shared.build]
     actions = parser.add_subparsers(dest="ir_action", required=True, metavar="ACTION")
     run: Callable[[argparse.Namespace], int]
     for name, help_text, run in (

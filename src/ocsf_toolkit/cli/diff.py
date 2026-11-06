@@ -4,12 +4,18 @@ import argparse
 import json
 import sys
 
-from ocsf_toolkit.cli._common import printable, source_ir
+from ocsf_toolkit.cli._common import AddParser, Options, printable, source_ir
 from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
 
 
-def register(parser: argparse.ArgumentParser) -> None:
-    """Add the ``diff`` arguments to its subparser."""
+def register(add_parser: AddParser, shared: Options) -> None:
+    """Add the ``diff`` subcommand."""
+    parser = add_parser(
+        "diff",
+        help="show what changed between two OCSF versions",
+        description="Compare two IRs field by field, matching classes by uid so a renamed "
+        "class shows as a rename; exit 0 if equal, 1 if they differ, 2 on error.",
+    )
     for name in ("old", "new"):
         parser.add_argument(name, metavar=name.upper(), help="a shipped OCSF version or an IR file")
     output = parser.add_mutually_exclusive_group()

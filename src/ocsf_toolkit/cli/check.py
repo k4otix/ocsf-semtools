@@ -8,14 +8,20 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TextIO, cast
 
-from ocsf_toolkit.cli._common import printable
+from ocsf_toolkit.cli._common import AddParser, Options, printable
 from ocsf_toolkit.models import parse
 from ocsf_toolkit.schema import load
 from ocsf_toolkit.walk import dotted
 
 
-def register(parser: argparse.ArgumentParser) -> None:
-    """Add the ``check`` arguments to its subparser."""
+def register(add_parser: AddParser, shared: Options) -> None:
+    """Add the ``check`` subcommand."""
+    parser = add_parser(
+        "check",
+        help="report how events deviate from an OCSF version",
+        description="Check each event in JSON Lines files against an OCSF version and print "
+        "its findings; exit 1 if any event has an error.",
+    )
     parser.add_argument("--version", required=True, help="OCSF version to check against")
     parser.add_argument(
         "--profiles",

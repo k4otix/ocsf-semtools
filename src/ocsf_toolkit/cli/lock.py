@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from ocsf_toolkit.cli import _upstream
+from ocsf_toolkit.cli._common import AddParser, Options
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
 WINDOW = 3  # model dists ship for the newest WINDOW versions (D#25)
@@ -239,8 +240,14 @@ def windowed(schemas: Sequence[SchemaEntry]) -> tuple[SchemaEntry, ...]:
     )
 
 
-def register(parser: argparse.ArgumentParser) -> None:
-    """Add the ``lock`` arguments to its subparser."""
+def register(add_parser: AddParser, shared: Options) -> None:
+    """Add the ``lock`` subcommand."""
+    parser = add_parser(
+        "lock",
+        parents=shared.compiling,
+        help="add an OCSF version to ocsf.lock",
+        description="Resolve an upstream ref, pin its commit, compile it, and record compiled_sha256.",
+    )
     parser.add_argument("--add", required=True, metavar="VERSION", help="OCSF version, e.g. 1.9.0")
     parser.add_argument("--ref", help="upstream tag or branch to pin instead of <VERSION> / v<VERSION>")
     parser.add_argument("--repo", default=UPSTREAM_REPO, help="ocsf-schema repository URL")

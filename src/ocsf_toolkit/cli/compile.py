@@ -4,10 +4,18 @@ import argparse
 from pathlib import Path
 
 from ocsf_toolkit.cli import _upstream, lock
+from ocsf_toolkit.cli._common import AddParser, Options
 
 
-def register(parser: argparse.ArgumentParser) -> None:
-    """Add the ``compile`` arguments to its subparser."""
+def register(add_parser: AddParser, shared: Options) -> None:
+    """Add the ``compile`` subcommand."""
+    parser = add_parser(
+        "compile",
+        parents=shared.compiling,
+        help="compile lockfile schemas and check their hashes",
+        description="Clone each pinned commit, compile it with ocsf-schema-compiler under "
+        "Python 3.14, and assert compiled_sha256 and the compiled version.",
+    )
     parser.add_argument(
         "versions",
         nargs="*",

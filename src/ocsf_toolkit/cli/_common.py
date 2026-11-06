@@ -1,9 +1,43 @@
 """Helpers more than one subcommand uses."""
 
+import argparse
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 from ocsf_toolkit.ir import SchemaIR
 from ocsf_toolkit.schema import load, load_ir
+
+type AddParser = Callable[..., argparse.ArgumentParser]  # the root's add_parser, which each register calls
+
+
+@dataclass(frozen=True, slots=True)
+class Options:
+    """The shared options, as argparse parents; each command takes only the ones it reads."""
+
+    lockfile: argparse.ArgumentParser
+    build: argparse.ArgumentParser
+    compiler: argparse.ArgumentParser
+
+    @property
+    def compiling(self) -> list[argparse.ArgumentParser]:
+        """Return the parents of a command that compiles a schema checkout."""
+        return [self.lockfile, self.build, self.compiler]
+
+
+def options() -> Options:
+    """Build the shared option parents."""
+    lockfile = argparse.ArgumentParser(add_help=False)
+    lockfile.add_argument("--lock", default="ocsf.lock", help="lockfile path (default: %(default)s)")
+    build = argparse.ArgumentParser(add_help=False)
+    build.add_argument("--build-dir", default="build", help="checkout cache and output root (default: %(default)s)")
+    compiler = argparse.ArgumentParser(add_help=False)
+    compiler.add_argument(
+        "--compiler-cmd",
+        help="command that compiles a schema checkout to stdout, replacing uvx "
+        "(air-gapped builds); the checkout path is appended",
+    )
+    return Options(lockfile, build, compiler)
 
 
 def printable(text: str) -> str:
