@@ -14,6 +14,7 @@ from ocsf_toolkit.walk import dotted
 
 
 def register(parser: argparse.ArgumentParser) -> None:
+    """Add the ``check`` arguments to its subparser."""
     parser.add_argument("--version", required=True, help="OCSF version to check against")
     parser.add_argument(
         "--profiles",
@@ -31,6 +32,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    """Check each event and print its findings; return 1 if any event has an error."""
     profiles = None if args.profiles is None else [p for p in args.profiles.split(",") if p]
     try:  # fail once on a bad selection rather than once per event
         schema = load(args.version, profiles=profiles or ())

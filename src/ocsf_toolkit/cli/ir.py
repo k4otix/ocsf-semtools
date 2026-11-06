@@ -14,6 +14,7 @@ DATA_DIR = "src/ocsf_toolkit/data"
 
 
 def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -> None:
+    """Add the ``ir export`` and ``ir check`` subcommands."""
     actions = parser.add_subparsers(dest="ir_action", required=True, metavar="ACTION")
     for name, help_text in (
         ("export", "write data/ir-<ver>.json from build/compiled/schema-<ver>.json"),
@@ -61,6 +62,7 @@ def build(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -
 
 
 def run(args: argparse.Namespace) -> int:
+    """Export or check the IR of each requested lockfile version against its ir_sha256."""
     lock_path = Path(args.lock)
     lockfile = lock.read(lock_path)
     versions: list[str] = args.versions or [e.version for e in lockfile.schemas if e.ir_sha256]

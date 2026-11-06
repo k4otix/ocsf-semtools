@@ -34,7 +34,7 @@ class SchemaDiff:
     changes: tuple[Change, ...]
 
     def to_dict(self) -> dict[str, Any]:
-        """A JSON-serializable form: IR values rendered as plain JSON."""
+        """Return a JSON-serializable form: IR values rendered as plain JSON."""
         return {
             "a": self.a,
             "b": self.b,
@@ -62,7 +62,7 @@ def diff(a: SchemaIR, b: SchemaIR) -> SchemaDiff:
 
 
 def plain(value: object) -> object:
-    """An IR value as JSON data: dataclasses as objects, sets sorted, enums by value."""
+    """Return an IR value as JSON data: dataclasses as objects, sets sorted, enums by value."""
     match value:
         case Enum():
             return value.value

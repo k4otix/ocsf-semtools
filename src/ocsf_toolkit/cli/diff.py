@@ -12,6 +12,7 @@ from ocsf_toolkit.schema import load, load_ir
 
 
 def register(parser: argparse.ArgumentParser) -> None:
+    """Add the ``diff`` arguments to its subparser."""
     for name in ("a", "b"):
         parser.add_argument(name, metavar=name.upper(), help="a shipped OCSF version or an IR file")
     output = parser.add_mutually_exclusive_group()
@@ -44,8 +45,9 @@ def run(args: argparse.Namespace) -> int:
 
 
 def semver(result: SchemaDiff) -> tuple[str, int]:
-    """The library release a changed IR of an already-shipped OCSF version calls for (repo plan
-    §4.1 gray case): nothing -> patch, only additions -> minor, anything else -> major.
+    """Return the library release a changed IR of an already-shipped OCSF version calls for.
+
+    Repo plan §4.1 gray case: nothing -> patch, only additions -> minor, anything else -> major.
 
     Provenance is left out: a compiler bump rewrites it without changing what the IR says.
     """
@@ -58,7 +60,7 @@ def semver(result: SchemaDiff) -> tuple[str, int]:
 
 
 def source_ir(source: str) -> SchemaIR:
-    """A shipped OCSF version by number, or an IR JSON file by path."""
+    """Load a shipped OCSF version by number, or an IR JSON file by path."""
     path = Path(source)
     if source.endswith(".json") or path.is_file():
         return load_ir(path)

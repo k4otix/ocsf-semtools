@@ -127,8 +127,10 @@ def render(
 
 
 def _check_names(ir: SchemaIR) -> None:
-    """Refuse IR names that would be written into comments or code unquoted: a custom
-    extension's IR is input, and a newline in a profile name would end a comment."""
+    """Refuse IR names that would be written into comments or code unquoted.
+
+    A custom extension's IR is input, and a newline in a profile name would end a comment.
+    """
     if not _VERSION.fullmatch(ir.version):
         raise ValueError(f"OCSF version {ir.version!r} is not a plain version number")
     for what, names in (("profile", ir.profiles), ("extension", ir.extensions)):
@@ -157,7 +159,8 @@ class _Generator:
             out[place.path] = self._module(items[key], place)
         imports = Imports()
         bodies = [enum_class(e, imports) for _, e in sorted(self.shared.items())]
-        out["enums.py"] = module(self.header, imports, None, bodies)
+        doc = f"Enums of the OCSF {self.schema.version} dictionary, shared by its classes and objects."
+        out["enums.py"] = module(self.header, doc, imports, None, bodies)
         trees = exports(self.places.values())
         packages = {p.package[:n] for p in self.places.values() for n in (1, len(p.package))}
         for pkg in sorted(packages | {()}):
@@ -180,12 +183,13 @@ class _Generator:
     def _package_doc(self, pkg: tuple[str, ...]) -> str:
         version = self.schema.version
         if pkg == ():
-            mode = (
-                f"exact classes for profiles {sorted(self.schema.profiles)}"
-                if self.exact
-                else "superset classes: profile and extension attributes are optional"
-            )
-            return f"Typed models for OCSF {version}, {mode}."
+            if not self.exact:
+                return (
+                    f"Typed models for OCSF {version}, superset classes: profile and extension attributes are optional."
+                )
+            # the profile list goes below the summary line, which must fit on one line however many there are
+            summary = f"Typed models for OCSF {version}, exact classes for one profile set."
+            return f"{summary}\n\nProfiles: {sorted(self.schema.profiles)}."
         if pkg == ("classes",):
             return f"OCSF {version} classes; import them from the package root."
         if pkg == ("objects",):
@@ -211,11 +215,11 @@ class _Generator:
             groups.setdefault(group, []).append(field)
         identity = groups.get(_FIXED, [])
         identity.sort(key=lambda f: _IDENTITY.index(f.wire) if f.wire in _IDENTITY else 0)
-        doc = self._doc(item)
         bodies = [enum_class(e, imports) for e in sorted(local, key=lambda e: e.name)]
         ocsf = (self.schema.version, item.key)
-        bodies.append(struct_class(here.name, doc, ocsf, _ordered(groups), imports))
-        return module(self.header, imports, here, bodies)
+        bodies.append(struct_class(here.name, self._doc(item), ocsf, _ordered(groups), imports))
+        kind = "class" if item.is_class else "object"
+        return module(self.header, f"OCSF {self.schema.version} {kind} {item.key}.", imports, here, bodies)
 
     def _reference(
         self,
@@ -282,7 +286,7 @@ class _Generator:
         return group, value, None if required else "None"
 
     def _fixed(self, item: ResolvedItem, a: ResolvedAttribute) -> str | None:
-        """The literal a class fixes for an identity attribute, or metadata.version."""
+        """Return the literal a class fixes for an identity attribute, or metadata.version."""
         if item.identity is not None and a.name in _IDENTITY:
             value = getattr(item.identity, a.name)
             return None if value is None else (string(value) if isinstance(value, str) else str(value))

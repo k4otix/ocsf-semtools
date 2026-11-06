@@ -46,17 +46,19 @@ class Report:
     findings: tuple[Finding, ...]
 
     def errors(self) -> tuple[Finding, ...]:
-        """Findings of severity error; a repaired finding is no longer one."""
+        """Return the findings of severity error; a repaired finding is no longer one."""
         return tuple(f for f in self.findings if f.severity == "error")
 
     def by_kind(self, kind: Kind) -> tuple[Finding, ...]:
+        """Return the findings of one kind."""
         return tuple(f for f in self.findings if f.kind is kind)
 
     def ok(self) -> bool:
+        """Tell whether the event has no errors."""
         return not self.errors()
 
     def to_dict(self) -> dict[str, Any]:
-        """A JSON-serializable form, for CI gates and ingest pipelines."""
+        """Return a JSON-serializable form, for CI gates and ingest pipelines."""
         return {
             "version": self.schema.version,
             "profiles": sorted(self.schema.profiles),
@@ -74,6 +76,7 @@ class ConformanceError(Exception):
     """
 
     def __init__(self, report: Report, fatal: tuple[Finding, ...] | None = None) -> None:
+        """Hold the report; the message names the first five fatal findings."""
         errors = report.errors() if fatal is None else fatal
         shown = "; ".join(f.message for f in errors[:5])
         more = f"; and {len(errors) - 5} more" if len(errors) > 5 else ""
@@ -116,7 +119,7 @@ def extract(
     *,
     max_nodes: int | None = None,
 ) -> tuple[tuple[Observable, ...], Report]:
-    """The observables the schema derives from the event, in walk order; the event is unchanged.
+    """Return the observables the schema derives from the event, in walk order; the event is unchanged.
 
     The report holds observable_mismatch for caller entries nothing backs, and max_nodes_exceeded
     (with a partial result) when the walk passes max_nodes attribute visits.
@@ -133,7 +136,7 @@ def extract(
 
 
 def select(event: Mapping[str, Any], *, version: str | None, profiles: Iterable[str] | None) -> ResolvedSchema:
-    """The schema an event is read against: arguments first, then its metadata.
+    """Select the schema an event is read against: arguments first, then its metadata.
 
     No version anywhere is a ValueError: no OCSF version is ever implied (D#6). Profile names in
     metadata.profiles that the version doesn't define are skipped here; derivation then reports
@@ -148,7 +151,7 @@ def select(event: Mapping[str, Any], *, version: str | None, profiles: Iterable[
 
 
 def declared_profiles(event: Mapping[str, Any], ir: SchemaIR, extensions: frozenset[str]) -> frozenset[str]:
-    """The names in metadata.profiles that the IR defines under these extensions."""
+    """Return the names in metadata.profiles that the IR defines under these extensions."""
     declared = _metadata(event).get("profiles")
     names = cast(list[object], declared) if isinstance(declared, list) else []
     defined = ir.profiles
@@ -165,7 +168,7 @@ def _metadata(event: Mapping[str, Any]) -> Mapping[str, Any]:
 def _root_class(
     event: dict[str, Any], schema: ResolvedSchema, class_key: str | None
 ) -> tuple[ResolvedItem, bool, list[Finding]]:
-    """The class to walk, whether the event really is of it, and why not."""
+    """Return the class to walk, whether the event really is of it, and why not."""
     fallback = schema.classes[FALLBACK_CLASS]
     if class_key is not None:
         return schema.classes[class_key], True, []

@@ -20,6 +20,7 @@ class Place:
 
     @property
     def path(self) -> str:
+        """The module's file path inside the package."""
         return "/".join((*self.package, f"{self.module}.py"))
 
     @property
@@ -33,10 +34,12 @@ class Place:
         return "." * (len(self.package) + 1)
 
     def import_line(self, target: "Place") -> str:
+        """Return the line that imports ``target``'s module from this one, under its alias."""
         return f"from {self.root}{'.'.join(target.package)} import {target.module} as {target.alias}"
 
 
 def place(item: ItemDef) -> Place:
+    """Return where a class or object is generated: its package, module and class name."""
     module = module_name(item.name)
     package: tuple[str, ...]
     if item.extension is not None:

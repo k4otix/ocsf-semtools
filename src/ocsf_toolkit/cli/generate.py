@@ -11,6 +11,7 @@ from ocsf_toolkit.loader import load_compiled
 
 
 def register(parser: argparse.ArgumentParser) -> None:
+    """Add the ``generate`` arguments to its subparser."""
     parser.add_argument(
         "source",
         metavar="SOURCE",
@@ -37,6 +38,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    """Generate the model package and print where it was written."""
     ir = _extended(args) if args.ext else source_ir(args.source)
     try:
         path = generate(

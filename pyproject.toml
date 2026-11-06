@@ -81,6 +81,14 @@ extend-exclude = ["src/ocsf_toolkit/_version.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "C4", "PIE", "RET"]
+extend-select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.per-file-ignores]
+# pydocstyle's docstring-shape rules govern library prose, not test code
+"tests/**" = ["D"]
 
 # tests/golden and tests/generated/samples import the generated package, which exists only after
 # `make generate`; tests/generated/test_static.py type-checks them against it.

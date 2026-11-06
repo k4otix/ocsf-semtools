@@ -7,6 +7,7 @@ from ocsf_toolkit.cli import _uvx, lock
 
 
 def register(parser: argparse.ArgumentParser) -> None:
+    """Add the ``compile`` arguments to its subparser."""
     parser.add_argument(
         "versions",
         nargs="*",
@@ -17,6 +18,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    """Compile each requested lockfile schema and check its hash and version."""
     lockfile = lock.read(Path(args.lock))
     versions: list[str] = args.versions or [entry.version for entry in lockfile.schemas]
     for version in versions:

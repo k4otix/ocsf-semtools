@@ -15,6 +15,8 @@ CONSTRAINT_KINDS: Mapping[str, ConstraintKind] = MappingProxyType(
 
 
 class Requirement(StrEnum):
+    """How strongly a class or object asks for an attribute."""
+
     REQUIRED = "required"
     RECOMMENDED = "recommended"
     OPTIONAL = "optional"
@@ -33,6 +35,8 @@ class Root(StrEnum):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Deprecation:
+    """Upstream's deprecation notice for a class, object, attribute or enum member."""
+
     message: str
     since: str
     superseded_by: tuple[str, ...]
@@ -40,6 +44,8 @@ class Deprecation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class EnumMember:
+    """One value of an attribute's enum."""
+
     value: EnumValue
     caption: str
     deprecated: Deprecation | None
@@ -47,6 +53,8 @@ class EnumMember:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TypeDef:
+    """A data type of the dictionary, and the primitive it is rooted in."""
+
     name: str
     caption: str
     root: Root
@@ -61,6 +69,8 @@ class TypeDef:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Attribute:
+    """An attribute as its owner declares it, before any profile or extension is resolved."""
+
     name: str  # key within its owner; unscoped even when contributed by an extension
     caption: str
     type: str  # type key; "object_t" when object_type is set
@@ -80,6 +90,8 @@ class Attribute:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Constraint:
+    """An at_least_one or just_one rule over a group of an item's attributes."""
+
     kind: ConstraintKind
     attributes: tuple[str, ...]
 
@@ -109,6 +121,8 @@ class ItemDef:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Profile:
+    """A profile: a named set of attributes classes can take on."""
+
     key: str  # "<extension>/<name>" for extension profiles
     name: str
     caption: str
@@ -118,6 +132,8 @@ class Profile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Extension:
+    """An extension that contributes classes, objects, attributes or profiles."""
+
     name: str
     uid: int
     caption: str
@@ -127,6 +143,8 @@ class Extension:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Category:
+    """A category of classes."""
+
     name: str
     uid: int
     caption: str
@@ -135,6 +153,8 @@ class Category:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Provenance:
+    """Where an IR was compiled from, and with what."""
+
     schema_repo: str
     ref: str  # upstream tag or branch as spelled upstream; commit is the pin
     commit: str
@@ -145,6 +165,8 @@ class Provenance:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SchemaIR:
+    """One OCSF version as the library's own intermediate representation."""
+
     version: str
     compile_version: int
     provenance: Provenance

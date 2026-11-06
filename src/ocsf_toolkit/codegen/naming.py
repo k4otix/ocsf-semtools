@@ -23,14 +23,14 @@ def class_name(name: str) -> str:
 
 
 def field_name(attr: str) -> str:
-    """The Python name of an attribute: keywords take a trailing underscore (``from_``)."""
+    """Return the Python name of an attribute: keywords take a trailing underscore (``from_``)."""
     if not attr.isidentifier() or not attr.islower() or attr.startswith("_") or attr in RESERVED:
         raise ValueError(f"attribute name {attr!r} cannot be a generated field")
     return f"{attr}_" if keyword.iskeyword(attr) else attr
 
 
 def module_name(name: str) -> str:
-    """A submodule name that no generated module body can mistake for something else."""
+    """Return a submodule name that no generated module body can mistake for something else."""
     shadows = hasattr(builtins, name) or name in {"enums", "importlib"}
     if not name.isidentifier() or keyword.iskeyword(name) or not name.islower() or shadows:
         raise ValueError(f"item name {name!r} cannot be a generated module")

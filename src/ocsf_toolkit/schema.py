@@ -40,6 +40,8 @@ class ClassIdentity:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SiblingSpec:
+    """How an ``_id`` attribute derives its label attribute, and the reverse."""
+
     label: str  # the label attribute the id attribute names as its sibling
     is_array: bool  # list-valued: labels map element-wise
     enum: Mapping[EnumValue, EnumMember] | None  # None for *.type_uid: see class_by_type_uid()
@@ -48,6 +50,8 @@ class SiblingSpec:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResolvedAttribute(Attribute):
+    """An attribute as it applies to one item under the active profiles and extensions."""
+
     gated_by: frozenset[str]  # the active profiles that admitted it; empty for base attributes
     root: Root | None  # resolved primitive root; None for object_t
     owner: str  # key of the item it was resolved on
@@ -68,6 +72,7 @@ class ResolvedItem:
     _siblings: Mapping[str, SiblingSpec] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        """Index the item's ``_id`` -> label sibling pairs."""
         siblings = {
             name: SiblingSpec(label=a.sibling, is_array=a.is_array, enum=a.enum)
             for name, a in self.attributes.items()
@@ -99,6 +104,7 @@ class ResolvedSchema:
     _markers: Mapping[tuple[str, str], int] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        """Index the classes by class_uid and type_uid, and the observable markers."""
         by_uid: dict[int, ResolvedItem] = {}
         by_type_uid: dict[int, ResolvedItem] = {}
         for item in self.classes.values():
@@ -112,6 +118,7 @@ class ResolvedSchema:
         object.__setattr__(self, "_markers", MappingProxyType(_markers(self)))
 
     def class_by_uid(self, uid: int) -> ResolvedItem:
+        """Return the class with this class_uid; an unknown uid is a KeyError."""
         try:
             return self._by_uid[uid]
         except KeyError:

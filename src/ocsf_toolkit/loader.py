@@ -363,7 +363,7 @@ class _Node:
         return self.node(key, ctx)
 
     def children(self, key: str, ctx: str) -> Iterator[tuple[str, "_Node"]]:
-        """The entries of a JSON object whose values are objects, e.g. a classes table."""
+        """Yield the entries of a JSON object whose values are objects, e.g. a classes table."""
         container = self.opt_node(key, ctx + ".map")
         return iter(()) if container is None else container.children_of_self(ctx)
 

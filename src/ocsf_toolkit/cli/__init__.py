@@ -17,6 +17,7 @@ from ocsf_toolkit.cli import models as models_command
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser: the root options and one subparser per command."""
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--lock", default="ocsf.lock", help="lockfile path (default: %(default)s)")
     common.add_argument("--build-dir", default="build", help="checkout cache and output root (default: %(default)s)")
@@ -92,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run one command and return its exit status; an expected failure prints one line to stderr."""
     args = build_parser().parse_args(argv)
     try:
         status: int = args.run(args)

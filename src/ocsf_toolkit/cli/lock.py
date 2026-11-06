@@ -36,6 +36,8 @@ _HEADER = """\
 
 @dataclass(frozen=True, slots=True)
 class Toolchain:
+    """The pinned tools every lockfile schema is compiled and exported with."""
+
     ocsf_schema_compiler: str
     python_compile: str
     msgspec: str
@@ -44,6 +46,8 @@ class Toolchain:
 
 @dataclass(frozen=True, slots=True)
 class SchemaEntry:
+    """One pinned OCSF version: where it comes from, and the hashes that gate it."""
+
     version: str
     repo: str
     ref: str
@@ -56,6 +60,8 @@ class SchemaEntry:
 
 @dataclass(frozen=True, slots=True)
 class Lockfile:
+    """The parsed ``ocsf.lock``: the toolchain and the pinned schemas, oldest first."""
+
     toolchain: Toolchain
     schemas: tuple[SchemaEntry, ...]
 
@@ -105,14 +111,17 @@ def dumps(lock: Lockfile) -> str:
 
 
 def read(path: Path) -> Lockfile:
+    """Read and parse a lockfile."""
     return loads(path.read_text(encoding="utf-8"))
 
 
 def write(path: Path, lock: Lockfile) -> None:
+    """Write a lockfile in its canonical layout."""
     path.write_text(dumps(lock), encoding="utf-8")
 
 
 def find(lock: Lockfile, version: str) -> SchemaEntry:
+    """Return the entry for an OCSF version; a version not in the lockfile is a ValueError."""
     for entry in lock.schemas:
         if entry.version == version:
             return entry
@@ -120,6 +129,7 @@ def find(lock: Lockfile, version: str) -> SchemaEntry:
 
 
 def version_key(version: str) -> tuple[int, ...]:
+    """Return the sort key of an x.y.z version: 1.10.0 sorts after 1.9.0."""
     return tuple(int(part) for part in version.split("."))
 
 
@@ -199,8 +209,10 @@ def add(
 
 
 def windowed(schemas: Sequence[SchemaEntry]) -> tuple[SchemaEntry, ...]:
-    """Entries with ship_models on for the newest WINDOW versions and off for the rest; an entry
-    leaving the window drops its models_tree_sha256, which nothing checks any more."""
+    """Turn ship_models on for the newest WINDOW versions and off for the rest.
+
+    An entry leaving the window drops its models_tree_sha256, which nothing checks any more.
+    """
     newest = set(sorted((e.version for e in schemas), key=version_key)[-WINDOW:])
     return tuple(
         e
@@ -215,6 +227,7 @@ def windowed(schemas: Sequence[SchemaEntry]) -> tuple[SchemaEntry, ...]:
 
 
 def register(parser: argparse.ArgumentParser) -> None:
+    """Add the ``lock`` arguments to its subparser."""
     parser.add_argument("--add", required=True, metavar="VERSION", help="OCSF version, e.g. 1.9.0")
     parser.add_argument("--ref", help="upstream tag or branch to pin instead of <VERSION> / v<VERSION>")
     parser.add_argument("--repo", default=UPSTREAM_REPO, help="ocsf-schema repository URL")
@@ -222,6 +235,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    """Pin a new OCSF version in the lockfile and move the model window."""
     path = Path(args.lock)
     updated = add(
         read(path),

@@ -23,7 +23,7 @@ class Observable:
     value: str | None  # None when the marked attribute is an object
 
     def to_dict(self) -> dict[str, Any]:
-        """The entry as an OCSF observable object."""
+        """Return the entry as an OCSF observable object."""
         entry: dict[str, Any] = {"name": self.name, "type_id": self.type_id}
         if self.type is not None:
             entry["type"] = self.type
@@ -33,7 +33,7 @@ class Observable:
 
 
 def observe(visit: Visit, schema: ResolvedSchema, root: ResolvedItem) -> list[Observable]:
-    """The observables one attribute visit yields; none for a close or an undeclared attribute."""
+    """Return the observables one attribute visit yields; none for a close or an undeclared attribute."""
     if visit.attr is None or visit.value is None:
         return []
     ra = visit.owner.attributes.get(visit.attr)
@@ -56,7 +56,7 @@ def observe(visit: Visit, schema: ResolvedSchema, root: ResolvedItem) -> list[Ob
 
 
 def stringify(value: object) -> str | None:
-    """An observable value as upstream spells it; None for anything that isn't a scalar."""
+    """Return an observable value as upstream spells it; None for anything that isn't a scalar."""
     match value:
         case bool():
             return "true" if value else "false"
@@ -100,7 +100,7 @@ def unfounded(event: Mapping[str, Any], found: Iterable[Observable]) -> list[Fin
 
 
 def merge(event: Mapping[str, Any], found: Iterable[Observable]) -> dict[str, Any]:
-    """A copy of the event with found observables appended to the caller's, which stay as given.
+    """Return a copy of the event with found observables appended to the caller's, which stay as given.
 
     An entry already present, matched on (canonical name, type_id, value), is not added twice.
     """

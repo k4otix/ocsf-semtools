@@ -124,7 +124,7 @@ def _generated(cls: object) -> type[msgspec.Struct]:
 def _target(
     cls: type[msgspec.Struct], profiles: Iterable[str] | None, event: dict[str, Any]
 ) -> tuple[ResolvedSchema, str, bool]:
-    """(schema, class key, exact) for a generated class; an exact class fixes its profiles."""
+    """Return (schema, class key, exact) for a generated class; an exact class fixes its profiles."""
     _, key = cast(tuple[str, str], vars(cls)["__ocsf__"])
     package = sys.modules[cls.__module__.partition(".")[0]]
     fixed = cast(tuple[str, ...] | None, package.__ocsf_profiles__)
@@ -140,7 +140,7 @@ def _target(
 
 @functools.lru_cache(maxsize=32)
 def _schema(package: str, profiles: frozenset[str]) -> ResolvedSchema:
-    """The schema a generated package was made from: its bundled IR, checked against its digest.
+    """Return the schema a generated package was made from: its bundled IR, checked against its digest.
 
     The package's own IR, not core's copy of that version, so a core that re-pins an OCSF
     version never changes what an installed model package means.
@@ -169,6 +169,9 @@ def _wire(cls: type[msgspec.Struct], fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _fatal(report: Report, exact: bool) -> tuple[Finding, ...]:
-    """What stops an event becoming an instance: errors, and for an exact class any attribute
-    or declared profile outside its profile set (it has no field for them)."""
+    """Return what stops an event becoming an instance.
+
+    That is its errors and, for an exact class, any attribute or declared profile outside its
+    profile set (it has no field for them).
+    """
     return report.errors() + (report.by_kind(Kind.PROFILE_MISMATCH) if exact else ())

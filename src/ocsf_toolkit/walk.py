@@ -19,6 +19,8 @@ _INDEX = re.compile(r"\[[^\]]*\]")
 
 
 class Kind(StrEnum):
+    """What a finding is about; each kind has one fixed severity."""
+
     MISSING_REQUIRED = "missing_required"
     MISSING_RECOMMENDED = "missing_recommended"
     UNKNOWN_ATTRIBUTE = "unknown_attribute"
@@ -133,12 +135,12 @@ def walk(
 
 
 def dotted(path: Path) -> str:
-    """An indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
+    """Return an indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
     return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
 
 
 def canonical(name: str | Path) -> str:
-    """The dotted form a path is matched by, in any upstream notation or as an indexed path.
+    """Return the dotted form a path is matched by, in any upstream notation or as an indexed path.
 
     Leading ``$`` and ``.`` go, as do ``[]``, ``[n]`` and ``[*]`` segments: ``$.resources[*].uid``,
     ``resources[0].uid`` and ``("resources", 0, "uid")`` are all ``resources.uid``.

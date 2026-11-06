@@ -16,7 +16,7 @@ _ROOTS = {
 
 
 def annotation(a: ResolvedAttribute, named: str | None) -> str:
-    """The value type of a field; ``named`` is the Struct or enum it refers to, if any."""
+    """Return the value type of a field; ``named`` is the Struct or enum it refers to, if any."""
     if named is not None:
         value = named
     elif a.object_type == OPEN_OBJECT:

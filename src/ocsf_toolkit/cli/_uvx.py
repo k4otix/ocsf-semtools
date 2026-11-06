@@ -139,8 +139,10 @@ def compiled_output(
     compiler_cmd: str | None = None,
     extensions: Sequence[Path] = (),
 ) -> tuple[bytes, str]:
-    """Check out and compile one pinned schema, with any custom extensions; return the verified
-    canonical bytes and their sha256 without writing them anywhere."""
+    """Check out and compile one pinned schema, with any custom extensions.
+
+    Return the verified canonical bytes and their sha256 without writing them anywhere.
+    """
     print(f"{version}: checkout {repo} @ {commit}", file=sys.stderr)
     src = checkout(repo, commit, build_dir / "ocsf-schema")
     argv = compiler_argv(

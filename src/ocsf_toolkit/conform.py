@@ -227,7 +227,7 @@ def _conforms(value: object, root: Root) -> bool:
 
 
 def _coerced(value: object, ra: ResolvedAttribute, checks: Checks) -> object | None:
-    """The coercion this policy allows for value, or None."""
+    """Return the coercion this policy allows for value, or None."""
     if isinstance(value, datetime):
         if checks.datetimes and ra.type == "timestamp_t" and value.utcoffset() is not None:
             return _epoch_ms(value)

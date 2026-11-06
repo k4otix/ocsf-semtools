@@ -14,6 +14,7 @@ DISTS_DIR = "build/dists"
 
 
 def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -> None:
+    """Add the ``models check`` and ``models record`` subcommands."""
     actions = parser.add_subparsers(dest="models_action", required=True, metavar="ACTION")
     for name, help_text in (
         ("check", "assert each generated tree is stable and matches models_tree_sha256"),
@@ -36,7 +37,7 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
 
 
 def package_name(version: str) -> str:
-    """The import name of the model dist for an OCSF version: 1.9.0 -> ocsf_toolkit_v1_9_0."""
+    """Return the import name of the model dist for an OCSF version: 1.9.0 -> ocsf_toolkit_v1_9_0."""
     return "ocsf_toolkit_v" + version.replace(".", "_")
 
 
@@ -58,7 +59,7 @@ def read_tree(root: Path) -> dict[str, bytes]:
 
 
 def tree(version: str) -> dict[str, bytes]:
-    """The model package a release ships for a version: superset, every extension."""
+    """Render the model package a release ships for a version: superset, every extension."""
     first = render(load(version).ir, package=package_name(version))
     if render(load(version).ir, package=package_name(version)) != first:
         raise ValueError(f"OCSF {version}: two renders of the model package differ")
@@ -66,6 +67,7 @@ def tree(version: str) -> dict[str, bytes]:
 
 
 def run(args: argparse.Namespace) -> int:
+    """Check or record each model-window tree against models_tree_sha256 in the lockfile."""
     path = Path(args.lock)
     lockfile = lock.read(path)
     versions: list[str] = args.versions or [e.version for e in lockfile.schemas if e.ship_models]
