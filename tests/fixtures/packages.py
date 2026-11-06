@@ -5,6 +5,9 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
+from typing import cast
+
+import msgspec
 
 from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.ir import SchemaIR
@@ -29,3 +32,11 @@ def import_generated(
         return importlib.import_module(package)
     finally:
         sys.path.remove(str(out))
+
+
+def generated_class(package: ModuleType, key: str) -> type[msgspec.Struct]:
+    """Return the class a generated package exports for an OCSF class key."""
+    names = cast(list[str], package.__all__)
+    classes = [cast(type[msgspec.Struct], getattr(package, name)) for name in names]
+    (cls,) = [c for c in classes if vars(c)["__ocsf__"][1] == key]
+    return cls
