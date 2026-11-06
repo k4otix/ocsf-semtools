@@ -5,6 +5,10 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 
 ## Unreleased
 
+## 0.1.0a2
+
+- Publishes model package `ocsf-toolkit-v1-9-0`.
+
 ## 0.1.0a1
 
 The first alpha. Model packages `ocsf-toolkit-v1-7-0` and `ocsf-toolkit-v1-8-0` publish with it;

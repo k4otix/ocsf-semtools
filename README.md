@@ -12,11 +12,11 @@ reports every deviation it finds, extracts observables, and diffs two versions. 
 
 ```shell
 pip install --pre ocsf-toolkit          # core: every OCSF release from 1.0.0 to 1.9.0, as data
-pip install --pre ocsf-toolkit-v1-8-0   # optional: typed models for OCSF 1.8.0 (also -v1-7-0)
+pip install --pre ocsf-toolkit-v1-9-0   # optional: typed models for OCSF 1.9.0 (also -v1-8-0, -v1-7-0)
 ```
 
-Typed models for OCSF 1.9.0 (`ocsf-toolkit-v1-9-0`) arrive on PyPI with the next release. Until then,
-`ocsf-toolkit generate` builds the same package locally (see [Command line](docs/cli.md)).
+`ocsf-toolkit generate` builds a model package for any other version or extension set (see
+[Command line](docs/cli.md)).
 
 Python 3.12 or newer. The only runtime dependency is msgspec.
 
