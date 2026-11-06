@@ -22,9 +22,7 @@ jobs:
           fetch-depth: 0 # hatch-vcs derives the version from git tags
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - run: uv sync --locked
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run lint-imports
+      - run: make lint
 
   type:
     runs-on: ubuntu-latest
@@ -57,10 +55,10 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest
 
-  # Gate 3 (D-7, acc. #6) and N4 / acc. #1, #9: generate every model-window dist from its shipped
-  # IR (no compile step), assert each tree is stable and matches models_tree_sha256, then ruff,
-  # pyright strict, the snapshot, laziness and a clean-environment install over them; finally
-  # build every sdist and wheel and check the wheels hold the pinned trees.
+  # Gate 3, regeneration: generate every model-window dist from its shipped IR (no compile step)
+  # and assert each tree is stable and matches models_tree_sha256. Then ruff, pyright strict, the
+  # snapshot, laziness and a clean-environment install over the dists; build every sdist and wheel
+  # and check the wheels hold the pinned trees; and run the dists just built on this core.
   generated:
     runs-on: ubuntu-latest
     steps:
@@ -71,7 +69,7 @@ jobs:
       - run: uv sync --locked
       - name: Generate the dists (gate 3)
         run: make dists
-      - run: uv run pytest tests/generated -v
+      - run: make test-generated
       - name: Build sdists and wheels
         run: make wheels
       - name: The dists just built run on this core (exercises the compat check)

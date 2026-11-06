@@ -1,4 +1,5 @@
-# Mirror of `make lint type` (.github/workflows/ci.yaml) so a commit fails fast, before CI does.
+# The blocking checks of `make lint type`, so a commit fails fast, before CI does. ruff fixes what
+# it can in place; mypy, which is informational, is left to `make type`.
 # Install once after cloning:  uvx pre-commit install
 # Run by hand:                 uvx pre-commit run --all-files
 #

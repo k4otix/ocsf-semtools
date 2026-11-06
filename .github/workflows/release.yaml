@@ -74,7 +74,7 @@ jobs:
           make wheels WHEELS=build/wheels-again
           diff <(cd build/wheels && sha256sum ./*) <(cd build/wheels-again && sha256sum ./*)
       - name: Typed use of the dists
-        run: uv run pytest tests/generated
+        run: make test-generated
       - name: The dists already on PyPI run on this core
         run: make compat
       - name: Choose the files and projects to publish
