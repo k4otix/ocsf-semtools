@@ -15,7 +15,7 @@ from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
 from ocsf_toolkit.walk import Kind as Kind
 from ocsf_toolkit.walk import RepairAction as RepairAction
-from ocsf_toolkit.walk import walk
+from ocsf_toolkit.walk import is_int, walk
 
 FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema knows
 
@@ -23,7 +23,7 @@ FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Policy:
-    """How the engine treats what it finds; the only thing build, parse and repair differ in."""
+    """How the engine treats what it finds: build, parse and repair differ only in their policy."""
 
     fill: bool  # derive identity, siblings, *_dt, metadata.version; accept datetime timestamps
     overwrite: bool  # conflicting derived values <- the schema's; 1:1 deprecation migrations
@@ -87,7 +87,7 @@ class ConformanceError(Exception):
 def run(
     event: dict[str, Any], schema: ResolvedSchema, class_key: str | None, policy: Policy
 ) -> tuple[dict[str, Any], Report]:
-    """Walk the event once, deriving and checking; the input is copied before any change."""
+    """Walk the event once, deriving and checking; a policy that changes the event works on a copy."""
     mutates = policy.fill or policy.overwrite or policy.coerce or policy.unknown == "relocate"
     out = copy.deepcopy(event) if mutates else event
     item, identity, findings = _root_class(out, schema, class_key, coerce=policy.coerce)
@@ -187,7 +187,7 @@ def _root_class(
         value = event.get(attr)
         if coerce and (number := as_integer(value)) is not None:
             value = number
-        if not isinstance(value, int) or isinstance(value, bool):
+        if not is_int(value):
             continue
         try:
             return lookup(value), True, []

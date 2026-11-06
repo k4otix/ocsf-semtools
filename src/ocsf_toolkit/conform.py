@@ -6,11 +6,11 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, TypeGuard, cast, final
+from typing import Any, cast, final
 
 from ocsf_toolkit.ir import Deprecation, ItemDef, Requirement, Root
-from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, dotted
+from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema
+from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, dotted, is_int
 
 UNMAPPED = "unmapped"  # the class attribute that holds what the schema has no place for
 # long_t is 64-bit: 19 digits covers it, and caps int() well below its 4300-digit limit.
@@ -20,8 +20,9 @@ _MISSING = {
     Requirement.REQUIRED: Kind.MISSING_REQUIRED,
     Requirement.RECOMMENDED: Kind.MISSING_RECOMMENDED,
 }
-# Derivation owns these at the class root and reports them as identity_conflict.
-_IDENTITY = frozenset({"class_uid", "category_uid", "type_uid"})
+# Derivation owns these at the class root and reports them as identity_conflict, so their enums
+# are not checked here.
+_DERIVED_IDENTITY = frozenset({("class_uid",), ("category_uid",), ("type_uid",)})
 
 
 @final
@@ -36,7 +37,11 @@ class _Plan:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Checks:
-    """What the conformance visitor may change while it checks; it reports in every mode."""
+    """What the conformance visitor needs for one run.
+
+    That is the event, the changes the policy allows, and the node plans that every run against the
+    schema shares: held here so that no node's close has to hash the schema to find them.
+    """
 
     schema: ResolvedSchema
     root: dict[str, Any]  # the event, whose unmapped attribute receives relocations
@@ -212,7 +217,7 @@ def _element(
             repair=RepairAction(action="coerce", before=value, after=new),
         )
         value = new
-    if ra.enum is None or (visit.owner.identity is not None and visit.path in _ROOT_IDENTITY):
+    if ra.enum is None or (visit.owner.identity is not None and visit.path in _DERIVED_IDENTITY):
         return
     member = ra.enum.get(cast(int | str, value))
     if member is None:
@@ -240,17 +245,14 @@ def _element(
         )
 
 
-_ROOT_IDENTITY = frozenset((name,) for name in _IDENTITY)
-
-
 def _conforms(value: object, root: Root) -> bool:
     match root:
         case Root.STRING:
             return isinstance(value, str)
         case Root.INTEGER | Root.LONG:
-            return _is_int(value)
+            return is_int(value)
         case Root.FLOAT:
-            return _is_int(value) or isinstance(value, float)  # a JSON 1 is a valid float
+            return is_int(value) or isinstance(value, float)  # a JSON 1 is a valid float
         case Root.BOOLEAN:
             return isinstance(value, bool)
         case Root.JSON:
@@ -375,8 +377,9 @@ def _plan(checks: Checks, item: ResolvedItem) -> _Plan:
     return plan
 
 
-@functools.lru_cache(maxsize=32)  # as many as load() keeps
+@functools.lru_cache(maxsize=SCHEMAS_KEPT)
 def _plans(schema: ResolvedSchema) -> dict[tuple[bool, str], _Plan]:
+    """Return the schema's node plans by (is_class, item key), filled as items are met."""
     return {}
 
 
@@ -391,7 +394,3 @@ def _lookup(node: dict[str, Any], dotted_name: str) -> object:
 
 def _item_def(schema: ResolvedSchema, item: ResolvedItem) -> ItemDef:
     return (schema.ir.classes if item.is_class else schema.ir.objects)[item.key]
-
-
-def _is_int(value: object) -> TypeGuard[int]:
-    return isinstance(value, int) and not isinstance(value, bool)

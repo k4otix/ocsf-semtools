@@ -164,8 +164,12 @@ def _names(names: Iterable[str], what: str) -> frozenset[str]:
     return frozenset(names)
 
 
-# A resolved 1.9.0 schema holds up to 7,904 attributes, so the number kept alive is bounded.
-@functools.lru_cache(maxsize=32)
+# A resolved 1.9.0 schema holds up to 7,904 attributes, so the number kept alive is bounded. The
+# visitors' per-schema tables use the same bound, so they keep alive no schema load() has dropped.
+SCHEMAS_KEPT = 32
+
+
+@functools.lru_cache(maxsize=SCHEMAS_KEPT)
 def _load(version: str, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedSchema:
     ir, ir_digest = _shipped(version)
     return _resolve(ir, ir_digest, profiles, extensions)

@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from typing import Any, cast, final
 
 from ocsf_toolkit.ir import EnumMember, EnumValue
-from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted
+from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
+from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int
 
 OBSERVABLES = "observables"  # the class attribute holding an event's observable entries
 _OBSERVABLE = "observable"  # the object type of each entry
@@ -37,7 +37,12 @@ class Observable:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Markers:
-    """What makes a visited attribute an observable, for one schema and root class; built once per pair."""
+    """What makes a visited attribute an observable, for one schema and root class; built once per pair.
+
+    Upstream defines six kinds of observable marker. Kinds 1-5 (on a dictionary attribute, a type, an
+    object, or an attribute local to one item) resolve into one (owner key, attribute) table; kind 6
+    is a path map a class declares, matched only at the root class.
+    """
 
     by_attr: Mapping[tuple[str, str], int]  # (owner key, attribute) -> type_id: kinds 1-5
     by_path: Mapping[str, int]  # canonical path -> type_id: kind 6, the root class's own map
@@ -112,7 +117,7 @@ def unfounded(event: Mapping[str, Any], found: Iterable[Observable]) -> list[Fin
             continue  # conform reports the shape
         e = cast(dict[str, Any], entry)
         name, type_id, value = e.get("name"), e.get("type_id"), e.get("value")
-        if not isinstance(name, str) or not isinstance(type_id, int) or isinstance(type_id, bool):
+        if not isinstance(name, str) or not is_int(type_id):
             continue  # conform reports the types
         problem = _problem(by_name.get(canonical(name), []), type_id, value)
         if problem is not None:
@@ -132,7 +137,8 @@ def unfounded(event: Mapping[str, Any], found: Iterable[Observable]) -> list[Fin
 def merge(event: Mapping[str, Any], found: Iterable[Observable]) -> dict[str, Any]:
     """Return a copy of the event with found observables appended to the caller's, which stay as given.
 
-    An entry already present, matched on (canonical name, type_id, value), is not added twice.
+    An entry already present, matched on (canonical name, type_id, value), is not added twice. An
+    ``observables`` attribute that is not an array is a ValueError.
     """
     out = copy.deepcopy(dict(event))
     entries = out.setdefault(OBSERVABLES, [])
@@ -177,8 +183,9 @@ def _elements(path: Path, value: object, is_array: bool) -> Iterator[tuple[Path,
                 yield (*path, i), element
 
 
-@functools.lru_cache(maxsize=32)  # as many as load() keeps
+@functools.lru_cache(maxsize=SCHEMAS_KEPT)
 def _markers(schema: ResolvedSchema) -> dict[str, Markers]:
+    """Return the schema's markers by root class key, filled as classes are met."""
     return {}
 
 

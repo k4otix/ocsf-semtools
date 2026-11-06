@@ -1,13 +1,17 @@
-"""The one traversal of an event against a schema, with the vocabulary of findings it yields."""
+"""The one traversal of an event against a schema, and the vocabulary every visitor reports in.
+
+``Finding``, ``Kind`` and ``RepairAction`` live here because the walk and all three visitors use them;
+``ocsf_toolkit.engine`` re-exports them as the public names.
+"""
 
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Literal, cast, final
+from typing import Any, Literal, TypeGuard, cast, final
 
 from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
+from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
 
 type Path = tuple[str | int, ...]
 type Severity = Literal["error", "warning", "info"]
@@ -110,7 +114,10 @@ def walk(
     *,
     max_nodes: int | None = None,
 ) -> Iterator[Visit | Finding]:
-    """Visit every attribute of the event depth-first; stops with a finding past max_nodes."""
+    """Yield a Visit for every attribute and node close of the event, depth-first.
+
+    Past ``max_nodes`` attribute visits the walk yields one ``max_nodes_exceeded`` Finding and stops.
+    """
     stack: list[tuple[ResolvedItem, dict[str, Any], Path]] = [(item, event, ())]
     count = 0
     while stack:
@@ -132,9 +139,7 @@ def walk(
                     )
                     return
                 yield Visit(owner, attr, node[attr], (*path, attr), node)
-                ra = owner.attributes.get(attr)
-                if ra is not None and ra.object_type is not None and ra.object_type != OPEN_OBJECT and attr in node:
-                    children.extend(_children(ra, attr, node[attr], path, schema))
+                children.extend(_children(owner, attr, node, path, schema))
             seen.update(keys)
             keys = [attr for attr in node if attr not in seen]
         yield Visit(owner, None, node, path, node)
@@ -160,16 +165,25 @@ def canonical(name: str | Path) -> str:
     return _INDEX.sub("", name.lstrip("$").lstrip("."))
 
 
+def is_int(value: object) -> TypeGuard[int]:
+    """Tell whether a value is an integer: JSON's true and false are not."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 def _children(
-    ra: ResolvedAttribute, attr: str, value: object, path: Path, schema: ResolvedSchema
-) -> Iterator[tuple[ResolvedItem, dict[str, Any], Path]]:
-    assert ra.object_type is not None
+    owner: ResolvedItem, attr: str, node: dict[str, Any], path: Path, schema: ResolvedSchema
+) -> Sequence[tuple[ResolvedItem, dict[str, Any], Path]]:
+    """Return the object nodes an attribute holds after its visit, to walk next."""
+    ra = owner.attributes.get(attr)
+    if ra is None or ra.object_type is None or ra.object_type == OPEN_OBJECT or attr not in node:
+        return ()  # unknown, a primitive, free-form JSON, or moved away by a visitor
     child = schema.objects.get(ra.object_type)
     if child is None:
-        return
+        return ()
+    value = node[attr]
     if isinstance(value, dict):
-        yield child, cast(dict[str, Any], value), (*path, attr)
-    elif isinstance(value, list) and ra.is_array:
-        for i, element in enumerate(cast(list[object], value)):
-            if isinstance(element, dict):
-                yield child, cast(dict[str, Any], element), (*path, attr, i)
+        return [(child, cast(dict[str, Any], value), (*path, attr))]
+    if isinstance(value, list) and ra.is_array:
+        elements = enumerate(cast(list[object], value))
+        return [(child, cast(dict[str, Any], e), (*path, attr, i)) for i, e in elements if isinstance(e, dict)]
+    return ()

@@ -18,13 +18,13 @@ from ocsf_toolkit.engine import (
     STRICT,
     ConformanceError,
     Finding,
+    Kind,
     Report,
     declared_profiles,
     run,
     select,
 )
 from ocsf_toolkit.schema import ResolvedSchema, load_ir, resolve
-from ocsf_toolkit.walk import Kind
 
 if TYPE_CHECKING:  # imported where used: reading a schema never loads the modelling layer
     import msgspec

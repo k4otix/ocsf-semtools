@@ -4,24 +4,27 @@ import functools
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any, TypeGuard, cast
+from typing import Any, cast
 
-from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema, SiblingSpec
-from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, dotted
+from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema, SiblingSpec
+from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, dotted, is_int
 
 OTHER = 99  # the "Other" id: a caller-supplied label is source-specific and always kept
-UNKNOWN = 0
+_UNKNOWN = 0
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-_IDENTITY = ("class_uid", "category_uid")
+_ROOT_SIBLINGS = ("class_uid", "category_uid")  # ids whose labels _identity sets from the class itself
 
 
 def derive(
     visit: Visit, schema: ResolvedSchema, *, fill: bool, overwrite: bool, identity: bool = True
 ) -> list[Finding]:
-    """At the close of a node, apply architecture §5.1 steps 0-5 to it.
+    """Derive what the schema computes in a node, at its close.
 
-    ``fill`` writes absent derivable values; ``overwrite`` replaces conflicting ones. Conflicts are
-    findings either way. ``identity`` off skips steps 0-3 (the class could not be determined).
+    At the root of a class: class and category identity, metadata.version and metadata.profiles, and
+    type_uid. In every node: each ``_id`` attribute's label, and under the datetime profile each
+    timestamp's ``_dt`` twin. ``fill`` writes absent values and ``overwrite`` replaces conflicting
+    ones; a conflict is a finding either way. ``identity`` off skips the root step, for an event whose
+    class could not be determined.
     """
     if visit.attr is not None:
         return []
@@ -30,7 +33,7 @@ def derive(
     if root:
         _identity(out, schema)
     for id_attr, spec in visit.owner.siblings().items():
-        if not (root and id_attr in _IDENTITY):
+        if not (root and id_attr in _ROOT_SIBLINGS):
             _sibling(out, schema, id_attr, spec)
     if "datetime" in schema.profiles:
         _timestamps(out, schema)
@@ -62,15 +65,17 @@ class _Node:
         if current is None:
             if self.fill:
                 self.node[attr] = derived
-                self._add(Kind.FILLED, ra, path, derived, None, f"{dotted(path)} derived", "fill")
+                filled = RepairAction(action="fill", before=None, after=derived)
+                self._add(Kind.FILLED, ra, path, derived, None, f"{dotted(path)} derived", filled)
             return
         if (equal or _same)(current, derived):
             return
-        action = "overwrite" if self.overwrite and not keep else None
-        if action:
+        repair: RepairAction | None = None
+        if self.overwrite and not keep:
             self.node[attr] = derived
+            repair = RepairAction(action="overwrite", before=current, after=derived)
         message = f"{dotted(path)} is {current!r}; the schema derives {derived!r}"
-        self._add(conflict, ra, path, derived, current, message, action)
+        self._add(conflict, ra, path, derived, current, message, repair)
 
     def _add(
         self,
@@ -80,13 +85,8 @@ class _Node:
         expected: object,
         actual: object,
         message: str,
-        action: str | None,
+        repair: RepairAction | None,
     ) -> None:
-        repair = None
-        if action == "fill":
-            repair = RepairAction(action="fill", before=None, after=expected)
-        elif action == "overwrite":
-            repair = RepairAction(action="overwrite", before=actual, after=expected)
         self.findings.append(
             Finding(
                 kind=kind,
@@ -114,6 +114,8 @@ def _identity(out: _Node, schema: ResolvedSchema) -> None:
     ):
         if value is not None and attr in attrs:
             out.put(attr, value, Kind.IDENTITY_CONFLICT)
+    # metadata.version and .profiles come from the schema the class is read under, which only the root
+    # knows; the root closes before its children, so this step reaches into metadata itself.
     metadata = out.node.get("metadata")
     meta_item = schema.objects.get("metadata")
     if isinstance(metadata, dict) and meta_item is not None and "metadata" in attrs:
@@ -124,7 +126,7 @@ def _identity(out: _Node, schema: ResolvedSchema) -> None:
             _profiles(meta, schema.profiles)
         out.findings.extend(meta.findings)
     activity_id = out.node.get("activity_id")
-    if _is_int(activity_id) and "type_uid" in attrs:
+    if is_int(activity_id) and "type_uid" in attrs:
         out.put("type_uid", ident.class_uid * 100 + activity_id, Kind.IDENTITY_CONFLICT)
 
 
@@ -157,7 +159,7 @@ def _sibling(out: _Node, schema: ResolvedSchema, id_attr: str, spec: SiblingSpec
         if label is None and id_attr == "type_uid" and out.path == () and out.fill:
             _other_type_name(out, spec.label)
         return
-    if value == UNKNOWN and isinstance(label, str) and not label.strip():
+    if value == _UNKNOWN and isinstance(label, str) and not label.strip():
         ra = out.owner.attributes[id_attr]
         out.findings.append(
             Finding(
@@ -186,7 +188,7 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
         return
     captions: list[str] = []
     for i in ids:
-        member = spec.enum.get(i) if _is_int(i) else None
+        member = spec.enum.get(i) if is_int(i) else None
         if member is None:
             return  # conform reports the element; nothing to derive from
         captions.append(member.caption)
@@ -207,7 +209,7 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
 def _timestamps(out: _Node, schema: ResolvedSchema) -> None:
     for name, twin in _twins(schema, out.owner):
         value = out.node.get(name)
-        if not _is_int(value):
+        if not is_int(value):
             continue
         try:
             text = rfc3339(value)
@@ -229,13 +231,14 @@ def _twins(schema: ResolvedSchema, item: ResolvedItem) -> tuple[tuple[str, str],
     return pairs
 
 
-@functools.lru_cache(maxsize=32)  # as many as load() keeps
+@functools.lru_cache(maxsize=SCHEMAS_KEPT)
 def _twin_table(schema: ResolvedSchema) -> dict[tuple[bool, str], tuple[tuple[str, str], ...]]:
+    """Return the schema's timestamp twins by (is_class, item key), filled as items are met."""
     return {}
 
 
 def rfc3339(ms: int) -> str:
-    """Epoch milliseconds as YYYY-MM-DDTHH:MM:SS.mmmZ, the form of OCSF's datetime_t."""
+    """Return epoch milliseconds as YYYY-MM-DDTHH:MM:SS.mmmZ, the form of OCSF's datetime_t."""
     m = _EPOCH + timedelta(milliseconds=ms)
     # Each field by hand: strftime's %Y is not zero-padded below year 1000 on glibc.
     date, time = f"{m.year:04d}-{m.month:02d}-{m.day:02d}", f"{m.hour:02d}:{m.minute:02d}:{m.second:02d}"
@@ -253,7 +256,7 @@ def _same_instant(given: object, derived: object) -> bool:
 
 
 def _caption(schema: ResolvedSchema, spec: SiblingSpec, value: object) -> str | None:
-    if not _is_int(value):
+    if not is_int(value):
         return None
     if spec.enum is not None:
         member = spec.enum.get(value)
@@ -271,10 +274,6 @@ def _is_other(id_attr: str, value: int) -> bool:
     if id_attr == "type_uid":
         return value % 100 == OTHER
     return value == OTHER
-
-
-def _is_int(value: object) -> TypeGuard[int]:
-    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def _same(a: object, b: object) -> bool:
