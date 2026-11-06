@@ -10,6 +10,11 @@
 # ocsf-toolkit-v<x>-<y>-<z> -> environment pypi-v<x>-<y>-<z>. Each project publishes from its own
 # job in its own environment, and only after the `approve` job passes the protected `release`
 # environment.
+#
+# PyPI allows only three pending publishers per account, so a dist can wait for its publisher. The
+# repository variable RELEASE_HOLD_DISTS lists such OCSF versions (space-separated, e.g. "1.9.0"):
+# they are built and checked but not published, and the next release publishes them, since PyPI
+# still lacks them. Clear an entry once its pending publisher exists.
 name: release
 
 on:
@@ -76,11 +81,16 @@ jobs:
         id: choose
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          HOLD: ${{ vars.RELEASE_HOLD_DISTS }}
         run: |
           mkdir -p upload
           cp build/wheels/ocsf_toolkit-* upload/
           projects='[{"project":"ocsf-toolkit","prefix":"ocsf_toolkit-","environment":"pypi"}]'
-          dists=$(uv run python packaging/version_dist/dist.py unpublished --version "$VERSION")
+          dists="" held=""
+          for v in $(uv run python packaging/version_dist/dist.py unpublished --version "$VERSION"); do
+            if [[ " $HOLD " == *" $v "* ]]; then held="$held $v"; else dists="$dists $v"; fi
+          done
+          dists=${dists# } held=${held# }
           for v in $dists; do
             cp build/wheels/ocsf_toolkit_v"${v//./_}"-* upload/
             projects=$(jq -c --arg d "${v//./-}" --arg u "${v//./_}" \
@@ -92,6 +102,7 @@ jobs:
           {
             echo "### ocsf-toolkit $VERSION"
             echo "model dists to publish: ${dists:-none (every published tree is current)}"
+            echo "model dists held back (RELEASE_HOLD_DISTS): ${held:-none}"
             echo '```'
             cat SHA256SUMS
             echo '```'
