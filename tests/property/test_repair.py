@@ -3,7 +3,7 @@
 A conformant event is damaged in the ways repair() calls unambiguous: integers sent as strings or
 integral floats, booleans as strings, derived values dropped or contradicted, and attributes the
 schema doesn't know. Repairing it gives what repairing the undamaged event gives, plus the unknown
-attributes in ``unmapped``.
+attributes in ``unmapped``, keyed by where the walk met them: below a migrated attribute, its successor.
 """
 
 import copy
@@ -14,10 +14,10 @@ import pytest
 from hypothesis import given, note
 from hypothesis import strategies as st
 
-from ocsf_toolkit import ResolvedItem, ResolvedSchema, load, repair
+from ocsf_toolkit import Report, ResolvedItem, ResolvedSchema, load, repair
 from ocsf_toolkit.derive import OTHER
 from ocsf_toolkit.ir import Root
-from ocsf_toolkit.walk import Visit, dotted, walk
+from ocsf_toolkit.walk import Path, Visit, dotted, walk
 from tests.property.strategies import SETTINGS, derived, fields, profile_sets
 from tests.property.test_roundtrip import CASES, build_event
 
@@ -98,6 +98,24 @@ def _apply(site: Site, value: object) -> dict[str, object]:
     return {}
 
 
+def _migrations(report: Report) -> dict[str, str]:
+    """Return each migration repair made, as dotted before -> after paths."""
+    moves: dict[str, str] = {}
+    for f in report.findings:
+        if f.repair is not None and f.repair.action == "migrate":
+            before, after = cast(Path, f.repair.before), cast(Path, f.repair.after)
+            moves[dotted(before)] = dotted(after)
+    return moves
+
+
+def _moved(key: str, moves: dict[str, str]) -> str:
+    """Name a relocation key by where the walk met it: under a migrated parent, at its successor."""
+    for before, after in moves.items():
+        if key.startswith((f"{before}.", f"{before}[")):
+            return after + key[len(before) :]
+    return key
+
+
 @pytest.mark.parametrize("case", CASES, ids=[f"{v}-{k}" for v, k in CASES])
 @SETTINGS
 @given(data=st.data())
@@ -126,6 +144,8 @@ def test_repair_restores_and_is_idempotent(case: tuple[str, str], data: st.DataO
     assert report.errors() == ()
     expected, _ = repair(event)
     if relocated:
+        moves = _migrations(report)
+        relocated = {_moved(key, moves): value for key, value in relocated.items()}
         expected["unmapped"] = {**expected.get("unmapped", {}), **relocated}
     assert fixed == expected
 
