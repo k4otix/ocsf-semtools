@@ -235,12 +235,18 @@ def _coerced(value: object, ra: ResolvedAttribute, checks: Checks) -> object | N
     if not checks.coerce:
         return None
     if ra.root in (Root.INTEGER, Root.LONG):
-        if isinstance(value, str) and _INT.fullmatch(value):
-            return int(value)
-        if isinstance(value, float) and math.isfinite(value) and value.is_integer():
-            return int(value)
+        return as_integer(value)
     if ra.root is Root.BOOLEAN and isinstance(value, str):
         return _BOOLS.get(value)
+    return None
+
+
+def as_integer(value: object) -> int | None:
+    """Return the integer a value unambiguously spells: an integer string or an integral float."""
+    if isinstance(value, str) and _INT.fullmatch(value):
+        return int(value)
+    if isinstance(value, float) and math.isfinite(value) and value.is_integer():
+        return int(value)
     return None
 
 

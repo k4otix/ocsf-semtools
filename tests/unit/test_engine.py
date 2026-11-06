@@ -162,6 +162,17 @@ def test_an_overlong_integer_string_is_reported_not_raised(schema: ResolvedSchem
         assert (Kind.TYPE_MISMATCH, ("severity_id",)) in {(f.kind, f.path) for f in report.errors()}
 
 
+@pytest.mark.parametrize("identity", [{"class_uid": "2004"}, {"class_uid": 2004.0}, {"type_uid": "200401"}])
+def test_repair_finds_the_class_from_a_coerced_identity(schema: ResolvedSchema, identity: dict[str, Any]) -> None:
+    """The class is read from the identity as repair coerces it; found by the repair property."""
+    base = base_detection_finding(schema)
+    event = {k: v for k, v in base.items() if k not in ("class_uid", "type_uid")} | identity
+    out, report = repair(event)
+    assert report.class_key == CLASS
+    assert report.errors() == ()
+    assert (out["class_uid"], out["type_uid"]) == (2004, 200401)
+
+
 def test_repair_coerces_array_elements_and_datetimes(schema: ResolvedSchema) -> None:
     event = base_detection_finding(schema) | {
         "observables": [{"name": "a", "type_id": "4"}],

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal, cast, final
 
-from ocsf_toolkit.conform import Checks, check
+from ocsf_toolkit.conform import Checks, as_integer, check
 from ocsf_toolkit.derive import derive
 from ocsf_toolkit.ir import Requirement, SchemaIR
 from ocsf_toolkit.observables import Observable, observe, unfounded
@@ -90,7 +90,7 @@ def run(
     """Walk the event once, deriving and checking; the input is copied before any change."""
     mutates = policy.fill or policy.overwrite or policy.coerce or policy.unknown == "relocate"
     out = copy.deepcopy(event) if mutates else event
-    item, identity, findings = _root_class(out, schema, class_key)
+    item, identity, findings = _root_class(out, schema, class_key, coerce=policy.coerce)
     checks = Checks(
         schema=schema,
         root=out,
@@ -166,9 +166,12 @@ def _metadata(event: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def _root_class(
-    event: dict[str, Any], schema: ResolvedSchema, class_key: str | None
+    event: dict[str, Any], schema: ResolvedSchema, class_key: str | None, *, coerce: bool = False
 ) -> tuple[ResolvedItem, bool, list[Finding]]:
-    """Return the class to walk, whether the event really is of it, and why not."""
+    """Return the class to walk, whether the event really is of it, and why not.
+
+    With ``coerce``, an identity the walk will coerce ("2004", 2004.0) names its class already.
+    """
     fallback = schema.classes[FALLBACK_CLASS]
     if class_key is not None:
         return schema.classes[class_key], True, []
@@ -178,6 +181,8 @@ def _root_class(
 
     for attr, lookup in (("class_uid", schema.class_by_uid), ("type_uid", by_type_uid)):
         value = event.get(attr)
+        if coerce and (number := as_integer(value)) is not None:
+            value = number
         if not isinstance(value, int) or isinstance(value, bool):
             continue
         try:
