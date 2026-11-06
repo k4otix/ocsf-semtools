@@ -1,4 +1,4 @@
-.PHONY: setup format lint type test schema ir lock generate dists wheels compat test-generated clean
+.PHONY: setup format lint type test bench schema ir lock generate dists wheels compat test-generated clean
 
 UV ?= uv
 
@@ -21,6 +21,10 @@ type:
 
 test:
 	$(UV) run pytest
+
+# S1 throughput at 2-20 KB per event, on this machine; slow, so not part of `test` or CI
+bench:
+	$(UV) run python -m tests.bench.engine
 
 # gates 1 and 2: compile every lockfile schema, then check every committed IR against it
 schema:
