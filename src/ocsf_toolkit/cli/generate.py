@@ -3,8 +3,9 @@
 import argparse
 from pathlib import Path
 
-from ocsf_toolkit.cli import _uvx, lock, models
-from ocsf_toolkit.cli.diff import source_ir
+from ocsf_toolkit.cli import _upstream, lock
+from ocsf_toolkit.cli._common import source_ir
+from ocsf_toolkit.cli.trees import files_sha256, read_tree
 from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.ir import Provenance, SchemaIR
 from ocsf_toolkit.loader import load_compiled
@@ -69,15 +70,13 @@ def _extended(args: argparse.Namespace) -> SchemaIR:
     for path in paths:
         if not path.is_dir():
             raise ValueError(f"--ext {path}: not a directory")
-    data, digest = _uvx.compiled_output(
+    data, digest = _upstream.compiled_output(
         repo=entry.repo,
         commit=entry.commit,
         version=entry.version,
         sha256=None,  # extensions change the output; the declared version is still checked
-        compiler_version=lockfile.toolchain.ocsf_schema_compiler,
-        python=lockfile.toolchain.python_compile,
+        compiler=lock.compiler(lockfile, args.compiler_cmd),
         build_dir=Path(args.build_dir),
-        compiler_cmd=args.compiler_cmd,
         extensions=paths,
     )
     provenance = Provenance(
@@ -86,11 +85,6 @@ def _extended(args: argparse.Namespace) -> SchemaIR:
         commit=entry.commit,
         compiler_version=lockfile.toolchain.ocsf_schema_compiler,
         compiler_output_sha256=digest,
-        extensions=tuple((p.resolve().name, "local", tree_sha256(p)) for p in paths),
+        extensions=tuple((p.resolve().name, "local", files_sha256(read_tree(p))) for p in paths),
     )
     return load_compiled(data, provenance)
-
-
-def tree_sha256(root: Path) -> str:
-    """Return the sha256 over the sorted (relative path, bytes) of every file under root."""
-    return models.files_sha256(models.read_tree(root))

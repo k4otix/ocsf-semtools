@@ -2,10 +2,11 @@
 
 import argparse
 import hashlib
-from dataclasses import replace
+from collections.abc import Callable
 from pathlib import Path
 
 from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli._upstream import atomic_write
 from ocsf_toolkit.export import IR_VERSION, export_ir
 from ocsf_toolkit.ir import Provenance
 from ocsf_toolkit.loader import load_compiled
@@ -13,14 +14,15 @@ from ocsf_toolkit.loader import load_compiled
 DATA_DIR = "src/ocsf_toolkit/data"
 
 
-def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -> None:
+def register(parser: argparse.ArgumentParser, parents: list[argparse.ArgumentParser]) -> None:
     """Add the ``ir export`` and ``ir check`` subcommands."""
     actions = parser.add_subparsers(dest="ir_action", required=True, metavar="ACTION")
-    for name, help_text in (
-        ("export", "write data/ir-<ver>.json from build/compiled/schema-<ver>.json"),
-        ("check", "assert the IR rebuilt from build/compiled matches ir_sha256 and data/"),
+    run: Callable[[argparse.Namespace], int]
+    for name, help_text, run in (
+        ("export", "write data/ir-<ver>.json from build/compiled/schema-<ver>.json", export),
+        ("check", "assert the IR rebuilt from build/compiled matches ir_sha256 and data/", check),
     ):
-        action = actions.add_parser(name, parents=[common], help=help_text, description=help_text)
+        action = actions.add_parser(name, parents=parents, help=help_text, description=help_text)
         action.add_argument(
             "versions",
             nargs="*",
@@ -37,7 +39,7 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
         action.set_defaults(run=run)
 
 
-def build(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -> bytes:
+def ir_bytes(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -> bytes:
     """Return the canonical IR JSON for one lockfile entry, from its verified compiled schema."""
     if toolchain.ir_version != IR_VERSION:
         raise ValueError(f"lockfile [toolchain] ir_version is {toolchain.ir_version}, this library writes {IR_VERSION}")
@@ -61,48 +63,51 @@ def build(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -
     return export_ir(ir)
 
 
-def run(args: argparse.Namespace) -> int:
-    """Export or check the IR of each requested lockfile version against its ir_sha256."""
+def export(args: argparse.Namespace) -> int:
+    """Write each version's IR to the data directory; with --record, accept a new ir_sha256."""
     lock_path = Path(args.lock)
     lockfile = lock.read(lock_path)
-    versions: list[str] = args.versions or [e.version for e in lockfile.schemas if e.ir_sha256]
-    if not versions:
-        raise ValueError("no lockfile entry has an ir_sha256; name the versions to export")
-    data_dir = Path(args.data_dir)
-    for version in versions:
-        entry = lock.find(lockfile, version)
-        data = build(entry, lockfile.toolchain, Path(args.build_dir))
+    for entry in _entries(lockfile, args.versions):
+        data = ir_bytes(entry, lockfile.toolchain, Path(args.build_dir))
         digest = hashlib.sha256(data).hexdigest()
-        out = data_dir / f"ir-{version}.json"
-        if args.ir_action == "check":
-            _check(entry, digest, data, out)
-            print(f"{version}: ok  ir_sha256 {digest} == lockfile == {out}")
-            continue
         if digest != entry.ir_sha256 and not args.record:
             raise ValueError(
-                f"IR for {version} has sha256 {digest}, lockfile has {entry.ir_sha256 or 'none'}; "
+                f"IR for {entry.version} has sha256 {digest}, lockfile has {entry.ir_sha256 or 'none'}; "
                 "pass --record to accept it"
             )
-        data_dir.mkdir(parents=True, exist_ok=True)
-        partial = out.with_suffix(".json.partial")
-        partial.write_bytes(data)
-        partial.replace(out)
+        out = Path(args.data_dir) / f"ir-{entry.version}.json"
+        atomic_write(out, data)
         if digest != entry.ir_sha256:
-            entries = [replace(e, ir_sha256=digest) if e is entry else e for e in lockfile.schemas]
-            lockfile = replace(lockfile, schemas=tuple(entries))
+            lockfile = lock.with_entry(lockfile, lock.find(lockfile, entry.version), ir_sha256=digest)
             lock.write(lock_path, lockfile)
-            print(f"{version}: recorded ir_sha256 {digest} -> {lock_path}")
-        print(f"{version}: wrote {out} ({len(data)} bytes)")
+            print(f"{entry.version}: recorded ir_sha256 {digest} -> {lock_path}")
+        print(f"{entry.version}: wrote {out} ({len(data)} bytes)")
     return 0
 
 
-def _check(entry: lock.SchemaEntry, digest: str, data: bytes, out: Path) -> None:
-    if not entry.ir_sha256:
-        raise ValueError(f"OCSF {entry.version} has no ir_sha256 in the lockfile")
-    if digest != entry.ir_sha256:
-        raise ValueError(
-            f"IR for {entry.version} has sha256 {digest}, lockfile has {entry.ir_sha256}; "
-            "the loader or the compiled schema changed"
-        )
-    if not out.is_file() or out.read_bytes() != data:
-        raise ValueError(f"{out} does not match the IR rebuilt from build/compiled")
+def check(args: argparse.Namespace) -> int:
+    """Assert each version's rebuilt IR matches its ir_sha256 and the file in the data directory."""
+    lockfile = lock.read(Path(args.lock))
+    for entry in _entries(lockfile, args.versions):
+        data = ir_bytes(entry, lockfile.toolchain, Path(args.build_dir))
+        digest = hashlib.sha256(data).hexdigest()
+        out = Path(args.data_dir) / f"ir-{entry.version}.json"
+        if not entry.ir_sha256:
+            raise ValueError(f"OCSF {entry.version} has no ir_sha256 in the lockfile")
+        if digest != entry.ir_sha256:
+            raise ValueError(
+                f"IR for {entry.version} has sha256 {digest}, lockfile has {entry.ir_sha256}; "
+                "the loader or the compiled schema changed"
+            )
+        if not out.is_file() or out.read_bytes() != data:
+            raise ValueError(f"{out} does not match the IR rebuilt from build/compiled")
+        print(f"{entry.version}: ok  ir_sha256 {digest} == lockfile == {out}")
+    return 0
+
+
+def _entries(lockfile: lock.Lockfile, versions: list[str]) -> list[lock.SchemaEntry]:
+    """Return the entries to work on: the named versions, or every entry with an ir_sha256."""
+    names = versions or [e.version for e in lockfile.schemas if e.ir_sha256]
+    if not names:
+        raise ValueError("no lockfile entry has an ir_sha256; name the versions to export")
+    return [lock.find(lockfile, v) for v in names]

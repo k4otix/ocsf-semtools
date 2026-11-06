@@ -18,14 +18,18 @@ from ocsf_toolkit.cli import models as models_command
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser: the root options and one subparser per command."""
-    common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--lock", default="ocsf.lock", help="lockfile path (default: %(default)s)")
-    common.add_argument("--build-dir", default="build", help="checkout cache and output root (default: %(default)s)")
-    common.add_argument(
+    # Shared options, each given only to the commands that read it.
+    lockfile = argparse.ArgumentParser(add_help=False)
+    lockfile.add_argument("--lock", default="ocsf.lock", help="lockfile path (default: %(default)s)")
+    build = argparse.ArgumentParser(add_help=False)
+    build.add_argument("--build-dir", default="build", help="checkout cache and output root (default: %(default)s)")
+    compiler = argparse.ArgumentParser(add_help=False)
+    compiler.add_argument(
         "--compiler-cmd",
         help="command that compiles a schema checkout to stdout, replacing uvx "
         "(air-gapped builds); the checkout path is appended",
     )
+    compiling = [lockfile, build, compiler]
 
     parser = argparse.ArgumentParser(prog="ocsf-toolkit", description="Version-pinned OCSF schema tooling.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -33,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     compile_command.register(
         sub.add_parser(
             "compile",
-            parents=[common],
+            parents=compiling,
             help="compile lockfile schemas and check their hashes",
             description="Clone each pinned commit, compile it with ocsf-schema-compiler under "
             "Python 3.14, and assert compiled_sha256 and the compiled version.",
@@ -42,7 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     lock_command.register(
         sub.add_parser(
             "lock",
-            parents=[common],
+            parents=compiling,
             help="add an OCSF version to ocsf.lock",
             description="Resolve an upstream ref, pin its commit, compile it, and record compiled_sha256.",
         )
@@ -53,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
             help="export or check canonical IR JSON",
             description="Build the IR from build/compiled and write or check data/ir-<ver>.json.",
         ),
-        common,
+        [lockfile, build],
     )
     check_command.register(
         sub.add_parser(
@@ -74,7 +78,7 @@ def build_parser() -> argparse.ArgumentParser:
     generate_command.register(
         sub.add_parser(
             "generate",
-            parents=[common],
+            parents=compiling,
             help="generate a typed msgspec model package",
             description="Project an OCSF version or IR into a typed package of msgspec Structs: "
             "superset classes by default, exact classes for a fixed --profiles set.",
@@ -87,7 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
             description="Render each model-window version twice from its shipped IR. check asserts the "
             "tree is stable and matches models_tree_sha256 in the lockfile; record writes that hash.",
         ),
-        common,
+        [lockfile],
     )
     return parser
 

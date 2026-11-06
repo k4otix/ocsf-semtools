@@ -1,6 +1,7 @@
 """Each dist is exactly what the generator renders, and one module is snapshotted for review."""
 
-from ocsf_toolkit.cli.models import read_tree, tree
+from ocsf_toolkit.cli.models import tree
+from ocsf_toolkit.cli.trees import read_tree
 from tests.conftest import ROOT
 from tests.generated.conftest import Dist, require
 

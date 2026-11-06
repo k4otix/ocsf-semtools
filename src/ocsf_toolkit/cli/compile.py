@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from ocsf_toolkit.cli import _uvx, lock
+from ocsf_toolkit.cli import _upstream, lock
 
 
 def register(parser: argparse.ArgumentParser) -> None:
@@ -23,15 +23,13 @@ def run(args: argparse.Namespace) -> int:
     versions: list[str] = args.versions or [entry.version for entry in lockfile.schemas]
     for version in versions:
         entry = lock.find(lockfile, version)
-        out, digest = _uvx.compile_commit(
+        out, digest = _upstream.compile_commit(
             repo=entry.repo,
             commit=entry.commit,
             version=entry.version,
             sha256=entry.compiled_sha256,
-            compiler_version=lockfile.toolchain.ocsf_schema_compiler,
-            python=lockfile.toolchain.python_compile,
+            compiler=lock.compiler(lockfile, args.compiler_cmd),
             build_dir=Path(args.build_dir),
-            compiler_cmd=args.compiler_cmd,
         )
         print(
             f"{entry.version}: ok  ref {entry.ref}  commit {entry.commit}\n"

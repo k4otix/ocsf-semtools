@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from ocsf_toolkit.cli import build_parser, generate, lock, main
+from ocsf_toolkit.cli.trees import files_sha256, read_tree
 from ocsf_toolkit.export import load_ir
 from tests.conftest import DATA_DIR
 from tests.fixtures.compiled import compiled
@@ -104,5 +105,5 @@ def test_generate_with_custom_extensions(tmp_path: Path, upstream: Upstream) -> 
     ir = load_ir((tmp_path / "gen" / "acme_models" / "ir.json").read_bytes())  # bundled
     assert ir.version == "1.9.0"
     assert ir.provenance.commit == upstream.commits["1.9.0"]
-    assert ir.provenance.extensions == (("myext", "local", generate.tree_sha256(ext)),)
+    assert ir.provenance.extensions == (("myext", "local", files_sha256(read_tree(ext))),)
     assert not (tmp_path / "build" / "compiled").exists()  # the lockfile's output is untouched

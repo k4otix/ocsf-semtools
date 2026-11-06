@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import lock, main, models
+from ocsf_toolkit.cli import lock, main, models, trees
 from tests.conftest import ROOT
 
 
@@ -26,21 +26,21 @@ def _run(path: Path, action: str, *args: str) -> int:
 
 
 def test_package_name() -> None:
-    assert models.package_name("1.10.0") == "ocsf_toolkit_v1_10_0"
+    assert trees.package_name("1.10.0") == "ocsf_toolkit_v1_10_0"
 
 
 def test_files_sha256_covers_paths_and_bytes() -> None:
-    base = models.files_sha256({"a.py": b"x", "b/c.py": b"y"})
-    assert base == models.files_sha256({"b/c.py": b"y", "a.py": b"x"})  # order-free
-    assert base != models.files_sha256({"a.py": b"x", "b/d.py": b"y"})
-    assert base != models.files_sha256({"a.py": b"x", "b/c.py": b"z"})
-    assert base != models.files_sha256({"a.pyb": b"", "/c.py": b"y"})  # no ambiguous joins
+    base = trees.files_sha256({"a.py": b"x", "b/c.py": b"y"})
+    assert base == trees.files_sha256({"b/c.py": b"y", "a.py": b"x"})  # order-free
+    assert base != trees.files_sha256({"a.py": b"x", "b/d.py": b"y"})
+    assert base != trees.files_sha256({"a.py": b"x", "b/c.py": b"z"})
+    assert base != trees.files_sha256({"a.pyb": b"", "/c.py": b"y"})  # no ambiguous joins
 
 
 def test_record_then_check(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(lockfile, "record") == 0
     digest = lock.find(lock.read(lockfile), "1.9.0").models_tree_sha256
-    assert digest == models.files_sha256(models.tree("1.9.0"))
+    assert digest == trees.files_sha256(models.tree("1.9.0"))
     assert _run(lockfile, "check") == 0
     assert f"1.9.0: ok  models_tree_sha256 {digest}" in capsys.readouterr().out
 

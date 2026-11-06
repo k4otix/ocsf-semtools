@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit.cli import lock, models
+from ocsf_toolkit.cli import lock, trees
 from tests.unit.cli.support import Upstream
 
 ROOT = Path(__file__).parents[3]
@@ -122,8 +122,7 @@ def test_every_shipped_version_is_in_the_generated_package_contract() -> None:
     config = configparser.ConfigParser()
     config.read(ROOT / ".importlinter")
     forbidden = config["importlinter:contract:no-generated-packages"]["forbidden_modules"].split()
-    shipped = [e for e in lock.read(ROOT / "ocsf.lock").schemas if e.ship_models]
-    expected = {models.package_name(e.version) for e in shipped}
+    expected = {trees.package_name(v) for v in lock.window(lock.read(ROOT / "ocsf.lock"))}
     assert expected <= set(forbidden)
 
 

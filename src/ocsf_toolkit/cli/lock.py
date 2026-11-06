@@ -9,7 +9,7 @@ from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any, cast
 
-from ocsf_toolkit.cli import _uvx
+from ocsf_toolkit.cli import _upstream
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
 WINDOW = 3  # model dists ship for the newest WINDOW versions (D#25)
@@ -128,6 +128,21 @@ def find(lock: Lockfile, version: str) -> SchemaEntry:
     raise ValueError(f"OCSF {version} is not in the lockfile")
 
 
+def with_entry(lock: Lockfile, entry: SchemaEntry, **changes: Any) -> Lockfile:
+    """Return the lockfile with one of its entries changed."""
+    return replace(lock, schemas=tuple(replace(e, **changes) if e is entry else e for e in lock.schemas))
+
+
+def window(lock: Lockfile) -> list[str]:
+    """Return the versions whose model dists ship (ship_models = true), oldest first."""
+    return [e.version for e in lock.schemas if e.ship_models]
+
+
+def compiler(lock: Lockfile, cmd: str | None) -> _upstream.Compiler:
+    """Return the compiler the lockfile pins, or ``cmd`` in its place."""
+    return _upstream.Compiler(lock.toolchain.ocsf_schema_compiler, lock.toolchain.python_compile, cmd)
+
+
 def version_key(version: str) -> tuple[int, ...]:
     """Return the sort key of an x.y.z version: 1.10.0 sorts after 1.9.0."""
     return tuple(int(part) for part in version.split("."))
@@ -184,15 +199,13 @@ def add(
         text=True,
     ).stdout
     ref_name, commit = resolve_ref(version, parse_ls_remote(listing), ref)
-    _, digest = _uvx.compile_commit(
+    _, digest = _upstream.compile_commit(
         repo=repo,
         commit=commit,
         version=version,
         sha256=None,
-        compiler_version=lock.toolchain.ocsf_schema_compiler,
-        python=lock.toolchain.python_compile,
+        compiler=compiler(lock, compiler_cmd),
         build_dir=build_dir,
-        compiler_cmd=compiler_cmd,
     )
     entry = SchemaEntry(
         version=version,
@@ -249,8 +262,7 @@ def run(args: argparse.Namespace) -> int:
     entry = find(updated, args.add)
     print(f"{entry.version}: pinned ref {entry.ref} commit {entry.commit}")
     print(f"{entry.version}: compiled_sha256 {entry.compiled_sha256} -> {path}")
-    window = ", ".join(e.version for e in updated.schemas if e.ship_models)
-    print(f"model window: {window}")
+    print(f"model window: {', '.join(window(updated))}")
     return 0
 
 

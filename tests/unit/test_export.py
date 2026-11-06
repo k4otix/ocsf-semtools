@@ -64,7 +64,7 @@ def test_round_trip_and_idempotence(version: str) -> None:
 @pytest.mark.parametrize("version", COMMITTED)
 def test_rebuilt_ir_matches_committed(version: str) -> None:
     compiled_path(version)  # skip without build/compiled
-    built = ir_cli.build(lock.find(LOCKFILE, version), LOCKFILE.toolchain, ROOT / "build")
+    built = ir_cli.ir_bytes(lock.find(LOCKFILE, version), LOCKFILE.toolchain, ROOT / "build")
     assert built == (DATA_DIR / f"ir-{version}.json").read_bytes()
 
 

@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TextIO, cast
 
+from ocsf_toolkit.cli._common import printable
 from ocsf_toolkit.models import parse
 from ocsf_toolkit.schema import load
 from ocsf_toolkit.walk import dotted
@@ -40,39 +41,29 @@ def run(args: argparse.Namespace) -> int:
         raise ValueError(exc.args[0]) from None
     if args.class_key is not None and args.class_key not in schema.classes:
         raise ValueError(f"no class {args.class_key!r} in OCSF {args.version}")
-    failed = 0
-    for name, line, text in _lines(args.files):
-        where = f"{name}:{line}"
-        try:
-            event: object = json.loads(text)
-        except ValueError as exc:
-            print(f"{where}: error: not JSON: {exc}")
-            failed += 1
-            continue
-        if not isinstance(event, dict):
-            print(f"{where}: error: not a JSON object")
-            failed += 1
-            continue
-        _, report = parse(
-            cast(dict[str, Any], event),
-            version=args.version,
-            profiles=profiles,
-            class_key=args.class_key,
-        )
-        failed += not report.ok()
-        if args.json:
-            print(json.dumps({"source": where, **report.to_dict()}))  # ASCII: no raw controls
-            continue
-        for f in report.findings:
-            if f.severity != "info":
-                path = dotted(f.path) or "."
-                print(printable(f"{where}: {f.severity} {f.kind.value} {path}: {f.message}"))
+    failed = sum(not _check_event(f"{name}:{line}", text, args, profiles) for name, line, text in _lines(args.files))
     return 1 if failed else 0
 
 
-def printable(text: str) -> str:
-    """Escape control characters: paths and messages carry keys taken from the input."""
-    return "".join(c if c.isprintable() else repr(c)[1:-1] for c in text)
+def _check_event(where: str, text: str, args: argparse.Namespace, profiles: list[str] | None) -> bool:
+    """Print one event's findings; return whether it has no errors."""
+    try:
+        event: object = json.loads(text)
+    except ValueError as exc:
+        print(f"{where}: error: not JSON: {exc}")
+        return False
+    if not isinstance(event, dict):
+        print(f"{where}: error: not a JSON object")
+        return False
+    _, report = parse(cast(dict[str, Any], event), version=args.version, profiles=profiles, class_key=args.class_key)
+    if args.json:
+        print(json.dumps({"source": where, **report.to_dict()}))  # ASCII: no raw controls
+        return report.ok()
+    for f in report.findings:
+        if f.severity != "info":
+            path = dotted(f.path) or "."
+            print(printable(f"{where}: {f.severity} {f.kind.value} {path}: {f.message}"))
+    return report.ok()
 
 
 def _lines(files: list[str]) -> Iterator[tuple[str, int, str]]:

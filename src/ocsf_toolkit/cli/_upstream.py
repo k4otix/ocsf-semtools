@@ -1,4 +1,4 @@
-"""The isolated compile step: a pinned ocsf-schema commit becomes a verified schema (on 3.14)."""
+"""Upstream ocsf-schema: check out a pinned commit and compile it into a verified schema (on 3.14)."""
 
 import hashlib
 import json
@@ -8,33 +8,36 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import cast, final
 
 
-def compiler_argv(
-    src: Path,
-    *,
-    compiler_version: str,
-    python: str,
-    compiler_cmd: str | None = None,
-    extensions: Sequence[Path] = (),
-) -> list[str]:
+@final
+@dataclass(frozen=True, slots=True)
+class Compiler:
+    """How to run ocsf-schema-compiler: the pinned version under its Python, or a replacement command."""
+
+    version: str  # ocsf-schema-compiler release, from the lockfile's [toolchain]
+    python: str  # the interpreter uvx runs it under
+    cmd: str | None = None  # replaces the uvx invocation (air-gapped builds); the checkout is appended
+
+
+def compiler_argv(src: Path, compiler: Compiler, extensions: Sequence[Path] = ()) -> list[str]:
     """Return the command line that compiles the schema checkout at ``src`` to JSON on stdout.
 
-    ``compiler_cmd`` replaces the ``uvx`` invocation (air-gapped builds); ``src`` is appended to it.
     Each of ``extensions`` is a directory of custom extensions, passed as ``-e PATH``.
     """
     ext_args = [arg for path in extensions for arg in ("-e", str(path))]
-    if compiler_cmd is not None:
-        return [*shlex.split(compiler_cmd), str(src), *ext_args]
+    if compiler.cmd is not None:
+        return [*shlex.split(compiler.cmd), str(src), *ext_args]
     return [
         "uvx",
         "--quiet",
         "--python",
-        python,
+        compiler.python,
         "--from",
-        f"ocsf-schema-compiler=={compiler_version}",
+        f"ocsf-schema-compiler=={compiler.version}",
         "python",
         "-m",
         "ocsf_schema_compiler",
@@ -95,35 +98,17 @@ def verify(output: bytes, *, version: str, sha256: str | None) -> tuple[bytes, s
 
 
 def compile_commit(
-    *,
-    repo: str,
-    commit: str,
-    version: str,
-    sha256: str | None,
-    compiler_version: str,
-    python: str,
-    build_dir: Path,
-    compiler_cmd: str | None = None,
+    *, repo: str, commit: str, version: str, sha256: str | None, compiler: Compiler, build_dir: Path
 ) -> tuple[Path, str]:
     """Check out, compile and verify one pinned schema; write it to ``build/compiled/``.
 
     Returns the output path and its sha256. Nothing is written unless verification passes.
     """
     data, digest = compiled_output(
-        repo=repo,
-        commit=commit,
-        version=version,
-        sha256=sha256,
-        compiler_version=compiler_version,
-        python=python,
-        build_dir=build_dir,
-        compiler_cmd=compiler_cmd,
+        repo=repo, commit=commit, version=version, sha256=sha256, compiler=compiler, build_dir=build_dir
     )
     out = build_dir / "compiled" / f"schema-{version}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    partial = out.with_suffix(".json.partial")
-    partial.write_bytes(data)
-    partial.replace(out)
+    atomic_write(out, data)
     return out, digest
 
 
@@ -133,10 +118,8 @@ def compiled_output(
     commit: str,
     version: str,
     sha256: str | None,
-    compiler_version: str,
-    python: str,
+    compiler: Compiler,
     build_dir: Path,
-    compiler_cmd: str | None = None,
     extensions: Sequence[Path] = (),
 ) -> tuple[bytes, str]:
     """Check out and compile one pinned schema, with any custom extensions.
@@ -145,16 +128,18 @@ def compiled_output(
     """
     print(f"{version}: checkout {repo} @ {commit}", file=sys.stderr)
     src = checkout(repo, commit, build_dir / "ocsf-schema")
-    argv = compiler_argv(
-        src,
-        compiler_version=compiler_version,
-        python=python,
-        compiler_cmd=compiler_cmd,
-        extensions=extensions,
-    )
+    argv = compiler_argv(src, compiler, extensions)
     print(f"{version}: {shlex.join(argv)}", file=sys.stderr)
     output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
     return verify(output, version=version, sha256=sha256)
+
+
+def atomic_write(path: Path, data: bytes) -> None:
+    """Write data to path through a sibling ``.partial`` file, so a reader never sees half of it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    partial = path.with_name(path.name + ".partial")
+    partial.write_bytes(data)
+    partial.replace(path)
 
 
 def _git(*args: str, cwd: Path) -> str:

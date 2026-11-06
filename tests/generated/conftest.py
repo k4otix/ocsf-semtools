@@ -1,16 +1,19 @@
-"""Tests over the dists `make dists` writes, one per model-window version; each test skips until
-its dist exists."""
+"""Tests over the dists `make dists` writes, one per model-window version.
+
+Each test skips until its dist exists.
+"""
 
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli.models import package_name
+from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli.trees import package_name
 from tests.conftest import LOCKFILE, ROOT
 
 SAMPLES = Path(__file__).parent / "samples"  # typed usage of the 1.9.0 dist
-WINDOW = [e.version for e in LOCKFILE.schemas if e.ship_models]
+WINDOW = lock.window(LOCKFILE)
 
 
 @dataclass(frozen=True)

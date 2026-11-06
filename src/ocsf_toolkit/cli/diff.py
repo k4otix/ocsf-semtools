@@ -3,12 +3,9 @@
 import argparse
 import json
 import sys
-from pathlib import Path
 
-from ocsf_toolkit.cli.check import printable
+from ocsf_toolkit.cli._common import printable, source_ir
 from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
-from ocsf_toolkit.ir import SchemaIR
-from ocsf_toolkit.schema import load, load_ir
 
 
 def register(parser: argparse.ArgumentParser) -> None:
@@ -57,14 +54,6 @@ def semver(result: SchemaDiff) -> tuple[str, int]:
     if all(c.kind == "added" for c in changes):
         return "minor", len(changes)
     return "major", len(changes)
-
-
-def source_ir(source: str) -> SchemaIR:
-    """Load a shipped OCSF version by number, or an IR JSON file by path."""
-    path = Path(source)
-    if source.endswith(".json") or path.is_file():
-        return load_ir(path)
-    return load(source).ir
 
 
 def _line(c: Change) -> str:

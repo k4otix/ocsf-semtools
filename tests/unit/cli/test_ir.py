@@ -118,7 +118,7 @@ def test_toolchain_ir_version_must_match(workspace: Path, capsys: pytest.Capture
 def test_parser() -> None:
     args = build_parser().parse_args(["ir", "export", "1.9.0", "--record", "--data-dir", "d"])
     assert (args.run, args.ir_action, args.versions, args.record) == (
-        ir.run,
+        ir.export,
         "export",
         ["1.9.0"],
         True,

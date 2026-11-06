@@ -20,7 +20,7 @@ import zipfile
 from pathlib import Path
 
 from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli.models import files_sha256, package_name
+from ocsf_toolkit.cli.trees import files_sha256, package_name
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
