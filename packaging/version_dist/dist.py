@@ -64,11 +64,7 @@ def wheel_tree(wheel: Path | bytes, package: str) -> dict[str, bytes]:
     source = wheel if isinstance(wheel, Path) else io.BytesIO(wheel)
     prefix = f"{package}/"
     with zipfile.ZipFile(source) as z:
-        return {
-            n.removeprefix(prefix): z.read(n)
-            for n in z.namelist()
-            if n.startswith(prefix) and not n.endswith("/")
-        }
+        return {n.removeprefix(prefix): z.read(n) for n in z.namelist() if n.startswith(prefix) and not n.endswith("/")}
 
 
 def _window() -> list[lock.SchemaEntry]:
@@ -115,9 +111,7 @@ def needs_release(published: bytes | None, package: str, tree_sha256: str, core:
     """A dist is released again when PyPI has none, holds another tree, or excludes this core."""
     if published is None:
         return True
-    return files_sha256(wheel_tree(published, package)) != tree_sha256 or not admits(
-        published, core
-    )
+    return files_sha256(wheel_tree(published, package)) != tree_sha256 or not admits(published, core)
 
 
 def _latest_wheel(dist: str) -> tuple[str, bytes] | None:
@@ -221,9 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", required=True, type=Path)
     c = actions.add_parser("check-wheels", help="assert the built wheels hold the pinned trees")
     c.add_argument("wheels", nargs="+", type=Path)
-    u = actions.add_parser(
-        "unpublished", help="print the model-window versions PyPI lacks for this core release"
-    )
+    u = actions.add_parser("unpublished", help="print the model-window versions PyPI lacks for this core release")
     u.add_argument("--version", required=True, help="the core version being released")
     k = actions.add_parser("compat", help="run each released dist against this core")
     k.add_argument("--version", required=True, help="the version of the core in this checkout")

@@ -55,9 +55,7 @@ def test_depth_first_with_indexed_paths_and_closes(schema: ResolvedSchema) -> No
 
 def test_owner_is_the_item_that_declares_the_attribute(schema: ResolvedSchema) -> None:
     owners = {
-        v.path: v.owner.key
-        for v in walk(_event(), schema.classes["detection_finding"], schema)
-        if isinstance(v, Visit)
+        v.path: v.owner.key for v in walk(_event(), schema.classes["detection_finding"], schema) if isinstance(v, Visit)
     }
     assert owners[("metadata", "product", "name")] == "product"
     assert owners[("observables", 1, "type_id")] == "observable"
@@ -104,9 +102,7 @@ def test_iterative_walk_handles_depth_beyond_the_recursion_limit(schema: Resolve
 
 
 @pytest.mark.parametrize(("limit", "tripped"), [(12, False), (11, True), (1, True)])
-def test_max_nodes_counts_attribute_visits(
-    schema: ResolvedSchema, limit: int, tripped: bool
-) -> None:
+def test_max_nodes_counts_attribute_visits(schema: ResolvedSchema, limit: int, tripped: bool) -> None:
     out = list(walk(_event(), schema.classes["detection_finding"], schema, max_nodes=limit))
     attribute_visits = [v for v in out if isinstance(v, Visit) and v.attr is not None]
     findings = [f for f in out if isinstance(f, Finding)]

@@ -104,9 +104,7 @@ def test_enum_member_deprecation_and_redundant_uid(ir: SchemaIR) -> None:
     category = ir.classes["finding"].attributes["category_uid"].enum
     assert severity is not None
     assert category is not None
-    assert severity[3].deprecated == Deprecation(
-        message="Use <code>new</code>.", since="9.8.0", superseded_by=("new",)
-    )
+    assert severity[3].deprecated == Deprecation(message="Use <code>new</code>.", since="9.8.0", superseded_by=("new",))
     assert category[2].caption == "Findings"
 
 
@@ -137,9 +135,7 @@ def test_class_and_object_fields(ir: SchemaIR) -> None:
     finding = ir.classes["finding"]
     assert finding.is_class
     assert finding.observable is None
-    assert finding.constraints == (
-        Constraint(kind="at_least_one", attributes=("severity", "severity_id")),
-    )
+    assert finding.constraints == (Constraint(kind="at_least_one", attributes=("severity", "severity_id")),)
     assert dict(finding.associations) == {"actor.user": ("device",)}
     assert dict(finding.class_observables) == {}
     cloud = ir.objects["cloud"]
@@ -269,12 +265,7 @@ def test_1_9_0_detection_finding(ir_1_9_0: SchemaIR) -> None:
 
 def test_1_9_0_siblings_and_string_enums(ir_1_9_0: SchemaIR) -> None:
     items = {**ir_1_9_0.classes, **ir_1_9_0.objects}
-    list_siblings = {
-        (k, n)
-        for k, i in items.items()
-        for n, a in i.attributes.items()
-        if a.sibling and a.is_array
-    }
+    list_siblings = {(k, n) for k, i in items.items() for n, a in i.attributes.items() if a.sibling and a.is_array}
     assert list_siblings == {
         ("dns_activity", "flag_ids"),
         ("dns_answer", "flag_ids"),
@@ -283,10 +274,7 @@ def test_1_9_0_siblings_and_string_enums(ir_1_9_0: SchemaIR) -> None:
         ("url", "category_ids"),
     }
     string_enums = {
-        (k, n)
-        for k, i in items.items()
-        for n, a in i.attributes.items()
-        if a.enum is not None and a.type == "string_t"
+        (k, n) for k, i in items.items() for n, a in i.attributes.items() if a.enum is not None and a.type == "string_t"
     }
     assert string_enums == {("cvss", "depth"), ("http_request", "http_method"), ("osint", "tlp")}
 

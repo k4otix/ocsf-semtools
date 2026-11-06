@@ -19,18 +19,14 @@ from ocsf_toolkit.cli import models as models_command
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--lock", default="ocsf.lock", help="lockfile path (default: %(default)s)")
-    common.add_argument(
-        "--build-dir", default="build", help="checkout cache and output root (default: %(default)s)"
-    )
+    common.add_argument("--build-dir", default="build", help="checkout cache and output root (default: %(default)s)")
     common.add_argument(
         "--compiler-cmd",
         help="command that compiles a schema checkout to stdout, replacing uvx "
         "(air-gapped builds); the checkout path is appended",
     )
 
-    parser = argparse.ArgumentParser(
-        prog="ocsf-toolkit", description="Version-pinned OCSF schema tooling."
-    )
+    parser = argparse.ArgumentParser(prog="ocsf-toolkit", description="Version-pinned OCSF schema tooling.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
     compile_command.register(
@@ -47,8 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
             "lock",
             parents=[common],
             help="add an OCSF version to ocsf.lock",
-            description="Resolve an upstream ref, pin its commit, compile it, "
-            "and record compiled_sha256.",
+            description="Resolve an upstream ref, pin its commit, compile it, and record compiled_sha256.",
         )
     )
     ir_command.register(

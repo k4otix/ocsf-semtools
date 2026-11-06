@@ -49,9 +49,7 @@ def observe(visit: Visit, schema: ResolvedSchema, root: ResolvedItem) -> list[Ob
     for path, value in _elements(visit.path, visit.value, ra.is_array):
         if ra.object_type is not None:
             if isinstance(value, dict):
-                found.append(
-                    Observable(name=dotted(path), type_id=type_id, type=caption, value=None)
-                )
+                found.append(Observable(name=dotted(path), type_id=type_id, type=caption, value=None))
         elif (text := stringify(value)) is not None:
             found.append(Observable(name=dotted(path), type_id=type_id, type=caption, value=text))
     return found

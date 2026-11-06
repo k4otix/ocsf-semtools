@@ -37,12 +37,8 @@ def test_equal_irs_exit_zero(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @pytest.mark.parametrize("source", ["0.0.1", "missing.json"])
-def test_unreadable_input_exits_two(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], source: str
-) -> None:
-    assert (
-        main(["diff", "1.9.0", str(tmp_path / source) if source.endswith("json") else source]) == 2
-    )
+def test_unreadable_input_exits_two(tmp_path: Path, capsys: pytest.CaptureFixture[str], source: str) -> None:
+    assert main(["diff", "1.9.0", str(tmp_path / source) if source.endswith("json") else source]) == 2
     assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
 
 

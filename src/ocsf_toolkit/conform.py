@@ -309,8 +309,7 @@ def _constraints(visit: Visit) -> Iterator[Finding]:
             kind=Kind.CONSTRAINT_VIOLATED,
             path=visit.path,
             owner=visit.owner.key,
-            message=f"{dotted(visit.path) or visit.owner.key} needs {rule} of"
-            f" {list(c.attributes)}; present: {present}",
+            message=f"{dotted(visit.path) or visit.owner.key} needs {rule} of {list(c.attributes)}; present: {present}",
             expected=c.attributes,
             actual=tuple(present),
         )

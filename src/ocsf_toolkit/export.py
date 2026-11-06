@@ -95,8 +95,7 @@ def load_ir(source: Path | bytes) -> SchemaIR:
     ir = _Reader(ignored).schema(top)
     if ignored:
         warnings.warn(
-            f"IR {version} is newer than this reader ({IR_VERSION}); ignored fields: "
-            + ", ".join(sorted(ignored)),
+            f"IR {version} is newer than this reader ({IR_VERSION}); ignored fields: " + ", ".join(sorted(ignored)),
             stacklevel=2,
         )
     return ir
@@ -148,8 +147,7 @@ def _attribute(a: Attribute) -> dict[str, object]:
     enum = None
     if a.enum is not None:
         enum = {
-            str(value): _obj(caption=m.caption, deprecated=_deprecation(m.deprecated))
-            for value, m in a.enum.items()
+            str(value): _obj(caption=m.caption, deprecated=_deprecation(m.deprecated)) for value, m in a.enum.items()
         }
     return {
         "is_array": a.is_array,
@@ -195,9 +193,7 @@ def _item(i: ItemDef) -> dict[str, object]:
 
 
 def _profile(p: Profile) -> dict[str, object]:
-    return _obj(
-        name=p.name, caption=p.caption, extension=p.extension, annotations=dict(p.annotations)
-    )
+    return _obj(name=p.name, caption=p.caption, extension=p.extension, annotations=dict(p.annotations))
 
 
 def _extension(e: Extension) -> dict[str, object]:
@@ -276,9 +272,7 @@ class _Reader:
     ) -> Mapping[str, V]:  # fmt: skip
         path = f"{owner.path}.{key}"
         table = self._table(owner.value(key) or {}, path)
-        return MappingProxyType(
-            {name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)}
-        )
+        return MappingProxyType({name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)})
 
     def _deprecation(self, raw: object, path: str) -> Deprecation | None:
         if raw is None:
@@ -345,9 +339,7 @@ class _Reader:
             default=a.scalar("default"),
         )
 
-    def _enum(
-        self, raw: object, path: str, root: Root | None
-    ) -> Mapping[EnumValue, EnumMember] | None:
+    def _enum(self, raw: object, path: str, root: Root | None) -> Mapping[EnumValue, EnumMember] | None:
         if raw is None:
             return None
         members: dict[EnumValue, EnumMember] = {}
@@ -397,9 +389,7 @@ class _Reader:
             category_uid=i.opt_integer("category_uid"),
             category_name=i.opt_text("category_name"),
             associations=MappingProxyType({k: assoc_fields.texts(k) for k in sorted(associations)}),
-            class_observables=MappingProxyType(
-                {k: obs_fields.integer(k) for k in sorted(observables)}
-            ),
+            class_observables=MappingProxyType({k: obs_fields.integer(k) for k in sorted(observables)}),
         )
 
     def _profile(self, key: str, raw: object, path: str) -> Profile:
@@ -441,9 +431,7 @@ class _Fields:
 
     __slots__ = ("_data", "path")
 
-    def __init__(
-        self, raw: object, path: str, allowed: set[str], ignored: list[str] | None
-    ) -> None:
+    def __init__(self, raw: object, path: str, allowed: set[str], ignored: list[str] | None) -> None:
         if not isinstance(raw, dict):
             raise ValueError(f"{path}: expected an object, got {_kind(raw)}")
         self._data = cast(dict[str, object], raw)
@@ -527,9 +515,7 @@ class _Fields:
         if self._data.get(key) is None:
             return None
         items = self.list(key)
-        if len(items) != 2 or not all(
-            isinstance(v, int | float) and not isinstance(v, bool) for v in items
-        ):
+        if len(items) != 2 or not all(isinstance(v, int | float) and not isinstance(v, bool) for v in items):
             raise self._fail(key, "a [min, max] pair")
         low, high = cast(list[int | float], items)
         return (low, high)

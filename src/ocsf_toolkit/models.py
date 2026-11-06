@@ -38,9 +38,7 @@ _BUNDLED_IR = "ir.json"  # written by codegen into every generated package
 @overload
 def build(ref: ClassRef, /, **fields: Any) -> dict[str, Any]: ...
 @overload
-def build[**P, S: msgspec.Struct](
-    ref: Callable[P, S], /, *args: P.args, **kwargs: P.kwargs
-) -> S: ...
+def build[**P, S: msgspec.Struct](ref: Callable[P, S], /, *args: P.args, **kwargs: P.kwargs) -> S: ...
 def build(ref: Any, /, *args: Any, **fields: Any) -> Any:
     """Construct a conformant event, deriving everything the schema computes.
 
@@ -167,10 +165,7 @@ def _wire(cls: type[msgspec.Struct], fields: dict[str, Any]) -> dict[str, Any]:
     import msgspec
 
     names = dict(zip(cls.__struct_fields__, cls.__struct_encode_fields__, strict=True))
-    return {
-        names.get(k, k): msgspec.to_builtins(v, builtin_types=(datetime,))
-        for k, v in fields.items()
-    }
+    return {names.get(k, k): msgspec.to_builtins(v, builtin_types=(datetime,)) for k, v in fields.items()}
 
 
 def _fatal(report: Report, exact: bool) -> tuple[Finding, ...]:

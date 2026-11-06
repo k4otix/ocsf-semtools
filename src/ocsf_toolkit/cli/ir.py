@@ -26,9 +26,7 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
             metavar="VERSION",
             help="OCSF versions (default: every lockfile entry with an ir_sha256)",
         )
-        action.add_argument(
-            "--data-dir", default=DATA_DIR, help="IR JSON directory (default: %(default)s)"
-        )
+        action.add_argument("--data-dir", default=DATA_DIR, help="IR JSON directory (default: %(default)s)")
         if name == "export":
             action.add_argument(
                 "--record",
@@ -41,18 +39,13 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
 def build(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -> bytes:
     """Canonical IR JSON for one lockfile entry, from its verified compiled schema."""
     if toolchain.ir_version != IR_VERSION:
-        raise ValueError(
-            f"lockfile [toolchain] ir_version is {toolchain.ir_version}, "
-            f"this library writes {IR_VERSION}"
-        )
+        raise ValueError(f"lockfile [toolchain] ir_version is {toolchain.ir_version}, this library writes {IR_VERSION}")
     path = build_dir / "compiled" / f"schema-{entry.version}.json"
     if not path.is_file():
         raise ValueError(f"{path} is missing; run `ocsf-toolkit compile {entry.version}` first")
     compiled = path.read_bytes()
     if hashlib.sha256(compiled).hexdigest() != entry.compiled_sha256:
-        raise ValueError(
-            f"{path} does not match compiled_sha256; run `ocsf-toolkit compile {entry.version}`"
-        )
+        raise ValueError(f"{path} does not match compiled_sha256; run `ocsf-toolkit compile {entry.version}`")
     provenance = Provenance(
         schema_repo=entry.repo,
         ref=entry.ref,

@@ -7,15 +7,7 @@ from typing import Any, Literal
 
 from msgspec import Struct, field
 
-from ..enums import (
-    ConfidenceId,
-    DispositionId,
-    ImpactId,
-    PriorityId,
-    RiskLevelId,
-    SeverityId,
-    VerdictId,
-)
+from ..enums import ConfidenceId, DispositionId, ImpactId, PriorityId, RiskLevelId, SeverityId, VerdictId
 from ..objects import actor as _actor
 from ..objects import anomaly_analysis as _anomaly_analysis
 from ..objects import api as _api

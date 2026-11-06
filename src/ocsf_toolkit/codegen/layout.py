@@ -33,9 +33,7 @@ class Place:
         return "." * (len(self.package) + 1)
 
     def import_line(self, target: "Place") -> str:
-        return (
-            f"from {self.root}{'.'.join(target.package)} import {target.module} as {target.alias}"
-        )
+        return f"from {self.root}{'.'.join(target.package)} import {target.module} as {target.alias}"
 
 
 def place(item: ItemDef) -> Place:

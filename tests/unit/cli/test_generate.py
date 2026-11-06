@@ -15,9 +15,7 @@ from tests.unit.cli.support import Upstream
 
 
 def test_parser() -> None:
-    args = build_parser().parse_args(
-        ["generate", "1.9.0", "--package", "p", "--out", "o", "--ext", "a", "--ext", "b"]
-    )
+    args = build_parser().parse_args(["generate", "1.9.0", "--package", "p", "--out", "o", "--ext", "a", "--ext", "b"])
     assert (args.run, args.source, args.package, args.out) == (generate.run, "1.9.0", "p", "o")
     assert (args.profiles, args.extensions, args.ext) == (None, None, ["a", "b"])
 
@@ -47,9 +45,7 @@ def test_generate_exact_from_an_ir_file(tmp_path: Path) -> None:
         (["--ext", "missing-dir"], "not a directory"),
     ],
 )
-def test_errors_exit_one(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], message: str
-) -> None:
+def test_errors_exit_one(tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], message: str) -> None:
     argv = ["generate", "1.9.0", "--package", "m", "--out", str(tmp_path), *extra]
     assert main(argv) == 1
     assert message in capsys.readouterr().err
@@ -75,9 +71,7 @@ def test_generate_with_custom_extensions(tmp_path: Path, upstream: Upstream) -> 
     (ext / "acme").mkdir(parents=True)
     (ext / "acme" / "extension.json").write_text('{"name": "acme"}')
     lockfile = tmp_path / "ocsf.lock"
-    toolchain = lock.Toolchain(
-        ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0"
-    )
+    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
     entry = lock.SchemaEntry(
         version="1.9.0",
         repo=upstream.url,

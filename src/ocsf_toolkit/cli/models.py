@@ -30,8 +30,7 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
             action.add_argument(
                 "--dists",
                 default=DISTS_DIR,
-                help="also check build/dists/<package>/<package> where it exists "
-                "(default: %(default)s)",
+                help="also check build/dists/<package>/<package> where it exists (default: %(default)s)",
             )
         action.set_defaults(run=run)
 
@@ -76,9 +75,7 @@ def run(args: argparse.Namespace) -> int:
             raise ValueError(f"OCSF {version} is outside the model window (ship_models = false)")
         digest = files_sha256(tree(version))
         if args.models_action == "record":
-            entries = [
-                replace(e, models_tree_sha256=digest) if e is entry else e for e in lockfile.schemas
-            ]
+            entries = [replace(e, models_tree_sha256=digest) if e is entry else e for e in lockfile.schemas]
             lockfile = replace(lockfile, schemas=tuple(entries))
             lock.write(path, lockfile)
             print(f"{version}: recorded models_tree_sha256 {digest} -> {path}")

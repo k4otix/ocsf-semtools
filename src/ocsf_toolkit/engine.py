@@ -102,9 +102,7 @@ def run(
         if isinstance(visit, Finding):
             findings.append(visit)
             continue
-        findings += derive(
-            visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity
-        )
+        findings += derive(visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity)
         findings += check(visit, checks)
         found += observe(visit, schema, item)  # after check: values as coerced or relocated
     findings += unfounded(out, found)
@@ -134,9 +132,7 @@ def extract(
     return tuple(found), Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
 
-def select(
-    event: Mapping[str, Any], *, version: str | None, profiles: Iterable[str] | None
-) -> ResolvedSchema:
+def select(event: Mapping[str, Any], *, version: str | None, profiles: Iterable[str] | None) -> ResolvedSchema:
     """The schema an event is read against: arguments first, then its metadata.
 
     No version anywhere is a ValueError: no OCSF version is ever implied (D#6). Profile names in
@@ -151,17 +147,13 @@ def select(
     return load(version, profiles=profiles)
 
 
-def declared_profiles(
-    event: Mapping[str, Any], ir: SchemaIR, extensions: frozenset[str]
-) -> frozenset[str]:
+def declared_profiles(event: Mapping[str, Any], ir: SchemaIR, extensions: frozenset[str]) -> frozenset[str]:
     """The names in metadata.profiles that the IR defines under these extensions."""
     declared = _metadata(event).get("profiles")
     names = cast(list[object], declared) if isinstance(declared, list) else []
     defined = ir.profiles
     return frozenset(
-        p
-        for p in names
-        if isinstance(p, str) and p in defined and defined[p].extension in (None, *extensions)
+        p for p in names if isinstance(p, str) and p in defined and defined[p].extension in (None, *extensions)
     )
 
 
@@ -196,8 +188,7 @@ def _root_class(
                         kind=Kind.ENUM_OUT_OF_RANGE,
                         path=(attr,),
                         owner=FALLBACK_CLASS,
-                        message=f"{attr} {value} names no class in OCSF {schema.version};"
-                        f" checked as {FALLBACK_CLASS}",
+                        message=f"{attr} {value} names no class in OCSF {schema.version}; checked as {FALLBACK_CLASS}",
                         tier=Requirement.REQUIRED,
                         actual=value,
                     )

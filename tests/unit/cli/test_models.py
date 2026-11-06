@@ -14,10 +14,7 @@ from tests.conftest import ROOT
 def lockfile(tmp_path: Path) -> Path:
     """The committed lockfile with 1.9.0 the only model version and its tree hash cleared."""
     committed = lock.read(ROOT / "ocsf.lock")
-    schemas = tuple(
-        replace(e, ship_models=e.version == "1.9.0", models_tree_sha256="")
-        for e in committed.schemas
-    )
+    schemas = tuple(replace(e, ship_models=e.version == "1.9.0", models_tree_sha256="") for e in committed.schemas)
     path = tmp_path / "ocsf.lock"
     lock.write(path, replace(committed, schemas=schemas))
     return path
@@ -53,9 +50,7 @@ def test_check_fails_on_a_changed_tree(lockfile: Path, capsys: pytest.CaptureFix
     assert "lockfile has none; review the change" in capsys.readouterr().err
 
 
-def test_check_refuses_a_version_outside_the_window(
-    lockfile: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_check_refuses_a_version_outside_the_window(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(lockfile, "check", "1.8.0") == 1
     assert "outside the model window" in capsys.readouterr().err
 

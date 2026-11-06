@@ -25,9 +25,7 @@ def test_verify_returns_canonical_bytes_and_their_sha() -> None:
 def test_verify_ignores_compiler_key_order() -> None:
     """The compiler's key order follows readdir order, which differs between machines."""
     reordered = b'{"classes": {"a": {"b": "\\u00e9", "y": [3, 1]}, "z": 1}, "version": "1.9.0"}'
-    assert _uvx.verify(reordered, version="1.9.0", sha256=None) == _uvx.verify(
-        OUTPUT, version="1.9.0", sha256=None
-    )
+    assert _uvx.verify(reordered, version="1.9.0", sha256=None) == _uvx.verify(OUTPUT, version="1.9.0", sha256=None)
 
 
 def test_verify_accepts_matching_sha() -> None:
@@ -145,9 +143,7 @@ def _lockfile(tmp_path: Path, upstream: Upstream, sha256: str) -> Path:
         models_tree_sha256="",
         ship_models=True,
     )
-    toolchain = lock.Toolchain(
-        ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0"
-    )
+    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
     path = tmp_path / "ocsf.lock"
     lock.write(path, lock.Lockfile(toolchain, (entry,)))
     return path

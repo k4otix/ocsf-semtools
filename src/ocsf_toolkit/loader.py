@@ -29,9 +29,7 @@ SUPPORTED_COMPILE_VERSION = 1
 
 # Keys deliberately left out of the IR, wherever they occur: display text (descriptions are ~70% of
 # the compiled JSON), captions and ids derivable from other tables, and free-text provenance.
-IGNORED_KEYS = frozenset(
-    {"description", "references", "type_name", "object_name", "extension_id", "source", "meta"}
-)
+IGNORED_KEYS = frozenset({"description", "references", "type_name", "object_name", "extension_id", "source", "meta"})
 
 
 @dataclass(slots=True)
@@ -62,8 +60,7 @@ def load_compiled(
     compile_version = top.integer("compile_version")
     if compile_version != SUPPORTED_COMPILE_VERSION:
         raise ValueError(
-            f"$.compile_version: {compile_version} is not supported; "
-            f"this loader reads {SUPPORTED_COMPILE_VERSION}"
+            f"$.compile_version: {compile_version} is not supported; this loader reads {SUPPORTED_COMPILE_VERSION}"
         )
 
     categories = top.node("categories", "categories")
@@ -92,20 +89,11 @@ def load_compiled(
         ),
         types=_sorted(types),
         dictionary=_sorted(
-            {
-                name: _attribute(node, name, roots)
-                for name, node in dictionary.children("attributes", "dict.attr")
-            }
+            {name: _attribute(node, name, roots) for name, node in dictionary.children("attributes", "dict.attr")}
         ),
-        classes=_sorted(
-            {key: _item(node, key, True, roots) for key, node in top.children("classes", "class")}
-        ),
-        objects=_sorted(
-            {key: _item(node, key, False, roots) for key, node in top.children("objects", "object")}
-        ),
-        profiles=_sorted(
-            {key: _profile(node, key) for key, node in top.children("profiles", "profile")}
-        ),
+        classes=_sorted({key: _item(node, key, True, roots) for key, node in top.children("classes", "class")}),
+        objects=_sorted({key: _item(node, key, False, roots) for key, node in top.children("objects", "object")}),
+        profiles=_sorted({key: _profile(node, key) for key, node in top.children("profiles", "profile")}),
         extensions=_sorted(
             {
                 key: Extension(
@@ -173,10 +161,7 @@ def _item(node: "_Node", key: str, is_class: bool, roots: Mapping[str, Root]) ->
         extension=node.opt_text("extension"),
         deprecated=_deprecation(node),
         attributes=_sorted(
-            {
-                name: _attribute(child, name, roots)
-                for name, child in node.children("attributes", attr_ctx)
-            }
+            {name: _attribute(child, name, roots) for name, child in node.children("attributes", attr_ctx)}
         ),
         profiles=frozenset(node.texts("profiles")),
         constraints=tuple(sorted(constraints, key=lambda c: c.kind)),
@@ -364,9 +349,7 @@ class _Node:
         if value is None:
             return None
         items = _as_list(value) or []
-        if len(items) != 2 or not all(
-            isinstance(v, int | float) and not isinstance(v, bool) for v in items
-        ):
+        if len(items) != 2 or not all(isinstance(v, int | float) and not isinstance(v, bool) for v in items):
             raise self._fail(key, "a [min, max] pair", value)
         low, high = cast(list[int | float], items)
         return (low, high)

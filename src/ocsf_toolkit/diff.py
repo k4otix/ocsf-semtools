@@ -53,10 +53,7 @@ class SchemaDiff:
 def diff(a: SchemaIR, b: SchemaIR) -> SchemaDiff:
     """Compare two IRs field by field; a class key that changes at a stable uid is a rename."""
     renames = _renames(a.classes, b.classes)
-    changes = [
-        Change(kind="renamed", path=("classes", old), before=old, after=new)
-        for old, new in renames.items()
-    ]
+    changes = [Change(kind="renamed", path=("classes", old), before=old, after=new) for old, new in renames.items()]
     matched = {renames.get(key, key): item for key, item in a.classes.items()}
     a = dataclasses.replace(a, classes=MappingProxyType(matched))
     changes += _compare(a, b, ())

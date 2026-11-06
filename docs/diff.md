@@ -12,11 +12,7 @@ the diff is data for you to read or act on.
 >>> changes = diff(load("1.7.0").ir, load("1.9.0").ir)
 >>> changes.a, changes.b, len(changes.changes)
 ('1.7.0', '1.9.0', 1115)
->>> [
-...     c.path[1]
-...     for c in changes.changes
-...     if c.kind == "added" and c.path[0] == "classes" and len(c.path) == 2
-... ]
+>>> [c.path[1] for c in changes.changes if c.kind == "added" and c.path[0] == "classes" and len(c.path) == 2]
 ['clipboard_activity', 'device_power_state_activity', 'role_management', 'user_management']
 
 ```

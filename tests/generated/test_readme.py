@@ -18,7 +18,5 @@ def test_typed_example_runs() -> None:
     assert found is not None
     assert "ocsf_toolkit_v1_9_0" in found[1]
     env = {"PYTHONPATH": os.pathsep.join([str(d.root), str(ROOT / "src")]), "PATH": ""}
-    result = subprocess.run(
-        [sys.executable, "-c", found[1]], capture_output=True, text=True, env=env
-    )
+    result = subprocess.run([sys.executable, "-c", found[1]], capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stderr

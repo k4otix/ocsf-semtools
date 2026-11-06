@@ -141,16 +141,12 @@ def shipped_versions() -> tuple[str, ...]:
     return tuple(sorted(found, key=lambda v: tuple(int(p) for p in v.split("."))))
 
 
-def load(
-    version: str, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()
-) -> ResolvedSchema:
+def load(version: str, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()) -> ResolvedSchema:
     """Resolve a shipped OCSF version; unknown profiles or extensions raise KeyError."""
     return _load(version, _names(profiles, "profiles"), _names(extensions, "extensions"))
 
 
-def resolve(
-    ir: SchemaIR, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()
-) -> ResolvedSchema:
+def resolve(ir: SchemaIR, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()) -> ResolvedSchema:
     """Resolve any IR, such as one built with a custom extension."""
     return _resolve(ir, digest(ir), _names(profiles, "profiles"), _names(extensions, "extensions"))
 
@@ -180,14 +176,9 @@ def _shipped(version: str) -> tuple[SchemaIR, str]:
     return ir, hashlib.sha256(data).hexdigest()  # the file is canonical, so this is digest(ir)
 
 
-def _resolve(
-    ir: SchemaIR, ir_digest: str, profiles: frozenset[str], extensions: frozenset[str]
-) -> ResolvedSchema:
+def _resolve(ir: SchemaIR, ir_digest: str, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedSchema:
     if unknown := extensions - ir.extensions.keys():
-        raise KeyError(
-            f"unknown extensions {sorted(unknown)} for OCSF {ir.version};"
-            f" known: {sorted(ir.extensions)}"
-        )
+        raise KeyError(f"unknown extensions {sorted(unknown)} for OCSF {ir.version}; known: {sorted(ir.extensions)}")
     usable = {key for key, p in ir.profiles.items() if p.extension in (None, *extensions)}
     if unknown := profiles - usable:
         raise KeyError(
@@ -199,11 +190,7 @@ def _resolve(
         return extension is None or extension in extensions
 
     def items(table: Mapping[str, ItemDef]) -> Mapping[str, ResolvedItem]:
-        resolved = {
-            key: _item(ir, item, profiles, extensions)
-            for key, item in table.items()
-            if active(item.extension)
-        }
+        resolved = {key: _item(ir, item, profiles, extensions) for key, item in table.items() if active(item.extension)}
         return MappingProxyType(resolved)
 
     return ResolvedSchema(
@@ -214,21 +201,16 @@ def _resolve(
         ir=ir,
         classes=items(ir.classes),
         objects=items(ir.objects),
-        categories=MappingProxyType(
-            {k: c for k, c in ir.categories.items() if active(c.extension)}
-        ),
+        categories=MappingProxyType({k: c for k, c in ir.categories.items() if active(c.extension)}),
         types=MappingProxyType({k: t for k, t in ir.types.items() if active(t.extension)}),
     )
 
 
-def _item(
-    ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: frozenset[str]
-) -> ResolvedItem:
+def _item(ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedItem:
     attributes = {
         name: _attribute(ir, item.key, a, profiles)
         for name, a in item.attributes.items()
-        if (not a.profiles or a.profiles & profiles)
-        and (a.extension is None or a.extension in extensions)
+        if (not a.profiles or a.profiles & profiles) and (a.extension is None or a.extension in extensions)
     }
     # A constraint member names an attribute or a dotted path into one; members whose attribute
     # is gated out are dropped, so no rule is ever emitted for an absent attribute (acc. #12a).
@@ -261,9 +243,7 @@ def _identity(item: ItemDef) -> ClassIdentity:
     )
 
 
-def _attribute(
-    ir: SchemaIR, owner: str, a: Attribute, profiles: frozenset[str]
-) -> ResolvedAttribute:
+def _attribute(ir: SchemaIR, owner: str, a: Attribute, profiles: frozenset[str]) -> ResolvedAttribute:
     root: Root | None = None
     if a.object_type is None:
         typedef = ir.types.get(a.type)

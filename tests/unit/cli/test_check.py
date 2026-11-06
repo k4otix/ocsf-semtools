@@ -54,9 +54,7 @@ def test_json_output(events: Path, capsys: pytest.CaptureFixture[str]) -> None:
     ]
 
 
-def test_stdin_and_bad_lines(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_stdin_and_bad_lines(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO("not json\n[1]\n"))
     assert main(["check", "--version", "1.9.0", "-"]) == 1
     out = capsys.readouterr().out
@@ -86,9 +84,7 @@ def test_bad_selection_fails_once(
     assert message in capsys.readouterr().err
 
 
-def test_control_characters_from_the_input_are_escaped(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_control_characters_from_the_input_are_escaped(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     event = base_detection_finding(load("1.9.0")) | {"\x1b[2J\x9bx": 1}
     path = tmp_path / "evil.jsonl"
     path.write_text(json.dumps(event) + "\n")

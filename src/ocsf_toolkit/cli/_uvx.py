@@ -85,14 +85,11 @@ def verify(output: bytes, *, version: str, sha256: str | None) -> tuple[bytes, s
             f"compiled schema reports version {actual!r} but the lockfile declares {version!r}; "
             "the pinned commit is not that release (upstream tag 1.5.0 is a known case)"
         )
-    canonical = json.dumps(
-        compiled, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
+    canonical = json.dumps(compiled, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     digest = hashlib.sha256(canonical).hexdigest()
     if sha256 is not None and digest != sha256:
         raise ValueError(
-            f"compiled schema {version} has sha256 {digest}, lockfile has {sha256}; "
-            "compiler output changed"
+            f"compiled schema {version} has sha256 {digest}, lockfile has {sha256}; compiler output changed"
         )
     return canonical, digest
 

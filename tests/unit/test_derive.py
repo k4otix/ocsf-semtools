@@ -55,9 +55,7 @@ def test_class_and_activity_id_are_enough_for_every_identity_field(schema: Resol
 def test_type_uid_is_never_a_caller_input(schema: ResolvedSchema) -> None:
     with pytest.raises(ConformanceError) as raised:
         build((schema, CLASS), **_minimal(type_uid=200403))
-    assert [(f.kind, f.path) for f in raised.value.report.errors()] == [
-        (Kind.IDENTITY_CONFLICT, ("type_uid",))
-    ]
+    assert [(f.kind, f.path) for f in raised.value.report.errors()] == [(Kind.IDENTITY_CONFLICT, ("type_uid",))]
     out, report = _run(_minimal(type_uid=200403), REPAIR)
     assert out["type_uid"] == 200401
     assert out["type_name"] == "Detection Finding: Create"
@@ -197,9 +195,7 @@ def test_type_uid_without_an_enum_derives_through_the_class_registry() -> None:
     assert derived["type_name"] == "Authentication: Logon"
     related["type_name"] = "Authentication: Logoff"
     _, report = _run(_minimal(finding_info={"uid": "f", "related_events": [related]}), LENIENT)
-    assert _at(report, ("finding_info", "related_events", 0, "type_name")) == [
-        Kind.SIBLING_CONFLICT
-    ]
+    assert _at(report, ("finding_info", "related_events", 0, "type_name")) == [Kind.SIBLING_CONFLICT]
 
 
 # --- profiles: no rule for an attribute outside the resolved class (acc. #12a) -------------
@@ -210,9 +206,7 @@ def test_no_sibling_rule_for_a_profile_gated_out_attribute() -> None:
     assert "action" not in out
     assert _at(report, ("action_id",)) == [Kind.PROFILE_MISMATCH]
     out, report = _run(
-        _minimal(
-            action_id=2, metadata={"product": {"name": "p"}, "profiles": ["security_control"]}
-        ),
+        _minimal(action_id=2, metadata={"product": {"name": "p"}, "profiles": ["security_control"]}),
         profiles=frozenset({"security_control"}),
     )
     assert out["action"] == "Denied"

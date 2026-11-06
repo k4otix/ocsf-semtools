@@ -216,9 +216,7 @@ def windowed(schemas: Sequence[SchemaEntry]) -> tuple[SchemaEntry, ...]:
 
 def register(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--add", required=True, metavar="VERSION", help="OCSF version, e.g. 1.9.0")
-    parser.add_argument(
-        "--ref", help="upstream tag or branch to pin instead of <VERSION> / v<VERSION>"
-    )
+    parser.add_argument("--ref", help="upstream tag or branch to pin instead of <VERSION> / v<VERSION>")
     parser.add_argument("--repo", default=UPSTREAM_REPO, help="ocsf-schema repository URL")
     parser.set_defaults(run=run)
 
@@ -274,9 +272,7 @@ def _check_entry(entry: SchemaEntry, where: str) -> None:
         raise ValueError(f"{where}: commit must be a full 40-hex SHA, got {entry.commit!r}")
     for name in ("compiled_sha256", "ir_sha256", "models_tree_sha256"):
         if not _SHA256.match(getattr(entry, name)):
-            raise ValueError(
-                f'{where}: {name} must be 64 hex chars or "", got {getattr(entry, name)!r}'
-            )
+            raise ValueError(f'{where}: {name} must be 64 hex chars or "", got {getattr(entry, name)!r}')
 
 
 def _check_repo(repo: str, where: str) -> None:

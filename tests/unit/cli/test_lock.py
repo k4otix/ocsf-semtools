@@ -17,9 +17,7 @@ COMMIT = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 SHA = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
 IR_SHA = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
 
-TOOLCHAIN = lock.Toolchain(
-    ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0"
-)
+TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
 ENTRY = lock.SchemaEntry(
     version="1.9.0",
     repo=lock.UPSTREAM_REPO,
@@ -183,9 +181,7 @@ def test_resolve_ref_missing() -> None:
 # --- lock --add, offline against a local upstream ------------------------------------------
 
 
-def _add(
-    tmp_path: Path, upstream: Upstream, compiler_cmd: str, version: str, ref: str | None = None
-) -> lock.Lockfile:
+def _add(tmp_path: Path, upstream: Upstream, compiler_cmd: str, version: str, ref: str | None = None) -> lock.Lockfile:
     return lock.add(
         LOCK,
         version,

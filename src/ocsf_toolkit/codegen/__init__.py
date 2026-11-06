@@ -163,9 +163,7 @@ class _Generator:
         for pkg in sorted(packages | {()}):
             path = "/".join((*pkg, "__init__.py"))
             dunders = self._dunders() if pkg == () else []
-            out[path] = lazy_init(
-                self.header, self._package_doc(pkg), trees.get(pkg, []), pkg, dunders
-            )
+            out[path] = lazy_init(self.header, self._package_doc(pkg), trees.get(pkg, []), pkg, dunders)
         out["py.typed"] = ""
         out[IR_FILE] = export_ir(self.ir).decode()
         return dict(sorted(out.items()))
@@ -287,9 +285,7 @@ class _Generator:
         """The literal a class fixes for an identity attribute, or metadata.version."""
         if item.identity is not None and a.name in _IDENTITY:
             value = getattr(item.identity, a.name)
-            return (
-                None if value is None else (string(value) if isinstance(value, str) else str(value))
-            )
+            return None if value is None else (string(value) if isinstance(value, str) else str(value))
         if item.key == "metadata" and a.name == "version":
             return string(self.schema.version)
         return None

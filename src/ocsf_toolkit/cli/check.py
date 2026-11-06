@@ -25,12 +25,8 @@ def register(parser: argparse.ArgumentParser) -> None:
         metavar="KEY",
         help="class key (default: inferred from class_uid, then type_uid)",
     )
-    parser.add_argument(
-        "--json", action="store_true", help="print one JSON report per event instead of text"
-    )
-    parser.add_argument(
-        "files", nargs="+", metavar="FILE", help="JSON Lines file of events; - reads stdin"
-    )
+    parser.add_argument("--json", action="store_true", help="print one JSON report per event instead of text")
+    parser.add_argument("files", nargs="+", metavar="FILE", help="JSON Lines file of events; - reads stdin")
     parser.set_defaults(run=run)
 
 

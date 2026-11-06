@@ -62,10 +62,7 @@ def test_changing_policies_work_on_a_copy(schema: ResolvedSchema, policy: Policy
 def test_policies_differ_only_in_behaviour(schema: ResolvedSchema) -> None:
     """The same walk finds the same problems; only what each policy does about them differs."""
     event = error_fixtures(schema)["E1_sibling_violated"]
-    found = {
-        p: {(f.kind, f.path) for f in run(event, schema, CLASS, p)[1].findings}
-        for p in (STRICT, LENIENT, REPAIR)
-    }
+    found = {p: {(f.kind, f.path) for f in run(event, schema, CLASS, p)[1].findings} for p in (STRICT, LENIENT, REPAIR)}
     assert found[STRICT] == found[LENIENT] == found[REPAIR]
 
 
@@ -151,9 +148,7 @@ def test_every_repair_change_is_a_finding_with_its_action(schema: ResolvedSchema
         ("time", "1762000000000.5"),
     ],
 )
-def test_coercion_is_limited_to_the_four_allowed_forms(
-    schema: ResolvedSchema, attr: str, value: object
-) -> None:
+def test_coercion_is_limited_to_the_four_allowed_forms(schema: ResolvedSchema, attr: str, value: object) -> None:
     event = base_detection_finding(schema) | {attr: value}
     out, report = repair(event)
     assert out[attr] == value
@@ -224,9 +219,7 @@ def test_version_and_profiles_come_from_metadata(schema: ResolvedSchema) -> None
     chosen = select(event, version=None, profiles=None)
     assert (chosen.version, chosen.profiles) == ("1.9.0", frozenset({"cloud"}))
     _, report = parse(event)
-    assert (Kind.PROFILE_MISMATCH, ("metadata", "profiles")) in {
-        (f.kind, f.path) for f in report.findings
-    }
+    assert (Kind.PROFILE_MISMATCH, ("metadata", "profiles")) in {(f.kind, f.path) for f in report.findings}
 
 
 def test_arguments_win_over_metadata(schema: ResolvedSchema) -> None:

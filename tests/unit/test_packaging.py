@@ -17,9 +17,7 @@ from tests.conftest import ROOT
 
 def _dist_module() -> ModuleType:
     # loaded by path: a top-level "packaging" would collide with the PyPI package of that name
-    spec = importlib.util.spec_from_file_location(
-        "version_dist", ROOT / "packaging" / "version_dist" / "dist.py"
-    )
+    spec = importlib.util.spec_from_file_location("version_dist", ROOT / "packaging" / "version_dist" / "dist.py")
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -108,9 +106,7 @@ def test_needs_release() -> None:
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_sdist_holds_only_the_allowlist(tmp_path: Path) -> None:
     """Files kept out of git only through .git/info/exclude must never reach an sdist."""
-    subprocess.run(
-        ["uv", "build", "--sdist", "--quiet", "--out-dir", str(tmp_path), str(ROOT)], check=True
-    )
+    subprocess.run(["uv", "build", "--sdist", "--quiet", "--out-dir", str(tmp_path), str(ROOT)], check=True)
     (sdist,) = tmp_path.glob("*.tar.gz")
     with tarfile.open(sdist) as tar:
         top = {name.split("/")[1] for name in tar.getnames() if "/" in name}

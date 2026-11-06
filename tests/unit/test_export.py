@@ -147,9 +147,7 @@ def test_unknown_field_at_this_minor_is_an_error(ir: SchemaIR) -> None:
 
 def test_newer_minor_is_read_with_a_warning(ir: SchemaIR) -> None:
     data = _with(ir, "1.7", schema__types__port_t__unit="ms", future="x")
-    with pytest.warns(
-        UserWarning, match=r"ignored fields: \$\.future, \$\.schema\.types\.port_t\.unit"
-    ):
+    with pytest.warns(UserWarning, match=r"ignored fields: \$\.future, \$\.schema\.types\.port_t\.unit"):
         loaded = load_ir(data)
     assert loaded == ir
 

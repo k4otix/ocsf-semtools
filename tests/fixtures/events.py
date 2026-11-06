@@ -78,9 +78,7 @@ def error_fixtures(schema: ResolvedSchema) -> dict[str, dict[str, Any]]:
     out["E2_derived_hand_built"] = e  # type_name follows type_uid
 
     e = copy.deepcopy(b)
-    e["observables"] = [
-        {"name": "actor.user.name", "type": "User Name", "type_id": "4", "value": "alice"}
-    ]
+    e["observables"] = [{"name": "actor.user.name", "type": "User Name", "type_id": "4", "value": "alice"}]
     out["E3_wrong_primitive"] = e  # observable.type_id is integer_t
 
     e = copy.deepcopy(b)

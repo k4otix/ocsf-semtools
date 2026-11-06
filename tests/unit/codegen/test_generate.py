@@ -59,15 +59,13 @@ def test_class_module_shape() -> None:
         "    unmapped: dict[str, Any] | None = None",
     ):
         assert line in text.splitlines(), line
-    assert "from ..enums import (" in text
+    assert any(line.startswith("from ..enums import ") for line in text.splitlines())
     assert "class DetectionFindingTypeUid" not in text
     assert "    # profile: cloud" in text
 
 
 def test_keywords_and_extension_attributes() -> None:
-    assert '    from_: str | None = field(default=None, name="from")' in _text(
-        TREE, "objects/email.py"
-    )
+    assert '    from_: str | None = field(default=None, name="from")' in _text(TREE, "objects/email.py")
     process = _text(TREE, "objects/process.py")
     assert "    # extension: win" in process
     assert "    hosted_services: list[_win_win_service.WinService] | None = None" in process
@@ -115,9 +113,7 @@ def test_a_custom_ir_is_bundled(synthetic_ir: SchemaIR) -> None:
         ({"extensions": {"Win #": IR.extensions["win"]}}, "extension name"),
     ],
 )
-def test_names_that_would_reach_code_unquoted_are_refused(
-    change: dict[str, object], message: str
-) -> None:
+def test_names_that_would_reach_code_unquoted_are_refused(change: dict[str, object], message: str) -> None:
     with pytest.raises(ValueError, match=message):
         render(dataclasses.replace(IR, **change), package="pkg")  # type: ignore[arg-type]
 

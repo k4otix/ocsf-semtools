@@ -21,9 +21,7 @@ def _at(d: SchemaDiff, *path: str | int) -> list[Change]:
 
 
 def _top(d: SchemaDiff, kind: str, table: str) -> set[str | int]:
-    return {
-        c.path[1] for c in d.changes if c.kind == kind and len(c.path) == 2 and c.path[0] == table
-    }
+    return {c.path[1] for c in d.changes if c.kind == kind and len(c.path) == 2 and c.path[0] == table}
 
 
 # --- shipped IRs ----------------------------------------------------------------------------
@@ -94,15 +92,11 @@ def test_classes_added_from_1_7_to_1_9(d_1_7_to_1_9: SchemaDiff) -> None:
 def test_requirement_drift_1_7_to_1_9(
     d_1_7_to_1_9: SchemaDiff, path: tuple[str, ...], before: object, after: object
 ) -> None:
-    assert [(c.kind, c.before, c.after) for c in _at(d_1_7_to_1_9, *path)] == [
-        ("changed", before, after)
-    ]
+    assert [(c.kind, c.before, c.after) for c in _at(d_1_7_to_1_9, *path)] == [("changed", before, after)]
 
 
 def test_new_deprecations_1_7_to_1_9(d_1_7_to_1_9: SchemaDiff) -> None:
-    [change] = _at(
-        d_1_7_to_1_9, "classes", "detection_finding", "attributes", "comment", "deprecated"
-    )
+    [change] = _at(d_1_7_to_1_9, "classes", "detection_finding", "attributes", "comment", "deprecated")
     assert change.before is None
     assert plain(change.after) == {
         "message": "Use the <code>notes</code> attribute instead.",

@@ -86,9 +86,7 @@ def test_extract_and_merge() -> None:
     assert all(isinstance(o, ocsf_toolkit.Observable) for o in found)
     assert isinstance(report, ocsf_toolkit.Report)
     merged = ocsf_toolkit.merge(event, found)
-    assert {"name": "device.hostname", "type_id": 1, "type": "Hostname", "value": "ws-01"} in (
-        merged["observables"]
-    )
+    assert {"name": "device.hostname", "type_id": 1, "type": "Hostname", "value": "ws-01"} in (merged["observables"])
 
 
 def test_diff_compares_shipped_irs() -> None:

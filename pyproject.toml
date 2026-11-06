@@ -74,7 +74,7 @@ only-include = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
 src = ["src", "tests"]
 extend-exclude = ["src/ocsf_toolkit/_version.py"]

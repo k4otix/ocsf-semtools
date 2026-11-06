@@ -17,9 +17,7 @@ VERSION = "9.9.9"
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     """A lockfile with one entry whose build/compiled schema is present and verified."""
-    data = json.dumps(
-        compiled(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode()
+    data = json.dumps(compiled(), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     out = tmp_path / "build" / "compiled" / f"schema-{VERSION}.json"
     out.parent.mkdir(parents=True)
     out.write_bytes(data)
@@ -33,9 +31,7 @@ def workspace(tmp_path: Path) -> Path:
         models_tree_sha256="",
         ship_models=False,
     )
-    toolchain = lock.Toolchain(
-        ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0"
-    )
+    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
     lock.write(tmp_path / "ocsf.lock", lock.Lockfile(toolchain, (entry,)))
     return tmp_path
 
@@ -57,9 +53,7 @@ def _run(workspace: Path, *args: str) -> int:
     )
 
 
-def test_export_requires_record_for_a_new_ir(
-    workspace: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_export_requires_record_for_a_new_ir(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(workspace, "export", VERSION) == 1
     assert "pass --record to accept it" in capsys.readouterr().err
     assert not (workspace / "data").exists()
@@ -113,9 +107,7 @@ def test_stale_compiled_schema(workspace: Path, capsys: pytest.CaptureFixture[st
     assert "does not match compiled_sha256" in capsys.readouterr().err
 
 
-def test_toolchain_ir_version_must_match(
-    workspace: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_toolchain_ir_version_must_match(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     path = workspace / "ocsf.lock"
     lockfile = lock.read(path)
     lock.write(path, replace(lockfile, toolchain=replace(lockfile.toolchain, ir_version="2.0")))

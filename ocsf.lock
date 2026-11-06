@@ -91,7 +91,7 @@ ref = "1.7.0"
 commit = "dc6359b49cd3c8f9e84dd657ec4524ab244c12ca"
 compiled_sha256 = "30e83d74801d2e31b2914706043a5700c3c9512726ada6f4fc5cf32908edb6ec"
 ir_sha256 = "3234e2cfcd0ebec4bad20069aad588ce8dfde821943a6a439656b5274476bbaf"
-models_tree_sha256 = "4f9de0afe04eae5d4ac29a39e548ea7afcb941a85ac70499b56017430c8eee4d"
+models_tree_sha256 = "ba1e5a292dab1e2a6467a6db266fbb5e719ecd5315a9fdf567649a035a369217"
 ship_models = true
 
 [[schemas]]
@@ -101,7 +101,7 @@ ref = "1.8.0"
 commit = "6fa6499a0f8c9f449d342816e90e5f687c224b0a"
 compiled_sha256 = "9a5c408782efb36be67627d9f945055caa74d65aa5c36eb758321b45f32800fb"
 ir_sha256 = "a695c715be70f026f2464d016aa39515c26fce615f7a36f0cc10f0c9bb4a7aaa"
-models_tree_sha256 = "a45db87fad0139058a395466fa6e61292e6b83f19e0ed868fe9b5d788f6dbb11"
+models_tree_sha256 = "f04cdf3162d90d6aac7d2f4e2d6617309f402f390124c0c54ccaeb68c91655b2"
 ship_models = true
 
 [[schemas]]
@@ -111,5 +111,5 @@ ref = "1.9.0"
 commit = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 compiled_sha256 = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
 ir_sha256 = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
-models_tree_sha256 = "582f9e9b98f8f977e9384901e3f44d38282f7918e8a8684d94f67c786c5f9b7c"
+models_tree_sha256 = "86b53dfd7bd31a12909449d543f310f76be5f799b22e325de81f6fe632bb762c"
 ship_models = true

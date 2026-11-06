@@ -54,7 +54,8 @@ def test_fields_required_optional_aliased_and_always_encoded() -> None:
 
 
 def test_long_fields_wrap_as_ruff_does() -> None:
-    long = "_unmanned_system_operating_area.UnmannedSystemOperatingArea"
+    long = "_unmanned_system_operating_area.UnmannedSystemOperatingArea" + "X" * (WIDTH - 100)
+    assert len(f"    unmanned_system_operating_area: {long} | None = None") > WIDTH
     lines = _class(
         Field("unmanned_system_operating_area", "unmanned_system_operating_area", long, "None"),
         Field("x" * 30, "x" * 30, f'Literal["{"y" * 40}"]', f'"{"y" * 40}"', always=True),
@@ -69,9 +70,7 @@ def test_long_fields_wrap_as_ruff_does() -> None:
     ]
 
 
-@pytest.mark.parametrize(
-    "text", ['a"\nimport os', "b'\r\nx", 'c"\\', "\x00\x1c" + chr(0x2028), "\"'\n"]
-)
+@pytest.mark.parametrize("text", ['a"\nimport os', "b'\r\nx", 'c"\\', "\x00\x1c" + chr(0x2028), "\"'\n"])
 def test_string_literals_hold_any_text(text: str) -> None:
     """Schema text is data: whatever it holds, the literal evaluates back to it."""
     literal = string(text)

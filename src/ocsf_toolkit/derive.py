@@ -116,9 +116,7 @@ def _identity(out: _Node, schema: ResolvedSchema) -> None:
     metadata = out.node.get("metadata")
     meta_item = schema.objects.get("metadata")
     if isinstance(metadata, dict) and meta_item is not None and "metadata" in attrs:
-        meta = _Node(
-            meta_item, cast(dict[str, Any], metadata), ("metadata",), out.fill, out.overwrite
-        )
+        meta = _Node(meta_item, cast(dict[str, Any], metadata), ("metadata",), out.fill, out.overwrite)
         if "version" in meta_item.attributes:
             meta.put("version", schema.version, Kind.IDENTITY_CONFLICT)
         if "profiles" in meta_item.attributes:
@@ -133,9 +131,7 @@ def _profiles(meta: _Node, active: frozenset[str]) -> None:
     declared = meta.node.get("profiles")
     if declared is None and not active:
         return  # nothing to state; an empty list would only add noise
-    if declared is not None and not (
-        (names := _list(declared)) is not None and all(isinstance(p, str) for p in names)
-    ):
+    if declared is not None and not ((names := _list(declared)) is not None and all(isinstance(p, str) for p in names)):
         return  # conform reports the type
 
     def equal(a: object, b: object) -> bool:
@@ -202,10 +198,7 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
     if given is None:
         return
     # An "Other" element keeps the caller's label at the same index.
-    expected = [
-        (given[n] if n < len(given) else None) if i == OTHER else captions[n]
-        for n, i in enumerate(ids)
-    ]
+    expected = [(given[n] if n < len(given) else None) if i == OTHER else captions[n] for n, i in enumerate(ids)]
     keep = len(given) != len(ids) and OTHER in ids  # no sound list to write back
     out.put(spec.label, expected, Kind.SIBLING_CONFLICT, keep=keep)
 
@@ -269,9 +262,7 @@ def _same(a: object, b: object) -> bool:
     """Equal and of the same type (True is not 1); lists element-wise, as labels are flat."""
     x, y = _list(a), _list(b)
     if x is not None and y is not None:
-        return len(x) == len(y) and all(
-            type(p) is type(q) and p == q for p, q in zip(x, y, strict=True)
-        )
+        return len(x) == len(y) and all(type(p) is type(q) and p == q for p, q in zip(x, y, strict=True))
     return type(a) is type(b) and a == b
 
 

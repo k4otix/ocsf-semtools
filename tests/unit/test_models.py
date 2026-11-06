@@ -171,9 +171,7 @@ def test_exact_build_requires_what_its_profiles_require(v1_9_0_cloud: ModuleType
 
 def test_exact_parse_refuses_attributes_outside_its_profiles(v1_9_0_cloud: ModuleType) -> None:
     cloud = {"provider": "aws", "region": "eu-west-1"}
-    event = msgspec.to_builtins(
-        build(v1_9_0_cloud.DetectionFinding, **_fields(v1_9_0_cloud, cloud=cloud))
-    )
+    event = msgspec.to_builtins(build(v1_9_0_cloud.DetectionFinding, **_fields(v1_9_0_cloud, cloud=cloud)))
     event["actor"] = {"app_name": "x"}  # host profile
     found, report = parse(event, as_=v1_9_0_cloud.DetectionFinding)
     assert found is None
@@ -187,9 +185,7 @@ def test_exact_build_refuses_a_profile_outside_its_set(v1_9_0_cloud: ModuleType)
     cloud = {"provider": "aws", "region": "eu-west-1"}
     with pytest.raises(ConformanceError) as caught:
         build(v1_9_0_cloud.DetectionFinding, **_fields(v1_9_0_cloud, cloud=cloud, actor={}))
-    assert _kinds(caught.value.report.by_kind(Kind.PROFILE_MISMATCH)) == [
-        ("profile_mismatch", ("actor",))
-    ]
+    assert _kinds(caught.value.report.by_kind(Kind.PROFILE_MISMATCH)) == [("profile_mismatch", ("actor",))]
     assert "1 conformance error(s)" in str(caught.value)
 
 
@@ -197,9 +193,7 @@ def test_exact_build_refuses_a_profile_outside_its_set(v1_9_0_cloud: ModuleType)
 
 
 def test_a_bundled_ir_is_loaded_from_the_package(synthetic: ModuleType) -> None:
-    finding: Any = build(
-        synthetic.Finding, severity_id=0, method=synthetic.classes.finding.FindingMethod.GET
-    )
+    finding: Any = build(synthetic.Finding, severity_id=0, method=synthetic.classes.finding.FindingMethod.GET)
     assert (finding.method, finding.severity_id) == ("GET", 0)
 
 

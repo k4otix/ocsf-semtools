@@ -62,9 +62,7 @@ def test_a_closed_pipe_ends_quietly() -> None:
     pipe; a smaller diff can finish into the buffer and never see it.
     """
     code = "from ocsf_toolkit.cli import main; raise SystemExit(main(['diff', '1.0.0', '1.9.0']))"
-    with subprocess.Popen(
-        [sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ) as process:
+    with subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
         assert process.stdout is not None
         assert process.stderr is not None
         process.stdout.readline()

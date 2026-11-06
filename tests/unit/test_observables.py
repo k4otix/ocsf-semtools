@@ -161,9 +161,7 @@ def test_caller_entries_match_in_any_notation(schema: ResolvedSchema, name: str)
         ({"name": "resources[0].uid", "type_id": 10, "value": "r-9"}, "does not occur"),
     ],
 )
-def test_unfounded_caller_entries_are_warnings(
-    schema: ResolvedSchema, entry: dict[str, Any], problem: str
-) -> None:
+def test_unfounded_caller_entries_are_warnings(schema: ResolvedSchema, entry: dict[str, Any], problem: str) -> None:
     ok = {"name": "resources[1].uid", "type_id": 10, "value": "r-2"}
     _, report = parse(_with(schema, ok, entry))
     [finding] = report.by_kind(Kind.OBSERVABLE_MISMATCH)

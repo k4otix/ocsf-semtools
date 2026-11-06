@@ -68,9 +68,7 @@ def test_every_1_9_0_enum_names_cleanly() -> None:
             assert not re.fullmatch(r"(INTEGER|VALUE)_?\d*", name)
 
 
-@pytest.mark.parametrize(
-    ("attr", "name"), [("from", "from_"), ("class", "class_"), ("type", "type"), ("x509", "x509")]
-)
+@pytest.mark.parametrize(("attr", "name"), [("from", "from_"), ("class", "class_"), ("type", "type"), ("x509", "x509")])
 def test_field_name(attr: str, name: str) -> None:
     assert field_name(attr) == name
 

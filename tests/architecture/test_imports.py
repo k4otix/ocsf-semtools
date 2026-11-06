@@ -60,10 +60,7 @@ def test_no_exception_types_beyond_conformance_error(path: Path) -> None:
         node.name
         for node in ast.walk(_tree(path))
         if isinstance(node, ast.ClassDef)
-        and any(
-            isinstance(base, ast.Name) and (base.id.endswith(("Error", "Exception")))
-            for base in node.bases
-        )
+        and any(isinstance(base, ast.Name) and (base.id.endswith(("Error", "Exception"))) for base in node.bases)
     }
     assert defined <= {"ConformanceError"}
 
@@ -84,10 +81,7 @@ def test_only_walk_traverses_an_event(name: str) -> None:
         f.name
         for f in ast.walk(tree)
         if isinstance(f, ast.FunctionDef)
-        and any(
-            isinstance(c, ast.Call) and isinstance(c.func, ast.Name) and c.func.id == f.name
-            for c in ast.walk(f)
-        )
+        and any(isinstance(c, ast.Call) and isinstance(c.func, ast.Name) and c.func.id == f.name for c in ast.walk(f))
     ]
     assert recursive == []
 

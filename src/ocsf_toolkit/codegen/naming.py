@@ -13,8 +13,7 @@ _NON_ALNUM = re.compile(r"[^0-9A-Za-z]+")
 # Names a generated module binds or evaluates in a class body: an attribute of the same name
 # would shadow one of them, so the generator refuses it rather than emit broken code.
 RESERVED = frozenset(
-    {"Any", "IntEnum", "Literal", "StrEnum", "Struct", "bool", "dict", "field", "float", "int"}
-    | {"list", "str"}
+    {"Any", "IntEnum", "Literal", "StrEnum", "Struct", "bool", "dict", "field", "float", "int"} | {"list", "str"}
 )
 
 

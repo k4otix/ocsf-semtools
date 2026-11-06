@@ -100,10 +100,7 @@ def test_constraint_members_gated_out_are_dropped() -> None:
         Constraint(kind="at_least_one", attributes=("severity",)),
         Constraint(kind="just_one", attributes=("method",)),
     )
-    assert (
-        resolve(ir, profiles={"cloud"}).classes["finding"].constraints
-        == ir.classes["finding"].constraints
-    )
+    assert resolve(ir, profiles={"cloud"}).classes["finding"].constraints == ir.classes["finding"].constraints
 
 
 def test_constraint_with_every_member_gated_out_is_dropped() -> None:
@@ -229,9 +226,7 @@ def test_datetime_profile_adds_dt_twins() -> None:
     assert attributes["time_dt"].root is Root.STRING
 
 
-def test_no_extensions_drops_extension_attributes_and_items(
-    base: ResolvedSchema, everything: ResolvedSchema
-) -> None:
+def test_no_extensions_drops_extension_attributes_and_items(base: ResolvedSchema, everything: ResolvedSchema) -> None:
     assert "hosted_services" not in base.objects["process"].attributes
     hosted = everything.objects["process"].attributes["hosted_services"]
     assert hosted.object_type == "win/win_service"
