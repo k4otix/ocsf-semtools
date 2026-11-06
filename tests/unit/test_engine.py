@@ -21,7 +21,11 @@ from ocsf_toolkit.engine import (
 )
 from ocsf_toolkit.models import build, parse, repair
 from ocsf_toolkit.schema import ResolvedSchema, load
-from ocsf_toolkit.walk import Finding, Kind
+from ocsf_toolkit.walk import (
+    _SEVERITY,  # pyright: ignore[reportPrivateUsage]
+    Finding,
+    Kind,
+)
 from tests.fixtures.events import (
     CLASS,
     T0,
@@ -29,11 +33,6 @@ from tests.fixtures.events import (
     error_fixtures,
     multi_error_fixture,
 )
-
-
-@pytest.fixture(scope="module")
-def schema() -> ResolvedSchema:
-    return load("1.9.0")
 
 
 def test_the_three_presets() -> None:
@@ -328,8 +327,10 @@ def test_severity_is_a_function_of_kind(kind: str, severity: str) -> None:
     assert Finding(kind=Kind(kind), path=(), owner="o", message="m").severity == severity
 
 
-def test_kind_table_is_complete() -> None:
-    assert len(Kind) == 16
+def test_every_kind_has_a_severity() -> None:
+    # The table names every warning and error; the rest are info by design.
+    info = {Kind.FILLED, Kind.COERCED, Kind.RELOCATED, Kind.SEMANTICALLY_EMPTY_ENUM, Kind.MAX_NODES_EXCEEDED}
+    assert set(Kind) - _SEVERITY.keys() == info
 
 
 def test_report_is_frozen(schema: ResolvedSchema) -> None:

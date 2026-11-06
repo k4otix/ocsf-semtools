@@ -18,11 +18,6 @@ from tests.fixtures.events import (
 )
 
 
-@pytest.fixture(scope="module")
-def schema() -> ResolvedSchema:
-    return load("1.9.0")
-
-
 def _check(event: dict[str, Any], **kwargs: Any) -> Report:
     return parse(event, version="1.9.0", **kwargs)[1]
 

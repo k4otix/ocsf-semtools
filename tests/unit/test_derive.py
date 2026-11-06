@@ -14,11 +14,6 @@ from ocsf_toolkit.walk import Kind, Path
 from tests.fixtures.events import CLASS, T0, base_detection_finding, caption
 
 
-@pytest.fixture(scope="module")
-def schema() -> ResolvedSchema:
-    return load("1.9.0")
-
-
 def _run(
     event: dict[str, Any], policy: Policy = STRICT, profiles: frozenset[str] = frozenset()
 ) -> tuple[dict[str, Any], Report]:

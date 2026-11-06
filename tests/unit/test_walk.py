@@ -4,13 +4,9 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.schema import ResolvedSchema, load
-from ocsf_toolkit.walk import Finding, Kind, Path, Visit, dotted, walk
-
-
-@pytest.fixture(scope="module")
-def schema() -> ResolvedSchema:
-    return load("1.9.0")
+from ocsf_toolkit.schema import ResolvedSchema
+from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, walk
+from tests.fixtures.notations import CANONICAL, NOTATIONS
 
 
 def _event() -> dict[str, Any]:
@@ -129,3 +125,13 @@ def test_dotted_uses_upstream_indexed_notation() -> None:
     assert dotted(("evidences", 0, "process", "file", "name")) == "evidences[0].process.file.name"
     assert dotted(("time",)) == "time"
     assert dotted(()) == ""
+
+
+@pytest.mark.parametrize("name", NOTATIONS)
+def test_every_notation_canonicalizes(name: str) -> None:
+    assert canonical(name) == CANONICAL
+
+
+def test_indexed_paths_canonicalize() -> None:
+    assert canonical(("resources", 0, "uid")) == CANONICAL
+    assert canonical("evidences[0].process.file.name") == "evidences.process.file.name"

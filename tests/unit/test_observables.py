@@ -11,15 +11,10 @@ from ocsf_toolkit.loader import load_compiled
 from ocsf_toolkit.models import parse, repair
 from ocsf_toolkit.observables import Observable, merge, stringify
 from ocsf_toolkit.schema import ResolvedSchema, load, resolve
-from ocsf_toolkit.walk import Kind, canonical
+from ocsf_toolkit.walk import Kind
 from tests.fixtures.compiled import PROVENANCE, compiled, compiled_bytes
 from tests.fixtures.events import CLASS, base_detection_finding, error_fixtures
-from tests.fixtures.notations import CANONICAL, NOTATIONS
-
-
-@pytest.fixture(scope="module")
-def schema() -> ResolvedSchema:
-    return load("1.9.0")
+from tests.fixtures.notations import NOTATIONS
 
 
 def _names(found: tuple[Observable, ...]) -> list[tuple[str, int, str | None]]:
@@ -121,19 +116,6 @@ def test_class_path_map_kind_6() -> None:
 )
 def test_stringify(value: object, text: str | None) -> None:
     assert stringify(value) == text
-
-
-# --- notations (D#16: emit indexed, accept all) ---------------------------------------------
-
-
-@pytest.mark.parametrize("name", NOTATIONS)
-def test_every_notation_canonicalizes(name: str) -> None:
-    assert canonical(name) == CANONICAL
-
-
-def test_indexed_paths_canonicalize() -> None:
-    assert canonical(("resources", 0, "uid")) == CANONICAL
-    assert canonical("evidences[0].process.file.name") == "evidences.process.file.name"
 
 
 # --- validating the caller's entries (parse and every run) ----------------------------------

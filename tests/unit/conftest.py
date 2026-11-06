@@ -1,4 +1,4 @@
-"""Generated packages shared by the codegen and models tests (generating 1.9.0 takes ~0.2 s)."""
+"""Fixtures shared by the unit tests: the 1.9.0 schema, and generated packages (1.9.0 takes ~0.2 s)."""
 
 from types import ModuleType
 
@@ -6,9 +6,15 @@ import pytest
 
 from ocsf_toolkit.ir import SchemaIR
 from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.schema import load
+from ocsf_toolkit.schema import ResolvedSchema, load
 from tests.fixtures.compiled import PROVENANCE, compiled_bytes
 from tests.fixtures.packages import import_generated
+
+
+@pytest.fixture(scope="session")
+def schema() -> ResolvedSchema:
+    """OCSF 1.9.0 with no profiles: the schema most engine tests read events against."""
+    return load("1.9.0")
 
 
 @pytest.fixture(scope="session")
