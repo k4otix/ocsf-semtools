@@ -1,5 +1,6 @@
 """Derivation visitor: fill and cross-check every value the schema computes from another one."""
 
+import functools
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -32,7 +33,7 @@ def derive(
         if not (root and id_attr in _IDENTITY):
             _sibling(out, schema, id_attr, spec)
     if "datetime" in schema.profiles:
-        _timestamps(out)
+        _timestamps(out, schema)
     return out.findings
 
 
@@ -203,18 +204,34 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
     out.put(spec.label, expected, Kind.SIBLING_CONFLICT, keep=keep)
 
 
-def _timestamps(out: _Node) -> None:
-    attrs = out.owner.attributes
-    for name, ra in attrs.items():
-        twin = f"{name}_dt"
+def _timestamps(out: _Node, schema: ResolvedSchema) -> None:
+    for name, twin in _twins(schema, out.owner):
         value = out.node.get(name)
-        if ra.type != "timestamp_t" or twin not in attrs or not _is_int(value):
+        if not _is_int(value):
             continue
         try:
             text = rfc3339(value)
         except OverflowError:
             continue  # out of datetime's range; nothing sound to derive
         out.put(twin, text, Kind.SIBLING_CONFLICT, equal=_same_instant)
+
+
+def _twins(schema: ResolvedSchema, item: ResolvedItem) -> tuple[tuple[str, str], ...]:
+    """Return an item's (timestamp_t attribute, its _dt twin) pairs, worked out once per item and schema."""
+    known = _twin_table(schema)
+    key = (item.is_class, item.key)
+    pairs = known.get(key)
+    if pairs is None:
+        attrs = item.attributes
+        pairs = known[key] = tuple(
+            (name, f"{name}_dt") for name, ra in attrs.items() if ra.type == "timestamp_t" and f"{name}_dt" in attrs
+        )
+    return pairs
+
+
+@functools.lru_cache(maxsize=32)  # as many as load() keeps
+def _twin_table(schema: ResolvedSchema) -> dict[tuple[bool, str], tuple[tuple[str, str], ...]]:
+    return {}
 
 
 def rfc3339(ms: int) -> str:
