@@ -215,6 +215,22 @@ def test_repair_migrates_one_to_one_deprecations_of_the_same_shape() -> None:
     )
 
 
+def test_repair_checks_a_migrated_value_as_its_successor() -> None:
+    schema = load("1.9.0")
+    cookie = {"name": "n", "value": "v", "http_only": "false"}  # is_http_only supersedes it
+    event: dict[str, Any] = {"class_uid": 4002, "activity_id": 1, "http_cookies": [cookie]}
+    out, _ = run(event, schema, None, REPAIR)
+    assert out["http_cookies"] == [{"name": "n", "value": "v", "is_http_only": False}]
+
+
+def test_repair_walks_below_a_migrated_object() -> None:
+    schema = load("1.9.0")
+    moved = {"group": {"uid": "g", "uid_numeric": "7"}}  # entity_result -> updated_entity
+    event: dict[str, Any] = {"class_uid": 3004, "activity_id": 1, "entity_result": moved}
+    out, _ = run(event, schema, None, REPAIR)
+    assert out["updated_entity"] == {"group": {"uid": "g", "uid_numeric": 7}}
+
+
 def test_repair_does_not_migrate_across_types(schema: ResolvedSchema) -> None:
     out, report = repair(base_detection_finding(schema) | {"comment": "old"})
     assert out["comment"] == "old"  # notes is an array of note objects

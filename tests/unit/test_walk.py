@@ -81,6 +81,18 @@ def test_the_walk_follows_changes_made_at_a_visit(schema: ResolvedSchema) -> Non
     assert not any(p[:1] == ("observables",) and len(p) > 1 for p in seen)
 
 
+def test_the_walk_visits_attributes_added_at_a_visit(schema: ResolvedSchema) -> None:
+    event = _event()
+    seen: list[Path] = []
+    for v in walk(event, schema.classes["detection_finding"], schema):
+        assert isinstance(v, Visit)
+        seen.append(v.path)
+        if v.attr == "class_uid":
+            v.node["finding_info"] = {"uid": "u"}  # as a migration adds its successor
+    assert seen.index(("finding_info",)) < seen.index(())  # before the node's close
+    assert ("finding_info", "uid") in seen
+
+
 def test_wrongly_shaped_values_are_visited_not_descended(schema: ResolvedSchema) -> None:
     event: dict[str, Any] = {"metadata": "nope", "observables": [1, {"name": "x"}]}
     assert _visits(schema, event) == [

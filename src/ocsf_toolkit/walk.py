@@ -91,7 +91,8 @@ class Visit:
     """An attribute of an object node (attr set), or the close of that node (attr None).
 
     ``node`` is the dict that holds ``attr``, or for a close the node itself. A visitor may change
-    the node at an attribute visit, and the walk descends into what the attribute holds afterwards.
+    the node at an attribute visit, and the walk descends into what the attribute holds afterwards;
+    an attribute it adds to the node is visited too, after the node's other attributes.
     A node's close comes after all its attribute visits and before any visit below it.
     """
 
@@ -115,23 +116,27 @@ def walk(
     while stack:
         owner, node, path = stack.pop()
         children: list[tuple[ResolvedItem, dict[str, Any], Path]] = []
-        for attr in list(node):
-            if attr not in node:
-                continue  # a visitor moved it while visiting an earlier attribute
-            count += 1
-            if max_nodes is not None and count > max_nodes:
-                yield Finding(
-                    kind=Kind.MAX_NODES_EXCEEDED,
-                    path=path,
-                    owner=owner.key,
-                    message=f"walk stopped after {max_nodes} attribute visits",
-                    expected=max_nodes,
-                )
-                return
-            yield Visit(owner, attr, node[attr], (*path, attr), node)
-            ra = owner.attributes.get(attr)
-            if ra is not None and ra.object_type is not None and ra.object_type != OPEN_OBJECT and attr in node:
-                children.extend(_children(ra, attr, node[attr], path, schema))
+        keys, seen = list(node), set[str]()
+        while keys:  # again for any attribute a visitor added, such as a migration's successor
+            for attr in keys:
+                if attr not in node:
+                    continue  # a visitor moved it while visiting an earlier attribute
+                count += 1
+                if max_nodes is not None and count > max_nodes:
+                    yield Finding(
+                        kind=Kind.MAX_NODES_EXCEEDED,
+                        path=path,
+                        owner=owner.key,
+                        message=f"walk stopped after {max_nodes} attribute visits",
+                        expected=max_nodes,
+                    )
+                    return
+                yield Visit(owner, attr, node[attr], (*path, attr), node)
+                ra = owner.attributes.get(attr)
+                if ra is not None and ra.object_type is not None and ra.object_type != OPEN_OBJECT and attr in node:
+                    children.extend(_children(ra, attr, node[attr], path, schema))
+            seen.update(keys)
+            keys = [attr for attr in node if attr not in seen]
         yield Visit(owner, None, node, path, node)
         stack.extend(reversed(children))
 
