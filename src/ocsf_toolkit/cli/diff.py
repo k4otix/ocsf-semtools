@@ -13,14 +13,14 @@ from ocsf_toolkit.schema import load, load_ir
 
 def register(parser: argparse.ArgumentParser) -> None:
     """Add the ``diff`` arguments to its subparser."""
-    for name in ("a", "b"):
+    for name in ("old", "new"):
         parser.add_argument(name, metavar=name.upper(), help="a shipped OCSF version or an IR file")
     output = parser.add_mutually_exclusive_group()
     output.add_argument("--json", action="store_true", help="print the diff as one JSON object")
     output.add_argument(
         "--semver",
         action="store_true",
-        help="print only the release category for re-pinning A as B: patch, minor or major",
+        help="print only the release category for re-pinning OLD as NEW: patch, minor or major",
     )
     parser.set_defaults(run=run)
 
@@ -28,11 +28,11 @@ def register(parser: argparse.ArgumentParser) -> None:
 def run(args: argparse.Namespace) -> int:
     """Print the diff of two IRs; return 0 when they are equal, 1 when they differ, 2 when one can't be read."""
     try:
-        a, b = source_ir(args.a), source_ir(args.b)
+        old, new = source_ir(args.old), source_ir(args.new)
     except (ValueError, OSError) as exc:
         print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
         return 2
-    result = diff(a, b)
+    result = diff(old, new)
     if args.semver:
         category, counted = semver(result)
         print(f"{category} ({counted} change(s) outside provenance)")

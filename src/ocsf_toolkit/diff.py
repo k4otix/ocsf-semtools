@@ -27,17 +27,17 @@ class Change:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SchemaDiff:
-    """What changed from OCSF version a to b; no changes means the IRs are equal."""
+    """What changed from the old OCSF version to the new; no changes means the IRs are equal."""
 
-    a: str
-    b: str
+    old: str
+    new: str
     changes: tuple[Change, ...]
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable form: IR values rendered as plain JSON."""
         return {
-            "a": self.a,
-            "b": self.b,
+            "old": self.old,
+            "new": self.new,
             "changes": [
                 {
                     "kind": c.kind,
@@ -50,15 +50,15 @@ class SchemaDiff:
         }
 
 
-def diff(a: SchemaIR, b: SchemaIR) -> SchemaDiff:
+def diff(old: SchemaIR, new: SchemaIR) -> SchemaDiff:
     """Compare two IRs field by field; a class key that changes at a stable uid is a rename."""
-    renames = _renames(a.classes, b.classes)
-    changes = [Change(kind="renamed", path=("classes", old), before=old, after=new) for old, new in renames.items()]
-    matched = {renames.get(key, key): item for key, item in a.classes.items()}
-    a = dataclasses.replace(a, classes=MappingProxyType(matched))
-    changes += _compare(a, b, ())
+    renames = _renames(old.classes, new.classes)
+    changes = [Change(kind="renamed", path=("classes", k), before=k, after=v) for k, v in renames.items()]
+    matched = {renames.get(key, key): item for key, item in old.classes.items()}
+    renamed = dataclasses.replace(old, classes=MappingProxyType(matched))
+    changes += _compare(renamed, new, ())
     changes.sort(key=lambda c: tuple(str(p) for p in c.path))
-    return SchemaDiff(a=a.version, b=b.version, changes=tuple(changes))
+    return SchemaDiff(old=old.version, new=new.version, changes=tuple(changes))
 
 
 def plain(value: object) -> object:
@@ -81,9 +81,9 @@ def plain(value: object) -> object:
             raise TypeError(f"not an IR value: {type(value).__name__}")
 
 
-def _renames(a: Mapping[str, ItemDef], b: Mapping[str, ItemDef]) -> dict[str, str]:
-    # Only a uid that names exactly one class on each side, whose old key is gone from b and
-    # whose new key is new in b, is a rename; anything else stays added and removed.
+def _renames(old: Mapping[str, ItemDef], new: Mapping[str, ItemDef]) -> dict[str, str]:
+    # Only a uid that names exactly one class on each side, whose old key is gone from the new IR and
+    # whose new key is new in it, is a rename; anything else stays added and removed.
     def by_uid(classes: Mapping[str, ItemDef]) -> dict[int, str]:
         seen: dict[int, list[str]] = {}
         for key, item in classes.items():
@@ -91,11 +91,11 @@ def _renames(a: Mapping[str, ItemDef], b: Mapping[str, ItemDef]) -> dict[str, st
                 seen.setdefault(item.uid, []).append(key)
         return {uid: keys[0] for uid, keys in seen.items() if len(keys) == 1}
 
-    old, new = by_uid(a), by_uid(b)
+    before, after = by_uid(old), by_uid(new)
     return {
-        old[uid]: new[uid]
-        for uid in old.keys() & new.keys()
-        if old[uid] != new[uid] and old[uid] not in b and new[uid] not in a
+        before[uid]: after[uid]
+        for uid in before.keys() & after.keys()
+        if before[uid] != after[uid] and before[uid] not in new and after[uid] not in old
     }
 
 

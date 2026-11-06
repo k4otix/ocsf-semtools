@@ -13,7 +13,7 @@ from tests.conftest import DATA_DIR
 
 def test_parser() -> None:
     args = build_parser().parse_args(["diff", "1.7.0", "1.9.0", "--json"])
-    assert (args.run, args.a, args.b, args.json) == (diff.run, "1.7.0", "1.9.0", True)
+    assert (args.run, args.old, args.new, args.json) == (diff.run, "1.7.0", "1.9.0", True)
 
 
 def test_text_output(capsys: pytest.CaptureFixture[str]) -> None:
@@ -28,7 +28,7 @@ def test_text_output(capsys: pytest.CaptureFixture[str]) -> None:
 def test_json_output_and_ir_files(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["diff", "--json", "1.7.0", str(DATA_DIR / "ir-1.9.0.json")]) == 1
     data = json.loads(capsys.readouterr().out)
-    assert (data["a"], data["b"], len(data["changes"])) == ("1.7.0", "1.9.0", 1115)
+    assert (data["old"], data["new"], len(data["changes"])) == ("1.7.0", "1.9.0", 1115)
 
 
 def test_equal_irs_exit_zero(capsys: pytest.CaptureFixture[str]) -> None:

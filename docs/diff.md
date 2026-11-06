@@ -2,7 +2,7 @@
 
 ### `diff`
 
-`diff(a, b)` compares two IRs field by field and returns every difference, keyed by its path in the IR.
+`diff(old, new)` compares two IRs field by field and returns every difference, keyed by its path in the IR.
 Classes are matched by `class_uid` before key, so a class renamed at a stable uid shows up as one
 rename. The diff is data for you to read or act on; it uses no similarity heuristics and migrates no
 events.
@@ -10,7 +10,7 @@ events.
 ```pycon
 >>> from ocsf_toolkit import diff, load
 >>> changes = diff(load("1.7.0").ir, load("1.9.0").ir)
->>> changes.a, changes.b, len(changes.changes)
+>>> changes.old, changes.new, len(changes.changes)
 ('1.7.0', '1.9.0', 1115)
 >>> [c.path[1] for c in changes.changes if c.kind == "added" and c.path[0] == "classes" and len(c.path) == 2]
 ['clipboard_activity', 'device_power_state_activity', 'role_management', 'user_management']
@@ -42,7 +42,7 @@ win/registry_value_info -> win/registry_value_query
 
 ### `SchemaDiff`
 
-`SchemaDiff(a, b, changes)`: the two versions and the changes, sorted by path. Each change has a
+`SchemaDiff(old, new, changes)`: the two versions and the changes, sorted by path. Each change has a
 `kind` (`added`, `removed`, `changed` or `renamed`), a `path`, and `before` and `after` values. An
 added or removed subtree is one change. A rename is one change at the old path, after which the
 class is compared under its new key. `to_dict()` renders IR values as plain JSON, which is what
@@ -50,6 +50,6 @@ class is compared under its new key. `to_dict()` renders IR values as plain JSON
 
 ```pycon
 >>> sorted(changes.to_dict())
-['a', 'b', 'changes']
+['changes', 'new', 'old']
 
 ```

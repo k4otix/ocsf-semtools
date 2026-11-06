@@ -107,7 +107,7 @@ def test_new_deprecations_1_7_to_1_9(d_1_7_to_1_9: SchemaDiff) -> None:
 
 def test_an_ir_equals_itself() -> None:
     ir = load("1.9.0").ir
-    assert diff(ir, ir) == SchemaDiff(a="1.9.0", b="1.9.0", changes=())
+    assert diff(ir, ir) == SchemaDiff(old="1.9.0", new="1.9.0", changes=())
 
 
 def test_diff_is_deterministic_and_json(d_1_7_to_1_9: SchemaDiff) -> None:
@@ -117,7 +117,7 @@ def test_diff_is_deterministic_and_json(d_1_7_to_1_9: SchemaDiff) -> None:
     assert keys == sorted(keys)
     data = d_1_7_to_1_9.to_dict()
     assert json.loads(json.dumps(data)) == data
-    assert (data["a"], data["b"], len(data["changes"])) == ("1.7.0", "1.9.0", 1115)
+    assert (data["old"], data["new"], len(data["changes"])) == ("1.7.0", "1.9.0", 1115)
 
 
 # --- the generic diff on the synthetic schema -----------------------------------------------
