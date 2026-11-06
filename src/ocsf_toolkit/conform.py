@@ -10,7 +10,7 @@ from typing import Any, cast, final
 
 from ocsf_toolkit.ir import Deprecation, ItemDef, Requirement, Root
 from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, dotted, is_int
+from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, attribute_finding, dotted, is_int
 
 UNMAPPED = "unmapped"  # the class attribute that holds what the schema has no place for
 # long_t is 64-bit: 19 digits covers it, and caps int() well below its 4300-digit limit.
@@ -161,13 +161,11 @@ def _deprecated(visit: Visit, ra: ResolvedAttribute, checks: Checks) -> Iterator
     if movable and target is not None:
         visit.node[target] = visit.node.pop(ra.name)
         repair = RepairAction(action="migrate", before=visit.path, after=(*visit.path[:-1], target))
-    yield Finding(
-        kind=Kind.DEPRECATED,
-        path=visit.path,
-        owner=visit.owner.key,
-        message=f"{dotted(visit.path)} is deprecated since {dep.since}: {dep.message}",
-        tier=ra.requirement,
-        profiles=ra.gated_by,
+    yield attribute_finding(
+        ra,
+        Kind.DEPRECATED,
+        visit.path,
+        f"{dotted(visit.path)} is deprecated since {dep.since}: {dep.message}",
         expected=targets,
         repair=repair,
     )
@@ -205,13 +203,11 @@ def _element(
             yield _mismatch(visit, ra, path, value, ra.type)
             return
         _replace(visit, index, new)
-        yield Finding(
-            kind=Kind.COERCED,
-            path=path,
-            owner=visit.owner.key,
-            message=f"{dotted(path)} coerced from {value!r} to {new!r}",
-            tier=ra.requirement,
-            profiles=ra.gated_by,
+        yield attribute_finding(
+            ra,
+            Kind.COERCED,
+            path,
+            f"{dotted(path)} coerced from {value!r} to {new!r}",
             expected=ra.type,
             actual=value,
             repair=RepairAction(action="coerce", before=value, after=new),
@@ -221,25 +217,21 @@ def _element(
         return
     member = ra.enum.get(cast(int | str, value))
     if member is None:
-        yield Finding(
-            kind=Kind.ENUM_OUT_OF_RANGE,
-            path=path,
-            owner=visit.owner.key,
-            message=f"{dotted(path)} is {value!r}, not one of {sorted(map(str, ra.enum))}",
-            tier=ra.requirement,
-            profiles=ra.gated_by,
+        yield attribute_finding(
+            ra,
+            Kind.ENUM_OUT_OF_RANGE,
+            path,
+            f"{dotted(path)} is {value!r}, not one of {sorted(map(str, ra.enum))}",
             expected=sorted(ra.enum, key=str),
             actual=value,
         )
     elif member.deprecated is not None:
-        yield Finding(
-            kind=Kind.DEPRECATED,
-            path=path,
-            owner=visit.owner.key,
-            message=f"{dotted(path)} value {value!r} ({member.caption}) is deprecated"
+        yield attribute_finding(
+            ra,
+            Kind.DEPRECATED,
+            path,
+            f"{dotted(path)} value {value!r} ({member.caption}) is deprecated"
             f" since {member.deprecated.since}: {member.deprecated.message}",
-            tier=ra.requirement,
-            profiles=ra.gated_by,
             expected=member.deprecated.superseded_by,
             actual=value,
         )
@@ -299,13 +291,11 @@ def _replace(visit: Visit, index: int | None, new: object) -> None:
 
 
 def _mismatch(visit: Visit, ra: ResolvedAttribute, path: Path, value: object, what: str) -> Finding:
-    return Finding(
-        kind=Kind.TYPE_MISMATCH,
-        path=path,
-        owner=visit.owner.key,
-        message=f"{dotted(path)} is {type(value).__name__} {value!r}; expected {what}",
-        tier=ra.requirement,
-        profiles=ra.gated_by,
+    return attribute_finding(
+        ra,
+        Kind.TYPE_MISMATCH,
+        path,
+        f"{dotted(path)} is {type(value).__name__} {value!r}; expected {what}",
         expected=ra.type,
         actual=value,
     )
@@ -315,7 +305,7 @@ def _mismatch(visit: Visit, ra: ResolvedAttribute, path: Path, value: object, wh
 
 
 def _absent(visit: Visit, plan: _Plan) -> Iterator[Finding]:
-    owner, node = visit.owner, visit.node
+    node = visit.node
     for name, ra, kind, source in plan.asked:
         if node.get(name) is not None:
             continue
@@ -323,15 +313,13 @@ def _absent(visit: Visit, plan: _Plan) -> Iterator[Finding]:
         if source is not None and node.get(source) is None:
             continue
         path = (*visit.path, name)
-        yield Finding(
-            kind=kind,
-            path=path,
-            owner=owner.key,
-            message=f"{dotted(path)} is {ra.requirement}"
+        yield attribute_finding(
+            ra,
+            kind,
+            path,
+            f"{dotted(path)} is {ra.requirement}"
             + (f" under profiles {sorted(ra.gated_by)}" if ra.gated_by else "")
             + " and absent",
-            tier=ra.requirement,
-            profiles=ra.gated_by,
         )
 
 

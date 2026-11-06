@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
-from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema, SiblingSpec
-from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, dotted, is_int
+from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema, SiblingSpec
+from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, attribute_finding, dotted, is_int
 
 OTHER = 99  # the "Other" id: a caller-supplied label is source-specific and always kept
 _UNKNOWN = 0
@@ -28,20 +28,22 @@ def derive(
     """
     if visit.attr is not None:
         return []
-    out = _Node(visit.owner, visit.node, visit.path, fill=fill, overwrite=overwrite)
+    site = _Site(visit.owner, visit.node, visit.path, fill=fill, overwrite=overwrite)
     root = identity and visit.owner.identity is not None and visit.path == ()
     if root:
-        _identity(out, schema)
+        _identity(site, schema)
     for id_attr, spec in visit.owner.siblings.items():
         if not (root and id_attr in _ROOT_SIBLINGS):
-            _sibling(out, schema, id_attr, spec)
+            _sibling(site, schema, id_attr, spec)
     if "datetime" in schema.profiles:
-        _timestamps(out, schema)
-    return out.findings
+        _timestamps(site, schema)
+    return site.findings
 
 
 @dataclass(slots=True)
-class _Node:
+class _Site:
+    """One node being derived: its item, where it is, what derivation may change, and its findings."""
+
     owner: ResolvedItem
     node: dict[str, Any]
     path: Path
@@ -66,7 +68,9 @@ class _Node:
             if self.fill:
                 self.node[attr] = derived
                 filled = RepairAction(action="fill", before=None, after=derived)
-                self._add(Kind.FILLED, ra, path, derived, None, f"{dotted(path)} derived", filled)
+                self.findings.append(
+                    attribute_finding(ra, Kind.FILLED, path, f"{dotted(path)} derived", expected=derived, repair=filled)
+                )
             return
         if (equal or _same)(current, derived):
             return
@@ -75,37 +79,15 @@ class _Node:
             self.node[attr] = derived
             repair = RepairAction(action="overwrite", before=current, after=derived)
         message = f"{dotted(path)} is {current!r}; the schema derives {derived!r}"
-        self._add(conflict, ra, path, derived, current, message, repair)
-
-    def _add(
-        self,
-        kind: Kind,
-        ra: ResolvedAttribute,
-        path: Path,
-        expected: object,
-        actual: object,
-        message: str,
-        repair: RepairAction | None,
-    ) -> None:
         self.findings.append(
-            Finding(
-                kind=kind,
-                path=path,
-                owner=self.owner.key,
-                message=message,
-                tier=ra.requirement,
-                profiles=ra.gated_by,
-                expected=expected,
-                actual=actual,
-                repair=repair,
-            )
+            attribute_finding(ra, conflict, path, message, expected=derived, actual=current, repair=repair)
         )
 
 
-def _identity(out: _Node, schema: ResolvedSchema) -> None:
-    ident = out.owner.identity
+def _identity(site: _Site, schema: ResolvedSchema) -> None:
+    ident = site.owner.identity
     assert ident is not None
-    attrs = out.owner.attributes
+    attrs = site.owner.attributes
     for attr, value in (
         ("class_uid", ident.class_uid),
         ("class_name", ident.class_name),
@@ -113,24 +95,24 @@ def _identity(out: _Node, schema: ResolvedSchema) -> None:
         ("category_name", ident.category_name),
     ):
         if value is not None and attr in attrs:
-            out.put(attr, value, Kind.IDENTITY_CONFLICT)
+            site.put(attr, value, Kind.IDENTITY_CONFLICT)
     # metadata.version and .profiles come from the schema the class is read under, which only the root
     # knows; the root closes before its children, so this step reaches into metadata itself.
-    metadata = out.node.get("metadata")
+    metadata = site.node.get("metadata")
     meta_item = schema.objects.get("metadata")
     if isinstance(metadata, dict) and meta_item is not None and "metadata" in attrs:
-        meta = _Node(meta_item, cast(dict[str, Any], metadata), ("metadata",), out.fill, out.overwrite)
+        meta = _Site(meta_item, cast(dict[str, Any], metadata), ("metadata",), site.fill, site.overwrite)
         if "version" in meta_item.attributes:
             meta.put("version", schema.version, Kind.IDENTITY_CONFLICT)
         if "profiles" in meta_item.attributes:
             _profiles(meta, schema.profiles)
-        out.findings.extend(meta.findings)
-    activity_id = out.node.get("activity_id")
+        site.findings.extend(meta.findings)
+    activity_id = site.node.get("activity_id")
     if is_int(activity_id) and "type_uid" in attrs:
-        out.put("type_uid", ident.class_uid * 100 + activity_id, Kind.IDENTITY_CONFLICT)
+        site.put("type_uid", ident.class_uid * 100 + activity_id, Kind.IDENTITY_CONFLICT)
 
 
-def _profiles(meta: _Node, active: frozenset[str]) -> None:
+def _profiles(meta: _Site, active: frozenset[str]) -> None:
     declared = meta.node.get("profiles")
     if declared is None and not active:
         return  # nothing to state; an empty list would only add noise
@@ -144,45 +126,43 @@ def _profiles(meta: _Node, active: frozenset[str]) -> None:
     meta.put("profiles", sorted(active), Kind.PROFILE_MISMATCH, equal=equal)
 
 
-def _sibling(out: _Node, schema: ResolvedSchema, id_attr: str, spec: SiblingSpec) -> None:
-    value = out.node.get(id_attr)
+def _sibling(site: _Site, schema: ResolvedSchema, id_attr: str, spec: SiblingSpec) -> None:
+    value = site.node.get(id_attr)
     if value is None:
         return
     if spec.is_array:
-        _sibling_list(out, id_attr, spec, value)
+        _sibling_list(site, id_attr, spec, value)
         return
     caption = _caption(schema, spec, value)
     if caption is None:
         return  # wrong type or out of range: conform reports it; nothing to derive from
-    label = out.node.get(spec.label)
+    label = site.node.get(spec.label)
     if _is_other(id_attr, value):
-        if label is None and id_attr == "type_uid" and out.path == () and out.fill:
-            _other_type_name(out, spec.label)
+        if label is None and id_attr == "type_uid" and site.path == () and site.fill:
+            _other_type_name(site, spec.label)
         return
     if value == _UNKNOWN and isinstance(label, str) and not label.strip():
-        ra = out.owner.attributes[id_attr]
-        out.findings.append(
-            Finding(
-                kind=Kind.SEMANTICALLY_EMPTY_ENUM,
-                path=(*out.path, id_attr),
-                owner=out.owner.key,
-                message=f"{dotted((*out.path, id_attr))} is 0 (Unknown) with an empty {spec.label}",
-                tier=ra.requirement,
-                profiles=ra.gated_by,
+        ra = site.owner.attributes[id_attr]
+        site.findings.append(
+            attribute_finding(
+                ra,
+                Kind.SEMANTICALLY_EMPTY_ENUM,
+                (*site.path, id_attr),
+                f"{dotted((*site.path, id_attr))} is 0 (Unknown) with an empty {spec.label}",
                 actual=label,
             )
         )
-    out.put(spec.label, caption, Kind.SIBLING_CONFLICT)
+    site.put(spec.label, caption, Kind.SIBLING_CONFLICT)
 
 
-def _other_type_name(out: _Node, label: str) -> None:
+def _other_type_name(site: _Site, label: str) -> None:
     # activity_id 99: type_name follows the caller's activity label, not the enum's "…: Other".
-    activity, ident = out.node.get("activity_name"), out.owner.identity
+    activity, ident = site.node.get("activity_name"), site.owner.identity
     if isinstance(activity, str) and activity and ident is not None:
-        out.put(label, f"{ident.class_name}: {activity}", Kind.SIBLING_CONFLICT)
+        site.put(label, f"{ident.class_name}: {activity}", Kind.SIBLING_CONFLICT)
 
 
-def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) -> None:
+def _sibling_list(site: _Site, id_attr: str, spec: SiblingSpec, value: object) -> None:
     ids = _list(value)
     if ids is None or spec.enum is None:
         return
@@ -192,10 +172,10 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
         if member is None:
             return  # conform reports the element; nothing to derive from
         captions.append(member.caption)
-    labels = out.node.get(spec.label)
+    labels = site.node.get(spec.label)
     if labels is None:
         if OTHER not in ids:
-            out.put(spec.label, captions, Kind.SIBLING_CONFLICT)
+            site.put(spec.label, captions, Kind.SIBLING_CONFLICT)
         return
     given = _list(labels)
     if given is None:
@@ -203,19 +183,19 @@ def _sibling_list(out: _Node, id_attr: str, spec: SiblingSpec, value: object) ->
     # An "Other" element keeps the caller's label at the same index.
     expected = [(given[n] if n < len(given) else None) if i == OTHER else captions[n] for n, i in enumerate(ids)]
     keep = len(given) != len(ids) and OTHER in ids  # no sound list to write back
-    out.put(spec.label, expected, Kind.SIBLING_CONFLICT, keep=keep)
+    site.put(spec.label, expected, Kind.SIBLING_CONFLICT, keep=keep)
 
 
-def _timestamps(out: _Node, schema: ResolvedSchema) -> None:
-    for name, twin in _twins(schema, out.owner):
-        value = out.node.get(name)
+def _timestamps(site: _Site, schema: ResolvedSchema) -> None:
+    for name, twin in _twins(schema, site.owner):
+        value = site.node.get(name)
         if not is_int(value):
             continue
         try:
             text = rfc3339(value)
         except OverflowError:
             continue  # out of datetime's range; nothing sound to derive
-        out.put(twin, text, Kind.SIBLING_CONFLICT, equal=_same_instant)
+        site.put(twin, text, Kind.SIBLING_CONFLICT, equal=_same_instant)
 
 
 def _twins(schema: ResolvedSchema, item: ResolvedItem) -> tuple[tuple[str, str], ...]:

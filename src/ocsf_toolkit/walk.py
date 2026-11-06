@@ -11,7 +11,7 @@ from enum import StrEnum
 from typing import Any, Literal, TypeGuard, cast, final
 
 from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
+from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
 
 type Path = tuple[str | int, ...]
 type Severity = Literal["error", "warning", "info"]
@@ -89,6 +89,30 @@ class Finding:
         return "info" if self.repair is not None else _SEVERITY.get(self.kind, "info")
 
 
+def attribute_finding(
+    ra: ResolvedAttribute,
+    kind: Kind,
+    path: Path,
+    message: str,
+    *,
+    expected: object = None,
+    actual: object = None,
+    repair: RepairAction | None = None,
+) -> Finding:
+    """Return a finding about one attribute, with its owner, tier and gating profiles taken from ``ra``."""
+    return Finding(
+        kind=kind,
+        path=path,
+        owner=ra.owner,
+        message=message,
+        tier=ra.requirement,
+        profiles=ra.gated_by,
+        expected=expected,
+        actual=actual,
+        repair=repair,
+    )
+
+
 @final
 @dataclass(frozen=True, slots=True)
 class Visit:
@@ -148,10 +172,10 @@ def walk(
 
 def dotted(path: Path) -> str:
     """Return an indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
-    try:
-        return ".".join(cast(tuple[str, ...], path)).lstrip(".")  # no index: the common case
-    except TypeError:
-        return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
+    try:  # a path without an index joins directly: the common case
+        return ".".join(cast(tuple[str, ...], path))
+    except TypeError:  # an int in the path
+        return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).removeprefix(".")
 
 
 def canonical(name: str | Path) -> str:
