@@ -295,7 +295,7 @@ class _Generator:
         return None
 
     def _derived(self, item: ResolvedItem, a: ResolvedAttribute) -> bool:
-        labels = {spec.label for spec in item.siblings().values()}
+        labels = {spec.label for spec in item.siblings.values()}
         twin = a.name.endswith("_dt") and _timestamp(item.attributes.get(a.name[:-3]))
         return a.name in labels or twin or (item.is_class and a.name == "type_uid")
 

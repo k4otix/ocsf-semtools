@@ -26,7 +26,7 @@ def _names(found: tuple[Observable, ...]) -> list[tuple[str, int, str | None]]:
 
 def test_marker_table_size(schema: ResolvedSchema) -> None:
     everything = load("1.9.0", profiles=schema.ir.profiles, extensions=schema.ir.extensions)
-    assert (len(schema.observable_markers()), len(everything.observable_markers())) == (478, 594)
+    assert (len(schema.observable_markers), len(everything.observable_markers)) == (478, 594)
 
 
 # --- extraction -----------------------------------------------------------------------------

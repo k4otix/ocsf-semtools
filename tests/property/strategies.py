@@ -88,7 +88,7 @@ class _Budget:
 
 def derived(item: ResolvedItem) -> frozenset[str]:
     """Return the attributes of an item that build() derives rather than takes."""
-    names = {spec.label for spec in item.siblings().values()}
+    names = {spec.label for spec in item.siblings.values()}
     names |= {f"{n}_dt" for n, a in item.attributes.items() if a.type == "timestamp_t"}
     if item.is_class:
         names |= _ROOT_DERIVED
@@ -207,7 +207,7 @@ def _lookup(node: dict[str, Any], dotted: str) -> object:
 def _other_labels(draw: st.DrawFn, item: ResolvedItem, node: dict[str, Any]) -> None:
     """Give an "Other" (99) id the label its source would send; derivation keeps it as given."""
     label = st.text(min_size=1, max_size=20)
-    for id_attr, spec in item.siblings().items():
+    for id_attr, spec in item.siblings.items():
         value = node.get(id_attr)
         if value == OTHER:
             node[spec.label] = draw(label)

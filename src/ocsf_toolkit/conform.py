@@ -367,7 +367,7 @@ def _plan(checks: Checks, item: ResolvedItem) -> _Plan:
     key = (item.is_class, item.key)
     plan = checks.plans.get(key)
     if plan is None:
-        sources = {spec.label: id_attr for id_attr, spec in item.siblings().items()}
+        sources = {spec.label: id_attr for id_attr, spec in item.siblings.items()}
         asked = tuple(
             (name, ra, kind, "activity_id" if item.is_class and name == "type_uid" else sources.get(name))
             for name, ra in item.attributes.items()

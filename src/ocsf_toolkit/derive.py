@@ -32,7 +32,7 @@ def derive(
     root = identity and visit.owner.identity is not None and visit.path == ()
     if root:
         _identity(out, schema)
-    for id_attr, spec in visit.owner.siblings().items():
+    for id_attr, spec in visit.owner.siblings.items():
         if not (root and id_attr in _ROOT_SIBLINGS):
             _sibling(out, schema, id_attr, spec)
     if "datetime" in schema.profiles:

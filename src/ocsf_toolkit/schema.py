@@ -67,7 +67,8 @@ class ResolvedItem:
     identity: ClassIdentity | None  # classes only
     attributes: Mapping[str, ResolvedAttribute]
     constraints: tuple[Constraint, ...]  # members absent under the active set removed
-    _siblings: Mapping[str, SiblingSpec] = field(init=False, repr=False, compare=False)
+    # id attribute -> how it derives its label; only pairs whose two attributes are both present
+    siblings: Mapping[str, SiblingSpec] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Index the item's ``_id`` -> label sibling pairs."""
@@ -76,11 +77,7 @@ class ResolvedItem:
             for name, a in self.attributes.items()
             if a.sibling is not None and a.sibling in self.attributes
         }
-        object.__setattr__(self, "_siblings", MappingProxyType(siblings))
-
-    def siblings(self) -> Mapping[str, SiblingSpec]:
-        """Id attribute -> its label; only pairs whose two attributes are both present."""
-        return self._siblings
+        object.__setattr__(self, "siblings", MappingProxyType(siblings))
 
 
 @final
@@ -99,7 +96,8 @@ class ResolvedSchema:
     types: Mapping[str, TypeDef] = field(repr=False, compare=False)
     _by_uid: Mapping[int, ResolvedItem] = field(init=False, repr=False, compare=False)
     _by_type_uid: Mapping[int, ResolvedItem] = field(init=False, repr=False, compare=False)
-    _markers: Mapping[tuple[str, str], int] = field(init=False, repr=False, compare=False)
+    # (owner key, attribute) -> observable type_id, for observable definition kinds 1-5
+    observable_markers: Mapping[tuple[str, str], int] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Index the classes by class_uid and type_uid, and the observable markers."""
@@ -113,7 +111,7 @@ class ResolvedSchema:
                 by_type_uid[int(value)] = item
         object.__setattr__(self, "_by_uid", MappingProxyType(by_uid))
         object.__setattr__(self, "_by_type_uid", MappingProxyType(by_type_uid))
-        object.__setattr__(self, "_markers", MappingProxyType(_markers(self)))
+        object.__setattr__(self, "observable_markers", MappingProxyType(_markers(self)))
 
     def class_by_uid(self, uid: int) -> ResolvedItem:
         """Return the class with this class_uid; an unknown uid is a KeyError."""
@@ -130,10 +128,6 @@ class ResolvedSchema:
             raise KeyError(f"no class declares type_uid {type_uid} in {self._label()}") from None
         assert item.identity is not None
         return item, type_uid - item.identity.class_uid * 100
-
-    def observable_markers(self) -> Mapping[tuple[str, str], int]:
-        """Return (owner key, attribute) -> observable type_id, for observable definition kinds 1-5."""
-        return self._markers
 
     def _label(self) -> str:
         return f"OCSF {self.version} with extensions {sorted(self.extensions)}"

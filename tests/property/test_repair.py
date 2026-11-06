@@ -53,7 +53,7 @@ def _sites(schema: ResolvedSchema, key: str, event: dict[str, Any]) -> list[Site
             sites.append(Site("unknown", node, UNKNOWN, visit.path))
             continue
         attr, value, ra = visit.attr, visit.value, owner.attributes[visit.attr]
-        labels = {spec.label: id_attr for id_attr, spec in owner.siblings().items()}
+        labels = {spec.label: id_attr for id_attr, spec in owner.siblings.items()}
         if attr in derived(owner) and not (attr in labels and _other(owner, node, labels[attr])):
             if not (owner.key == "metadata" and attr in ("version", "profiles")):  # they pick the schema
                 sites.append(Site("drop", node, attr, visit.path))

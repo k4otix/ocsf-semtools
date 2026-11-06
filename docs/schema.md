@@ -50,7 +50,7 @@ version, profiles and extensions.
 | `categories`, `types` | read-only mappings of the schema's categories and data types |
 | `class_by_uid(uid)` | the class with that `class_uid`; `KeyError` if none |
 | `class_by_type_uid(type_uid)` | `(class, activity_id)` for a `type_uid`; `KeyError` if none |
-| `observable_markers()` | `(owner key, attribute) -> observable type_id` |
+| `observable_markers` | read-only mapping from `(owner key, attribute)` to observable `type_id` |
 
 ```pycon
 >>> schema.class_by_uid(2004).key
@@ -73,12 +73,12 @@ A class or an object, holding only the attributes present under the active profi
 ClassIdentity(class_uid=2004, class_name='Detection Finding', category_uid=2, category_name='Findings')
 >>> sorted(name for name, a in finding.attributes.items() if a.requirement.value == "required")
 ['activity_id', 'category_uid', 'class_uid', 'finding_info', 'metadata', 'severity_id', 'time', 'type_uid']
->>> finding.siblings()["severity_id"].label
+>>> finding.siblings["severity_id"].label
 'severity'
 
 ```
 
-`identity` is `None` for objects. `siblings()` maps each `_id` attribute to its label attribute, with
+`identity` is `None` for objects. `siblings` maps each `_id` attribute to its label attribute, with
 the enum that derives one from the other.
 
 ### `ResolvedAttribute`

@@ -112,11 +112,11 @@ def test_constraint_with_every_member_gated_out_is_dropped() -> None:
 def test_siblings_need_both_attributes_present(ir: SchemaIR) -> None:
     data = compiled()
     data["classes"]["finding"]["attributes"]["severity"] = {"caption": "Sev", "type": "string_t"}
-    siblings = resolve(_ir(data)).classes["finding"].siblings()
+    siblings = resolve(_ir(data)).classes["finding"].siblings
     assert set(siblings) == {"severity_id"}
     assert siblings["severity_id"].label == "severity"
     assert siblings["severity_id"].enum is not None
-    assert resolve(ir).classes["finding"].siblings() == {}  # the label attribute is absent
+    assert resolve(ir).classes["finding"].siblings == {}  # the label attribute is absent
 
 
 def test_markers_follow_precedence() -> None:
@@ -128,7 +128,7 @@ def test_markers_follow_precedence() -> None:
     finding = data["classes"]["finding"]["attributes"]
     finding["source_ip"] = {"caption": "Source IP", "type": "ip_t"}
     finding["local"] = {"caption": "Local", "type": "ip_t", "observable": 5}
-    markers = resolve(_ir(data), profiles={"cloud"}, extensions={"win"}).observable_markers()
+    markers = resolve(_ir(data), profiles={"cloud"}, extensions={"win"}).observable_markers
     assert markers[("finding", "local")] == 5  # attribute-local beats type
     assert markers[("finding", "method")] == 7  # dictionary attribute
     assert markers[("cloud", "hosted")] == 9  # the "<ext>/<name>" dictionary entry is tried first
@@ -138,7 +138,7 @@ def test_markers_follow_precedence() -> None:
 
 
 def test_markers_cover_only_present_attributes(ir: SchemaIR) -> None:
-    assert ("finding", "cloud") not in resolve(ir).observable_markers()
+    assert ("finding", "cloud") not in resolve(ir).observable_markers
 
 
 # --- inputs ----------------------------------------------------------------------------------
@@ -248,8 +248,8 @@ def test_resolution_is_closed(which: str, request: pytest.FixtureRequest) -> Non
 
 
 def test_marker_table_size(base: ResolvedSchema, everything: ResolvedSchema) -> None:
-    assert len(everything.observable_markers()) == 594
-    assert len(base.observable_markers()) == 478
+    assert len(everything.observable_markers) == 594
+    assert len(base.observable_markers) == 478
 
 
 def test_type_uid_registry_matches_class_and_activity(everything: ResolvedSchema) -> None:
@@ -279,7 +279,7 @@ def test_list_siblings_are_the_five_the_spec_names(everything: ResolvedSchema) -
     arrays = {
         (item.key, name, spec.label)
         for item in (*everything.classes.values(), *everything.objects.values())
-        for name, spec in item.siblings().items()
+        for name, spec in item.siblings.items()
         if spec.is_array
     }
     assert arrays == {
@@ -294,8 +294,8 @@ def test_list_siblings_are_the_five_the_spec_names(everything: ResolvedSchema) -
 def test_sibling_without_label_attribute_has_no_rule(everything: ResolvedSchema) -> None:
     for key in ("observable", "prev_event"):
         assert "type_uid" in everything.objects[key].attributes
-        assert "type_uid" not in everything.objects[key].siblings()
-    assert everything.objects["related_event"].siblings()["type_uid"].enum is None
+        assert "type_uid" not in everything.objects[key].siblings
+    assert everything.objects["related_event"].siblings["type_uid"].enum is None
 
 
 # --- acceptance criteria --------------------------------------------------------------------
@@ -315,7 +315,7 @@ def test_acc_11_schema_semantics_without_a_model() -> None:
     activity = attributes["activity_id"]
     assert activity.enum is not None
     assert activity.enum[1].caption == "Create"
-    assert finding.siblings()["activity_id"].label == "activity_name"
+    assert finding.siblings["activity_id"].label == "activity_name"
     assert attributes["cloud"].gated_by == {"cloud"}
     assert finding.identity == ClassIdentity(
         class_uid=2004, class_name="Detection Finding", category_uid=2, category_name="Findings"
@@ -326,8 +326,8 @@ def test_acc_12a_profiles_change_attributes_and_rules(base: ResolvedSchema) -> N
     plain = base.classes["detection_finding"]
     control = load("1.9.0", profiles={"security_control"}).classes["detection_finding"]
     assert "action_id" not in plain.attributes
-    assert "action_id" not in plain.siblings()  # no sibling rule for a gated-out attribute
-    assert control.siblings()["action_id"].label == "action"
+    assert "action_id" not in plain.siblings  # no sibling rule for a gated-out attribute
+    assert control.siblings["action_id"].label == "action"
     cloud = load("1.9.0", profiles={"cloud"}).classes["detection_finding"]
     assert "cloud" not in plain.attributes  # so E4 (cloud absent) is not a finding here
     assert cloud.attributes["cloud"].requirement is Requirement.REQUIRED  # but is here

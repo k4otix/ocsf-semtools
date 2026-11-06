@@ -58,7 +58,7 @@ def markers(schema: ResolvedSchema, root: ResolvedItem) -> Markers:
         item = schema.ir.classes.get(root.key)
         paths: Mapping[str, int] = item.class_observables if item is not None else {}
         found = built[root.key] = Markers(
-            by_attr=schema.observable_markers(),
+            by_attr=schema.observable_markers,
             by_path=paths,
             tails=frozenset(p.rpartition(".")[2] for p in paths),
             captions=_captions(schema),
