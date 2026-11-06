@@ -1,4 +1,4 @@
-"""Public API of ocsf-toolkit; every exported name is listed in ``__all__``."""
+"""Version-pinned OCSF semantics: the schema as data, event building and checking, observables, diff."""
 
 from ocsf_toolkit._version import __version__
 from ocsf_toolkit.codegen import generate

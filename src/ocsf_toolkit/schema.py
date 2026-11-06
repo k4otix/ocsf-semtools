@@ -1,8 +1,8 @@
 """Resolve a SchemaIR under an active profile set into the one schema view every component reads."""
 
+import dataclasses
 import functools
 import hashlib
-import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from importlib import resources
@@ -22,8 +22,6 @@ from ocsf_toolkit.ir import (
     SchemaIR,
     TypeDef,
 )
-
-_VERSION = re.compile(r"\d+\.\d+\.\d+")
 
 
 @final
@@ -125,7 +123,7 @@ class ResolvedSchema:
             raise KeyError(f"no class with uid {uid} in {self._label()}") from None
 
     def class_by_type_uid(self, type_uid: int) -> tuple[ResolvedItem, int]:
-        """(class, activity_id) for a type_uid declared in some class's type_uid enum."""
+        """Return (class, activity_id) for a type_uid that some class's type_uid enum declares."""
         try:
             item = self._by_type_uid[type_uid]
         except KeyError:
@@ -134,7 +132,7 @@ class ResolvedSchema:
         return item, type_uid - item.identity.class_uid * 100
 
     def observable_markers(self) -> Mapping[tuple[str, str], int]:
-        """(owner key, attribute) -> observable type_id, for observable definition kinds 1-5."""
+        """Return (owner key, attribute) -> observable type_id, for observable definition kinds 1-5."""
         return self._markers
 
     def _label(self) -> str:
@@ -142,19 +140,23 @@ class ResolvedSchema:
 
 
 def shipped_versions() -> tuple[str, ...]:
-    """OCSF versions whose IR ships in this package, oldest first."""
+    """Return the OCSF versions whose IR ships in this package, oldest first."""
     names = (p.name for p in resources.files("ocsf_toolkit").joinpath("data").iterdir())
     found = [n[3:-5] for n in names if n.startswith("ir-") and n.endswith(".json")]
     return tuple(sorted(found, key=lambda v: tuple(int(p) for p in v.split("."))))
 
 
 def load(version: str, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()) -> ResolvedSchema:
-    """Resolve a shipped OCSF version; unknown profiles or extensions raise KeyError."""
+    """Resolve a shipped OCSF version under a set of profiles and extensions.
+
+    An unshipped version is a ValueError, unknown profiles or extensions a KeyError, and a bare string
+    in place of an iterable of names a TypeError.
+    """
     return _load(version, _names(profiles, "profiles"), _names(extensions, "extensions"))
 
 
 def resolve(ir: SchemaIR, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()) -> ResolvedSchema:
-    """Resolve any IR, such as one built with a custom extension."""
+    """Resolve any IR, such as one built with a custom extension; errors are as for ``load``."""
     return _resolve(ir, digest(ir), _names(profiles, "profiles"), _names(extensions, "extensions"))
 
 
@@ -178,7 +180,7 @@ def _load(version: str, profiles: frozenset[str], extensions: frozenset[str]) ->
 @functools.cache
 def _shipped(version: str) -> tuple[SchemaIR, str]:
     shipped = shipped_versions()
-    if not _VERSION.fullmatch(version) or version not in shipped:
+    if version not in shipped:  # also refuses a path such as "../1.9.0"
         raise ValueError(f"no shipped IR for OCSF version {version!r}; shipped: {list(shipped)}")
     data = resources.files("ocsf_toolkit").joinpath("data", f"ir-{version}.json").read_bytes()
     ir = load_ir(data)
@@ -248,7 +250,7 @@ def _identity(item: ItemDef) -> ClassIdentity:
         raise ValueError(f"class {item.key!r} has no uid or category_uid")
     return ClassIdentity(
         class_uid=item.uid,
-        class_name=item.caption,
+        class_name=item.caption,  # OCSF class_name is the caption: "Detection Finding"
         category_uid=item.category_uid,
         category_name=item.category_name,
     )
@@ -261,26 +263,8 @@ def _attribute(ir: SchemaIR, owner: str, a: Attribute, profiles: frozenset[str])
         if typedef is None:
             raise ValueError(f"{owner}.{a.name}: unknown type {a.type!r}")
         root = typedef.root
-    return ResolvedAttribute(
-        name=a.name,
-        caption=a.caption,
-        type=a.type,
-        object_type=a.object_type,
-        is_array=a.is_array,
-        requirement=a.requirement,
-        profiles=a.profiles,
-        sibling=a.sibling,
-        enum=a.enum,
-        observable=a.observable,
-        deprecated=a.deprecated,
-        extension=a.extension,
-        group=a.group,
-        suppress_checks=a.suppress_checks,
-        default=a.default,
-        gated_by=a.profiles & profiles,
-        root=root,
-        owner=owner,
-    )
+    declared = {f.name: getattr(a, f.name) for f in dataclasses.fields(Attribute)}
+    return ResolvedAttribute(**declared, gated_by=a.profiles & profiles, root=root, owner=owner)
 
 
 def _markers(schema: ResolvedSchema) -> dict[tuple[str, str], int]:

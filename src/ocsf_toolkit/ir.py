@@ -9,6 +9,7 @@ from typing import Literal
 type EnumValue = int | str
 type ScalarValue = bool | int | float | str
 type ConstraintKind = Literal["at_least_one", "just_one"]
+# Each kind keyed by its own name: a lookup that narrows a str read from JSON to ConstraintKind.
 CONSTRAINT_KINDS: Mapping[str, ConstraintKind] = MappingProxyType(
     {"at_least_one": "at_least_one", "just_one": "just_one"}
 )

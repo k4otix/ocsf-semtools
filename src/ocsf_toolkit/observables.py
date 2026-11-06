@@ -104,7 +104,7 @@ def stringify(value: object) -> str | None:
 
 
 def unfounded(event: Mapping[str, Any], found: Iterable[Observable]) -> list[Finding]:
-    """observable_mismatch for each caller entry no schema-derived observable backs."""
+    """Return an observable_mismatch for each caller entry that no schema-derived observable backs."""
     entries = event.get(OBSERVABLES)
     if not isinstance(entries, list):
         return []

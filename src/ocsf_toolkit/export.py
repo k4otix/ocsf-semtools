@@ -31,13 +31,14 @@ IR_VERSION = "1.0"
 _MAJOR, _MINOR = (int(part) for part in IR_VERSION.split("."))
 
 # Encoding rules: object keys sorted, one-space indent (so a git diff shows what changed),
-# UTF-8, trailing newline. A field that is None or an empty collection is omitted; booleans are
-# always written. A name that is already the key of its mapping is not repeated inside the entry.
-# Frozensets are written as sorted lists.
+# UTF-8, trailing newline. A field that is None or an empty collection is omitted, except
+# provenance.extensions, which is always written as a list; booleans are always written. A name
+# that is already the key of its mapping is not repeated inside the entry. Frozensets are written
+# as sorted lists.
 
 
 def export_ir(ir: SchemaIR) -> bytes:
-    """Canonical IR JSON bytes: identical for equal IRs, on every platform."""
+    """Return the canonical IR JSON bytes: identical for equal IRs, on every platform."""
     document = {
         "ir_version": IR_VERSION,
         "provenance": _provenance(ir.provenance),
@@ -65,7 +66,7 @@ def export_ir(ir: SchemaIR) -> bytes:
 
 
 def digest(ir: SchemaIR) -> str:
-    """sha256 of the canonical IR JSON: the value recorded as ``ir_sha256`` in ``ocsf.lock``."""
+    """Return the sha256 of the canonical IR JSON: the value ``ocsf.lock`` records as ``ir_sha256``."""
     return hashlib.sha256(export_ir(ir)).hexdigest()
 
 

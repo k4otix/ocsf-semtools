@@ -40,7 +40,7 @@ class KeyAccount:
     read: set[tuple[str, str]] = field(default_factory=set[tuple[str, str]])
 
     def unaccounted(self) -> set[tuple[str, str]]:
-        """Keys present in the input that the loader neither read nor deliberately ignores."""
+        """Return the keys in the input that the loader neither read nor deliberately ignores."""
         return {(ctx, key) for ctx, key in self.seen - self.read if key not in IGNORED_KEYS}
 
 

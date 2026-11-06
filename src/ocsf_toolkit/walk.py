@@ -85,7 +85,7 @@ class Finding:
 
     @property
     def severity(self) -> Severity:
-        """error, warning or info: a pure function of kind; a repaired finding is info."""
+        """Return error, warning or info: a pure function of kind, except that a repaired finding is info."""
         return "info" if self.repair is not None else _SEVERITY.get(self.kind, "info")
 
 
