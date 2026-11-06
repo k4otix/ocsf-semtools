@@ -142,6 +142,18 @@ def test_parse_gives_none_when_the_report_has_errors(v1_9_0: ModuleType) -> None
     assert _kinds(report.errors()) == [("identity_conflict", ("metadata", "version"))]
 
 
+def test_superset_build_takes_profiles_from_a_typed_metadata(v1_9_0: ModuleType) -> None:
+    """A Metadata instance declares profiles as a dict does; found by the typed round-trip property."""
+    objects = importlib.import_module(f"{v1_9_0.__name__}.objects")
+    metadata = objects.Metadata(product=objects.Product(name="p"), profiles=["cloud", "datetime"])
+    with pytest.raises(ConformanceError, match="cloud is required under profiles"):
+        build(v1_9_0.DetectionFinding, **_fields(v1_9_0, metadata=metadata))
+    finding: Any = build(
+        v1_9_0.DetectionFinding, **_fields(v1_9_0, metadata=metadata, cloud=objects.Cloud(provider="x"))
+    )
+    assert finding.time_dt == "2023-11-14T22:13:20.000Z"
+
+
 def test_superset_parse_takes_profiles_from_metadata(v1_9_0: ModuleType) -> None:
     """E4 through a superset class: cloud is required only once metadata declares it."""
     event = _wire(v1_9_0)

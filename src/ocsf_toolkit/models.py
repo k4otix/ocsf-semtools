@@ -54,8 +54,8 @@ def build(ref: Any, /, *args: Any, **fields: Any) -> Any:
     if cls is None:
         (schema, key), exact, event = cast(ClassRef, ref), False, fields
     else:
-        schema, key, exact = _target(cls, None, fields)
-        event = _wire(cls, fields)
+        event = _wire(cls, fields)  # first: a Metadata instance declares profiles only once it is a dict
+        schema, key, exact = _target(cls, None, event)
     event, report = run(event, schema, key, STRICT)
     for finding in report.by_kind(Kind.DEPRECATED):
         warnings.warn(finding.message, DeprecationWarning, stacklevel=2)
