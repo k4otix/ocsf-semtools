@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import _upstream, lock, main
+from ocsf_toolkit.cli import _upstream, main
 from ocsf_toolkit.cli._upstream import Compiler
-from tests.unit.cli.support import Upstream, git
+from tests.unit.cli.support import Upstream, entry, git, write_lockfile
 
 # --- verify: version assertion + canonical sha256 ------------------------------------------
 
@@ -127,20 +127,8 @@ def test_checkout_failure_leaves_no_cache_entry(tmp_path: Path, upstream: Upstre
 
 
 def _lockfile(tmp_path: Path, upstream: Upstream, sha256: str) -> Path:
-    entry = lock.SchemaEntry(
-        version="1.9.0",
-        repo=upstream.url,
-        ref="1.9.0",
-        commit=upstream.commits["1.9.0"],
-        compiled_sha256=sha256,
-        ir_sha256="",
-        models_tree_sha256="",
-        ship_models=True,
-    )
-    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
-    path = tmp_path / "ocsf.lock"
-    lock.write(path, lock.Lockfile(toolchain, (entry,)))
-    return path
+    pinned = entry(repo=upstream.url, commit=upstream.commits["1.9.0"], compiled_sha256=sha256)
+    return write_lockfile(tmp_path / "ocsf.lock", pinned)
 
 
 FAKE_SHA = hashlib.sha256(b'{"classes":{"a_class":{},"z_class":{}},"version":"1.9.0"}').hexdigest()

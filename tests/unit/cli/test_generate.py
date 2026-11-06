@@ -7,12 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import build_parser, generate, lock, main
+from ocsf_toolkit.cli import build_parser, generate, main
 from ocsf_toolkit.cli.trees import files_sha256, read_tree
 from ocsf_toolkit.export import load_ir
 from tests.conftest import DATA_DIR
 from tests.fixtures.compiled import compiled
-from tests.unit.cli.support import Upstream
+from tests.unit.cli.support import Upstream, entry, write_lockfile
 
 
 def test_parser() -> None:
@@ -71,19 +71,13 @@ def test_generate_with_custom_extensions(tmp_path: Path, upstream: Upstream) -> 
     ext = tmp_path / "myext"
     (ext / "acme").mkdir(parents=True)
     (ext / "acme" / "extension.json").write_text('{"name": "acme"}')
-    lockfile = tmp_path / "ocsf.lock"
-    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
-    entry = lock.SchemaEntry(
-        version="1.9.0",
+    pinned = entry(
         repo=upstream.url,
-        ref="1.9.0",
         commit=upstream.commits["1.9.0"],
         compiled_sha256="0" * 64,  # not checked: extensions change the output
-        ir_sha256="",
-        models_tree_sha256="",
         ship_models=False,
     )
-    lock.write(lockfile, lock.Lockfile(toolchain, (entry,)))
+    lockfile = write_lockfile(tmp_path / "ocsf.lock", pinned)
     argv = [
         "generate",
         "1.9.0",

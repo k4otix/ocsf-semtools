@@ -10,6 +10,7 @@ import pytest
 from ocsf_toolkit.cli import build_parser, ir, lock, main
 from ocsf_toolkit.export import load_ir
 from tests.fixtures.compiled import compiled
+from tests.unit.cli.support import entry, write_lockfile
 
 VERSION = "9.9.9"
 
@@ -21,18 +22,8 @@ def workspace(tmp_path: Path) -> Path:
     out = tmp_path / "build" / "compiled" / f"schema-{VERSION}.json"
     out.parent.mkdir(parents=True)
     out.write_bytes(data)
-    entry = lock.SchemaEntry(
-        version=VERSION,
-        repo="https://github.com/ocsf/ocsf-schema",
-        ref="v9.9.9",
-        commit="a" * 40,
-        compiled_sha256=hashlib.sha256(data).hexdigest(),
-        ir_sha256="",
-        models_tree_sha256="",
-        ship_models=False,
-    )
-    toolchain = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
-    lock.write(tmp_path / "ocsf.lock", lock.Lockfile(toolchain, (entry,)))
+    digest = hashlib.sha256(data).hexdigest()
+    write_lockfile(tmp_path / "ocsf.lock", entry(VERSION, ref="v9.9.9", compiled_sha256=digest, ship_models=False))
     return tmp_path
 
 

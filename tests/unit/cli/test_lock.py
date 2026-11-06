@@ -10,24 +10,14 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from ocsf_toolkit.cli import lock, trees
-from tests.unit.cli.support import Upstream
+from tests.conftest import ROOT
+from tests.unit.cli.support import TOOLCHAIN, Upstream, entry
 
-ROOT = Path(__file__).parents[3]
 COMMIT = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 SHA = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
 IR_SHA = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
 
-TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
-ENTRY = lock.SchemaEntry(
-    version="1.9.0",
-    repo=lock.UPSTREAM_REPO,
-    ref="1.9.0",
-    commit=COMMIT,
-    compiled_sha256=SHA,
-    ir_sha256="",
-    models_tree_sha256="",
-    ship_models=True,
-)
+ENTRY = entry(commit=COMMIT, compiled_sha256=SHA)
 LOCK = lock.Lockfile(TOOLCHAIN, (ENTRY,))
 
 

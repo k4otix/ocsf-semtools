@@ -22,6 +22,9 @@ def isolated_git(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def upstream(tmp_path: Path) -> Upstream:
+    """A local ocsf-schema repository with upstream's traps: tags <=1.2.0 carry a "v"; tag 1.5.0
+    points at a 1.6.0-dev commit while the real 1.5.0 is the head of branch v1.5.0; 1.9.0 is an
+    annotated tag."""
     repo = tmp_path / "ocsf-schema"
     repo.mkdir()
     git(repo, "init", "--quiet", "--initial-branch", "main")

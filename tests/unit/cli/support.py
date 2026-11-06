@@ -4,9 +4,34 @@ import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-# Mirrors the upstream traps: tags <=1.2.0 carry a "v"; tag 1.5.0 points at a 1.6.0-dev commit
-# while the real 1.5.0 is the head of branch v1.5.0; 1.9.0 is an annotated tag here.
+from ocsf_toolkit.cli import lock
+
+# The committed ocsf.lock's toolchain (test_lock checks that they agree).
+TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", msgspec="0.22.0", ir_version="1.0")
+
+
+def entry(version: str = "1.9.0", **fields: Any) -> lock.SchemaEntry:
+    """Return a valid lockfile entry for a version; ``fields`` override the placeholders."""
+    placeholders: dict[str, Any] = {
+        "repo": lock.UPSTREAM_REPO,
+        "ref": version,
+        "commit": "a" * 40,
+        "compiled_sha256": "",
+        "ir_sha256": "",
+        "models_tree_sha256": "",
+        "ship_models": True,
+    }
+    return lock.SchemaEntry(version=version, **(placeholders | fields))
+
+
+def write_lockfile(path: Path, *entries: lock.SchemaEntry) -> Path:
+    """Write a lockfile of the test toolchain and these entries; return its path."""
+    lock.write(path, lock.Lockfile(TOOLCHAIN, entries))
+    return path
+
+
 FAKE_COMPILER = """\
 import json, pathlib, sys
 src = pathlib.Path(sys.argv[1])
