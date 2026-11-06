@@ -18,7 +18,7 @@ RESERVED = frozenset(
 
 
 def class_name(name: str) -> str:
-    """``detection_finding`` -> ``DetectionFinding``."""
+    """Return the class name of an item key: ``detection_finding`` -> ``DetectionFinding``."""
     return "".join(part.capitalize() for part in name.split("_"))
 
 
@@ -38,13 +38,16 @@ def module_name(name: str) -> str:
 
 
 def member_name(caption: str) -> str:
-    """``"Identity & Access"`` -> ``IDENTITY_AND_ACCESS``; ``"5Views"`` -> ``N_5VIEWS``."""
+    """Return the member name of a caption.
+
+    ``"Identity & Access"`` -> ``IDENTITY_AND_ACCESS``; ``"5Views"`` -> ``N_5VIEWS``.
+    """
     name = _NON_ALNUM.sub("_", caption.replace("&", " and ")).strip("_").upper()
     return f"N_{name}" if name[:1].isdigit() else name
 
 
 def member_names(enum: Mapping[EnumValue, EnumMember]) -> dict[EnumValue, str]:
-    """Member names in value order; names that collide all take the value as a suffix."""
+    """Return member names in value order; names that collide all take the value as a suffix."""
     base = {value: member_name(m.caption) or "VALUE" for value, m in sorted(enum.items())}
     counts = Counter(base.values())
     names = {v: f"{n}_{_suffix(v)}" if counts[n] > 1 else n for v, n in base.items()}

@@ -14,12 +14,12 @@ from ocsf_toolkit.cli import _uvx
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
 WINDOW = 3  # model dists ship for the newest WINDOW versions (D#25)
 
-_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
-_COMMIT = re.compile(r"^[0-9a-f]{40}$")
-_SHA256 = re.compile(r"^(|[0-9a-f]{64})$")
+_VERSION = re.compile(r"\d+\.\d+\.\d+")
+_COMMIT = re.compile(r"[0-9a-f]{40}")
+_SHA256 = re.compile(r"(|[0-9a-f]{64})")
 # Values reach git and uvx command lines: no leading "-", no exotic git transports.
-_REPO = re.compile(r"^(https|file)://[^\s]+$")
-_TOOL_VERSION = re.compile(r"^\d+(\.\d+)*$")
+_REPO = re.compile(r"(https|file)://[^\s]+")
+_TOOL_VERSION = re.compile(r"\d+(\.\d+)*")
 
 _HEADER = """\
 # ocsf.lock: schema pins. Written by `ocsf-toolkit lock`.
@@ -83,7 +83,7 @@ def loads(text: str) -> Lockfile:
     _check_keys(data, {"toolchain", "schemas"}, "ocsf.lock")
     toolchain = Toolchain(**_table(data["toolchain"], _TOOLCHAIN_KEYS, "[toolchain]"))
     for key, field_name in _TOOLCHAIN_KEYS.items():
-        if not _TOOL_VERSION.match(getattr(toolchain, field_name)):
+        if not _TOOL_VERSION.fullmatch(getattr(toolchain, field_name)):
             raise ValueError(f"[toolchain]: {key} must be a plain version like 1.1.1")
     raw_schemas: object = data["schemas"]
     if not isinstance(raw_schemas, list):
@@ -134,7 +134,7 @@ def version_key(version: str) -> tuple[int, ...]:
 
 
 def parse_ls_remote(output: str) -> dict[str, str]:
-    """``git ls-remote`` output -> ``{ref: commit}``; peeled tags keep their ``^{}`` suffix."""
+    """Return ``git ls-remote`` output as ``{ref: commit}``; peeled tags keep their ``^{}`` suffix."""
     refs: dict[str, str] = {}
     for line in output.splitlines():
         if line.strip():
@@ -172,7 +172,7 @@ def add(
     compiler_cmd: str | None,
 ) -> Lockfile:
     """Resolve, pin and compile a new OCSF version; return the lockfile with its entry added."""
-    if not _VERSION.match(version):
+    if not _VERSION.fullmatch(version):
         raise ValueError(f"OCSF version must look like x.y.z, got {version!r}")
     _check_repo(repo, "--repo")
     if any(entry.version == version for entry in lock.schemas):
@@ -279,18 +279,18 @@ def _table(raw: object, keys: Mapping[str, str], where: str) -> dict[str, Any]:
 
 
 def _check_entry(entry: SchemaEntry, where: str) -> None:
-    if not _VERSION.match(entry.version):
+    if not _VERSION.fullmatch(entry.version):
         raise ValueError(f"{where}: version must look like x.y.z, got {entry.version!r}")
     _check_repo(entry.repo, where)
-    if not _COMMIT.match(entry.commit):
+    if not _COMMIT.fullmatch(entry.commit):
         raise ValueError(f"{where}: commit must be a full 40-hex SHA, got {entry.commit!r}")
     for name in ("compiled_sha256", "ir_sha256", "models_tree_sha256"):
-        if not _SHA256.match(getattr(entry, name)):
+        if not _SHA256.fullmatch(getattr(entry, name)):
             raise ValueError(f'{where}: {name} must be 64 hex chars or "", got {getattr(entry, name)!r}')
 
 
 def _check_repo(repo: str, where: str) -> None:
-    if not _REPO.match(repo):
+    if not _REPO.fullmatch(repo):
         raise ValueError(f"{where}: repo must be an https:// or file:// URL, got {repo!r}")
 
 

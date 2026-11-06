@@ -84,8 +84,8 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_parser(
             "models",
             help="check or record the generated model trees (regeneration gate)",
-            description="Render each model-window version twice from its shipped IR and assert "
-            "the tree is stable and matches models_tree_sha256 in the lockfile.",
+            description="Render each model-window version twice from its shipped IR. check asserts the "
+            "tree is stable and matches models_tree_sha256 in the lockfile; record writes that hash.",
         ),
         common,
     )

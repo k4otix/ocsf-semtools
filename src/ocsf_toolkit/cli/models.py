@@ -42,7 +42,7 @@ def package_name(version: str) -> str:
 
 
 def files_sha256(files: Mapping[str, bytes]) -> str:
-    """sha256 over the (relative path, bytes) pairs of a file tree, sorted by path."""
+    """Return the sha256 over the (relative path, bytes) pairs of a file tree, sorted by path."""
     h = hashlib.sha256()
     for path in sorted(files):
         h.update(path.encode() + b"\0" + files[path] + b"\0")
@@ -50,7 +50,7 @@ def files_sha256(files: Mapping[str, bytes]) -> str:
 
 
 def read_tree(root: Path) -> dict[str, bytes]:
-    """Every file under root by relative POSIX path, without bytecode caches."""
+    """Return every file under root by relative POSIX path, leaving out bytecode caches."""
     return {
         p.relative_to(root).as_posix(): p.read_bytes()
         for p in root.rglob("*")

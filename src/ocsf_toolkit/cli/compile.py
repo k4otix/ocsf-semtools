@@ -35,7 +35,7 @@ def run(args: argparse.Namespace) -> int:
         )
         print(
             f"{entry.version}: ok  ref {entry.ref}  commit {entry.commit}\n"
-            f"{entry.version}: compiled version {entry.version} == declared {entry.version}\n"
+            f"{entry.version}: compiled version matches the declared one\n"
             f"{entry.version}: sha256 {digest} == lockfile -> {out}"
         )
     return 0

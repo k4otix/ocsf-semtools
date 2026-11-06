@@ -38,7 +38,7 @@ def register(parser: argparse.ArgumentParser, common: argparse.ArgumentParser) -
 
 
 def build(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path) -> bytes:
-    """Canonical IR JSON for one lockfile entry, from its verified compiled schema."""
+    """Return the canonical IR JSON for one lockfile entry, from its verified compiled schema."""
     if toolchain.ir_version != IR_VERSION:
         raise ValueError(f"lockfile [toolchain] ir_version is {toolchain.ir_version}, this library writes {IR_VERSION}")
     path = build_dir / "compiled" / f"schema-{entry.version}.json"

@@ -112,7 +112,7 @@ def render(
     profiles: Iterable[str] | None = None,
     extensions: Iterable[str] | None = None,
 ) -> dict[str, bytes]:
-    """Relative path -> file bytes; a pure function of the IR, the arguments and this version."""
+    """Return relative path -> file bytes: a pure function of the IR, the arguments and this version."""
     if not package.isidentifier() or keyword.iskeyword(package):
         raise ValueError(f"package name {package!r} is not a single Python identifier")
     _check_names(ir)
@@ -256,7 +256,7 @@ class _Generator:
     def _classify(
         self, item: ResolvedItem, a: ResolvedAttribute, value: str, imports: Imports
     ) -> tuple[str, str, str | None]:
-        """(group, annotation, default) for one field."""
+        """Return (group, annotation, default) for one field."""
         fixed = self._fixed(item, a)
         if fixed is not None:
             imports.need("typing", "Literal")

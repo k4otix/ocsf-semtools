@@ -32,7 +32,8 @@ def register(parser: argparse.ArgumentParser) -> None:
         action="append",
         default=[],
         metavar="PATH",
-        help="a directory of custom extensions to compile SOURCE with (repeatable; needs 3.14)",
+        help="a directory of custom extensions to compile SOURCE with (repeatable; compiled through uvx "
+        "under the lockfile's python-compile)",
     )
     parser.set_defaults(run=run)
 
@@ -91,5 +92,5 @@ def _extended(args: argparse.Namespace) -> SchemaIR:
 
 
 def tree_sha256(root: Path) -> str:
-    """sha256 over the sorted (relative path, bytes) of every file under root."""
+    """Return the sha256 over the sorted (relative path, bytes) of every file under root."""
     return models.files_sha256(models.read_tree(root))

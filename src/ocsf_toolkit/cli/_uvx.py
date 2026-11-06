@@ -20,7 +20,7 @@ def compiler_argv(
     compiler_cmd: str | None = None,
     extensions: Sequence[Path] = (),
 ) -> list[str]:
-    """Command line that compiles the schema checkout at ``src`` to JSON on stdout.
+    """Return the command line that compiles the schema checkout at ``src`` to JSON on stdout.
 
     ``compiler_cmd`` replaces the ``uvx`` invocation (air-gapped builds); ``src`` is appended to it.
     Each of ``extensions`` is a directory of custom extensions, passed as ``-e PATH``.

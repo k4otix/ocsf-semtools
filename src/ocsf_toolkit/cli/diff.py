@@ -26,7 +26,7 @@ def register(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    """Exit 0 when the IRs are equal, 1 when they differ, 2 when one can't be read."""
+    """Print the diff of two IRs; return 0 when they are equal, 1 when they differ, 2 when one can't be read."""
     try:
         a, b = source_ir(args.a), source_ir(args.b)
     except (ValueError, OSError) as exc:

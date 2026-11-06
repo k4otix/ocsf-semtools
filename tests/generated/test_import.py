@@ -38,7 +38,7 @@ def test_classes_load_on_demand(dist: Dist) -> None:
     found = json.loads(result.stdout)
     assert found["root"] == []  # the package root imports nothing until a name is used
     assert found["classes"] == [f"{dist.package}.classes.detection_finding"]
-    print(f"{dist.version} cold import of DetectionFinding: {found['ms']:.1f} ms")  # S4: < 50 ms
+    print(f"{dist.version} cold import of DetectionFinding: {found['ms']:.1f} ms")  # reported, not gated
 
 
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")

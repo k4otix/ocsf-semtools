@@ -122,9 +122,9 @@ def needs_release(published: bytes | None, package: str, tree_sha256: str, core:
 
 
 def _latest_wheel(dist: str) -> tuple[str, bytes] | None:
-    """(file name, bytes) of the newest release's wheel on PyPI, or None if never published."""
+    """Return (file name, bytes) of the newest release's wheel on PyPI, or None if never published."""
     try:
-        with urllib.request.urlopen(PYPI.format(dist)) as response:
+        with urllib.request.urlopen(PYPI.format(dist), timeout=60) as response:
             info = json.load(response)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
@@ -133,13 +133,13 @@ def _latest_wheel(dist: str) -> tuple[str, bytes] | None:
     files = [u for u in info["urls"] if u["packagetype"] == "bdist_wheel"]
     if len(files) != 1:
         raise ValueError(f"{dist} {info['info']['version']}: expected one wheel, got {files}")
-    with urllib.request.urlopen(files[0]["url"]) as response:
+    with urllib.request.urlopen(files[0]["url"], timeout=60) as response:
         data: bytes = response.read()
     return files[0]["filename"], data
 
 
 def unpublished(core: str) -> list[str]:
-    """Model-window versions to release alongside core version ``core``."""
+    """Return the model-window versions to release alongside core version ``core``."""
     out: list[str] = []
     for e in _window():
         latest = _latest_wheel(dist_name(e.version))
@@ -238,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
         check_wheels(args.wheels)
     elif args.action == "compat":
         compat(args.version, args.wheels)
-    else:
+    elif args.action == "unpublished":
         print(" ".join(unpublished(args.version)))
     return 0
 
