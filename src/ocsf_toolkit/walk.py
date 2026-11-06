@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import Any, Literal, cast, final
 
 from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema
+from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
 
 type Path = tuple[str | int, ...]
 type Severity = Literal["error", "warning", "info"]
@@ -129,14 +129,19 @@ def walk(
                 )
                 return
             yield Visit(owner, attr, node[attr], (*path, attr), node)
-            children.extend(_children(owner, attr, node, path, schema))
+            ra = owner.attributes.get(attr)
+            if ra is not None and ra.object_type is not None and ra.object_type != OPEN_OBJECT and attr in node:
+                children.extend(_children(ra, attr, node[attr], path, schema))
         yield Visit(owner, None, node, path, node)
         stack.extend(reversed(children))
 
 
 def dotted(path: Path) -> str:
     """Return an indexed path in upstream notation: ("evidences", 0, "name") -> "evidences[0].name"."""
-    return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
+    try:
+        return ".".join(cast(tuple[str, ...], path)).lstrip(".")  # no index: the common case
+    except TypeError:
+        return "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path).lstrip(".")
 
 
 def canonical(name: str | Path) -> str:
@@ -151,15 +156,12 @@ def canonical(name: str | Path) -> str:
 
 
 def _children(
-    owner: ResolvedItem, attr: str, node: dict[str, Any], path: Path, schema: ResolvedSchema
+    ra: ResolvedAttribute, attr: str, value: object, path: Path, schema: ResolvedSchema
 ) -> Iterator[tuple[ResolvedItem, dict[str, Any], Path]]:
-    ra = owner.attributes.get(attr)
-    if ra is None or ra.object_type is None or ra.object_type == OPEN_OBJECT or attr not in node:
-        return
+    assert ra.object_type is not None
     child = schema.objects.get(ra.object_type)
     if child is None:
         return
-    value: object = node[attr]
     if isinstance(value, dict):
         yield child, cast(dict[str, Any], value), (*path, attr)
     elif isinstance(value, list) and ra.is_array:
