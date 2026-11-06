@@ -50,24 +50,24 @@ def place(item: ItemDef) -> Place:
 
 
 def plan(items: Iterable[ItemDef]) -> dict[str, Place]:
-    """Item key -> place; two items sharing a module, class name or import alias is an error."""
+    """Return each item's place by key; two items sharing a module, class name or import alias is an error."""
     places = {item.key: place(item) for item in items}
-    for what in ("module", "import alias", "class name"):
-        seen: defaultdict[object, list[str]] = defaultdict(list)
-        for item_key, p in places.items():
-            seen[_identities(p)[what]].append(item_key)
-        clashes = sorted(keys for keys in seen.values() if len(keys) > 1)
+    seen: dict[str, defaultdict[object, list[str]]] = {what: defaultdict(list) for what in _IDENTITIES}
+    for item_key, p in places.items():
+        for what, identity in zip(_IDENTITIES, (p.path, p.alias, (p.package, p.name)), strict=True):
+            seen[what][identity].append(item_key)
+    for what in _IDENTITIES:
+        clashes = sorted(keys for keys in seen[what].values() if len(keys) > 1)
         if clashes:
             raise ValueError(f"generated {what} collides for items {clashes}")
     return places
 
 
-def _identities(p: Place) -> dict[str, object]:
-    return {"module": p.path, "import alias": p.alias, "class name": (p.package, p.name)}
+_IDENTITIES = ("module", "import alias", "class name")  # what must be unique per place, checked in this order
 
 
 def exports(places: Iterable[Place]) -> dict[tuple[str, ...], list[Place]]:
-    """Package -> the places it re-exports lazily: the root exports core classes."""
+    """Return the places each package re-exports lazily: the root exports core classes."""
     out: defaultdict[tuple[str, ...], list[Place]] = defaultdict(list)
     for p in places:
         out[() if p.package == ("classes",) else p.package].append(p)

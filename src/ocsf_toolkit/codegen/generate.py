@@ -10,13 +10,13 @@ from pathlib import Path
 
 from ocsf_toolkit.codegen.emit import (
     MARKER,
-    Enum,
+    EnumClass,
     Field,
     Imports,
     enum_class,
     header,
     lazy_init,
-    module,
+    render_module,
     string,
     struct_class,
 )
@@ -30,7 +30,12 @@ from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema,
 IR_FILE = "ir.json"  # every package carries its IR, so it never depends on core's copy
 _IDENTITY = ("class_uid", "class_name", "category_uid", "category_name")
 _ANY = re.compile(r"\bAny\b")
+# a Struct's field groups, each under its comment, in this order; profile and extension groups follow
 _FIXED = "identity: fixed by the class"
+_REQUIRED = "required"
+_DERIVED = "derived: build() fills these"
+_OPTIONAL = "recommended and optional"
+_GROUPS = (_FIXED, _REQUIRED, _DERIVED, _OPTIONAL)
 _VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?")
 _NAME = re.compile(r"[a-z0-9_]+(/[a-z0-9_]+)?")  # "cloud", "linux/linux_users"
 
@@ -89,7 +94,7 @@ def _install(files: Mapping[str, bytes], target: Path) -> None:
 
 
 def _foreign(target: Path) -> list[Path]:
-    """Paths under a package directory that this generator would not have written."""
+    """Return the paths under a package directory that this generator would not have written."""
     foreign: list[Path] = []
     for root, dirs, names in os.walk(target, followlinks=False):
         here = Path(root)
@@ -119,7 +124,7 @@ def render(
     profiles: Iterable[str] | None = None,
     extensions: Iterable[str] | None = None,
 ) -> dict[str, bytes]:
-    """Return relative path -> file bytes: a pure function of the IR, the arguments and this version."""
+    """Return each file's bytes by relative path: a pure function of the IR, the arguments and this version."""
     if not package.isidentifier() or keyword.iskeyword(package):
         raise ValueError(f"package name {package!r} is not a single Python identifier")
     _check_names(ir)
@@ -147,6 +152,8 @@ def _check_names(ir: SchemaIR) -> None:
 
 
 class _Generator:
+    """One rendering of a resolved schema; collects the dictionary enums its modules share."""
+
     def __init__(self, ir: SchemaIR, schema: ResolvedSchema, *, exact: bool) -> None:
         self.ir = ir
         self.schema = schema
@@ -156,10 +163,11 @@ class _Generator:
             **{k: ir.objects[k] for k in schema.objects if k != OPEN_OBJECT},  # typed as a dict
         }
         self.places = plan(self.defs.values())
-        self.shared: dict[str, Enum] = {}  # name -> enum, for enums.py
+        self.shared: dict[str, EnumClass] = {}  # name -> enum, for enums.py
         self.header = header(schema.version, schema.digest)
 
     def files(self, package: str) -> dict[str, str]:
+        """Return every file of the package as text, by relative path."""
         out: dict[str, str] = {}
         items = {**self.schema.classes, **self.schema.objects}  # by key
         for key, place in sorted(self.places.items()):
@@ -167,7 +175,7 @@ class _Generator:
         imports = Imports()
         bodies = [enum_class(e, imports) for _, e in sorted(self.shared.items())]
         doc = f"Enums of the OCSF {self.schema.version} dictionary, shared by its classes and objects."
-        out["enums.py"] = module(self.header, doc, imports, None, bodies)
+        out["enums.py"] = render_module(self.header, doc, imports, None, bodies)
         trees = exports(self.places.values())
         packages = {p.package[:n] for p in self.places.values() for n in (1, len(p.package))}
         for pkg in sorted(packages | {()}):
@@ -207,17 +215,18 @@ class _Generator:
 
     def _module(self, item: ResolvedItem, here: Place) -> str:
         imports = Imports()
-        local: list[Enum] = []
+        local: list[EnumClass] = []
         groups: dict[str, list[Field]] = {}
         names = set(item.attributes)
+        labels = {spec.label for spec in item.siblings.values()}
         for name, a in sorted(item.attributes.items()):
             python = field_name(name)
             if python != name and python in names:
                 raise ValueError(f"{item.key}.{name}: field name {python!r} is taken")
+            fixed, derived = self._fixed(item, a), _derived(item, a, labels)
             # identity and derived values are written by build(), so they carry no enum type
-            enum = self._fixed(item, a) is None and not self._derived(item, a)
-            named = self._reference(item, a, here, imports, local, enum=enum)
-            group, value, default = self._classify(item, a, annotation(a, named), imports)
+            named = self._reference(item, a, here, imports, local, enum=fixed is None and not derived)
+            group, value, default = self._classify(item, a, annotation(a, named), imports, fixed, derived=derived)
             field = Field(python, name, value, default, always=group == _FIXED)
             groups.setdefault(group, []).append(field)
         identity = groups.get(_FIXED, [])
@@ -226,7 +235,7 @@ class _Generator:
         ocsf = (self.schema.version, item.key)
         bodies.append(struct_class(here.name, self._doc(item), ocsf, _ordered(groups), imports))
         kind = "class" if item.is_class else "object"
-        return module(self.header, f"OCSF {self.schema.version} {kind} {item.key}.", imports, here, bodies)
+        return render_module(self.header, f"OCSF {self.schema.version} {kind} {item.key}.", imports, here, bodies)
 
     def _reference(
         self,
@@ -234,7 +243,7 @@ class _Generator:
         a: ResolvedAttribute,
         here: Place,
         imports: Imports,
-        local: list[Enum],
+        local: list[EnumClass],
         *,
         enum: bool,
     ) -> str | None:
@@ -253,32 +262,37 @@ class _Generator:
             known = self.shared.get(name)
             if known is not None and known.enum != a.enum:
                 raise ValueError(f"two dictionary enums would both be named {name}")
-            self.shared[name] = Enum(name, f"{entry.caption}: the dictionary enum.", a.enum)
+            self.shared[name] = EnumClass(name, f"{entry.caption}: the dictionary enum.", a.enum)
             imports.enums.add(name)
             return name
         name = class_name(self.defs[item.key].name) + class_name(a.name)
-        local.append(Enum(name, f"{a.caption} of {item.key}.", a.enum))
+        local.append(EnumClass(name, f"{a.caption} of {item.key}.", a.enum))
         return name
 
     def _classify(
-        self, item: ResolvedItem, a: ResolvedAttribute, value: str, imports: Imports
+        self,
+        item: ResolvedItem,
+        a: ResolvedAttribute,
+        value: str,
+        imports: Imports,
+        fixed: str | None,
+        *,
+        derived: bool,
     ) -> tuple[str, str, str | None]:
-        """Return (group, annotation, default) for one field."""
-        fixed = self._fixed(item, a)
+        """Return one field's group, annotation and default."""
         if fixed is not None:
             imports.need("typing", "Literal")
             return _FIXED, f"Literal[{fixed}]", fixed
         if _ANY.search(value):
             imports.need("typing", "Any")
         owner = self.defs[item.key]
-        derived = self._derived(item, a)
         group: str | None = None
         if a.gated_by:
             group = f"profile: {', '.join(sorted(a.gated_by))}"
         elif a.extension is not None and a.extension != owner.extension:
             group = f"extension: {a.extension}"
         elif derived:
-            return "derived: build() fills these", value, "None"
+            return _DERIVED, value, "None"
         # Superset classes can't require what only a profile requires; extension attributes on
         # core items are opt-in; deprecated and derived values are never asked of the caller.
         required = (
@@ -289,7 +303,7 @@ class _Generator:
             and not (group or "").startswith("extension")
         )
         if group is None:
-            group = "required" if required else "recommended and optional"
+            group = _REQUIRED if required else _OPTIONAL
         return group, value, None if required else "None"
 
     def _fixed(self, item: ResolvedItem, a: ResolvedAttribute) -> str | None:
@@ -300,11 +314,6 @@ class _Generator:
         if item.key == "metadata" and a.name == "version":
             return string(self.schema.version)
         return None
-
-    def _derived(self, item: ResolvedItem, a: ResolvedAttribute) -> bool:
-        labels = {spec.label for spec in item.siblings.values()}
-        twin = a.name.endswith("_dt") and _timestamp(item.attributes.get(a.name[:-3]))
-        return a.name in labels or twin or (item.is_class and a.name == "type_uid")
 
     def _doc(self, item: ResolvedItem) -> str:
         owner = self.defs[item.key]
@@ -317,16 +326,20 @@ class _Generator:
         return doc
 
 
+def _derived(item: ResolvedItem, a: ResolvedAttribute, labels: set[str]) -> bool:
+    """Return whether build() derives the attribute: a sibling label, a _dt twin, or type_uid."""
+    twin = a.name.endswith("_dt") and _timestamp(item.attributes.get(a.name[:-3]))
+    return a.name in labels or twin or (item.is_class and a.name == "type_uid")
+
+
 def _timestamp(a: ResolvedAttribute | None) -> bool:
     return a is not None and a.type == "timestamp_t"
 
 
 def _ordered(groups: Mapping[str, list[Field]]) -> list[tuple[str, list[Field]]]:
-    fixed = [_FIXED, "required", "derived: build() fills these"]
-    fixed.append("recommended and optional")
-    rest = sorted(g for g in groups if g not in fixed)
+    rest = sorted(g for g in groups if g not in _GROUPS)
     rest.sort(key=lambda g: not g.startswith("profile"))  # profiles, then extensions
-    return [(g, groups[g]) for g in (*fixed, *rest) if g in groups]
+    return [(g, groups[g]) for g in (*_GROUPS, *rest) if g in groups]
 
 
 def _tuple(values: list[str]) -> str:

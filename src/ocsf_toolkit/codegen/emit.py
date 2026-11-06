@@ -25,7 +25,7 @@ class Field:
 
 
 @dataclass(frozen=True, slots=True)
-class Enum:
+class EnumClass:
     """One IntEnum or StrEnum class to emit."""
 
     name: str
@@ -76,7 +76,7 @@ def string(text: str) -> str:
     Every control character is escaped, so no input text can end the literal.
     """
     if '"' in text and "'" not in text:
-        return repr(text)  # single-quoted, since text has no single quote
+        return repr(text)
     return json.dumps(text, ensure_ascii=False)
 
 
@@ -95,7 +95,9 @@ def docstring(text: str, indent: str) -> list[str]:
         lead = f'{indent}"""' if n == 0 else indent
         if n:
             lines.append("")
-        lines += textwrap.wrap(  # 3 short, so a single wrapped line would have fit as a one-liner
+        # 3 short of the width, the room the closing quotes take: a paragraph that fits in one line that
+        # way would have fit as a one-liner, which returned above
+        lines += textwrap.wrap(
             paragraph,
             WIDTH - 3,
             initial_indent=lead,
@@ -106,7 +108,7 @@ def docstring(text: str, indent: str) -> list[str]:
     return [*lines, f'{indent}"""']
 
 
-def enum_class(e: Enum, imports: Imports) -> list[str]:
+def enum_class(e: EnumClass, imports: Imports) -> list[str]:
     """Return the lines of one enum class, recording the imports it needs."""
     is_str = any(isinstance(v, str) for v in e.enum)
     base = "StrEnum" if is_str else "IntEnum"
@@ -141,14 +143,14 @@ def struct_class(
     return lines
 
 
-def module(header_lines: list[str], doc: str, imports: Imports, here: Place | None, bodies: list[list[str]]) -> str:
+def render_module(
+    header_lines: list[str], doc: str, imports: Imports, here: Place | None, bodies: list[list[str]]
+) -> str:
     """Return a module of enums and Structs: the header comment, a docstring, imports, then the bodies."""
     lines = [*header_lines, *docstring(doc, ""), "", *imports.render(here)]
     for body in bodies:
         lines += ["", *body, ""]
-    while lines and lines[-1] == "":
-        lines.pop()
-    return "\n".join(lines) + "\n"
+    return _finish(lines)
 
 
 def lazy_init(
@@ -193,6 +195,10 @@ def lazy_init(
         ]
     else:
         lines.append("__all__: list[str] = []")
+    return _finish(lines)
+
+
+def _finish(lines: list[str]) -> str:
     while lines and lines[-1] == "":
         lines.pop()
     return "\n".join(lines) + "\n"
@@ -203,7 +209,7 @@ def _tail(p: Place, here: tuple[str, ...]) -> str:
 
 
 def _field(f: Field, imports: Imports) -> list[str]:
-    """One field, wrapped the way ruff format wraps an over-long annotated assignment."""
+    """Return one field, wrapped the way ruff format wraps an over-long annotated assignment."""
     annotation = f.annotation if f.default != "None" else f"{f.annotation} | None"
     default = f.default
     if f.name != f.wire or f.always:
