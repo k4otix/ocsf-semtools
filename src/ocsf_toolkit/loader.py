@@ -3,11 +3,9 @@
 import json
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from types import MappingProxyType
 from typing import cast
 
 from ocsf_toolkit.ir import (
-    CONSTRAINT_KINDS,
     Attribute,
     Category,
     Constraint,
@@ -16,13 +14,16 @@ from ocsf_toolkit.ir import (
     EnumValue,
     Extension,
     ItemDef,
+    JsonObject,
     Profile,
     Provenance,
-    Requirement,
     Root,
-    ScalarValue,
     SchemaIR,
     TypeDef,
+    constraint_kind,
+    enum_key,
+    frozen_sorted,
+    parse_requirement,
 )
 
 SUPPORTED_COMPILE_VERSION = 1
@@ -76,7 +77,7 @@ def load_compiled(
         version=top.text("version"),
         compile_version=compile_version,
         provenance=provenance,
-        categories=_sorted(
+        categories=frozen_sorted(
             {
                 name: Category(
                     name=name,
@@ -87,14 +88,14 @@ def load_compiled(
                 for name, node in categories.children("attributes", "category")
             }
         ),
-        types=_sorted(types),
-        dictionary=_sorted(
+        types=frozen_sorted(types),
+        dictionary=frozen_sorted(
             {name: _attribute(node, name, roots) for name, node in dictionary.children("attributes", "dict.attr")}
         ),
-        classes=_sorted({key: _item(node, key, True, roots) for key, node in top.children("classes", "class")}),
-        objects=_sorted({key: _item(node, key, False, roots) for key, node in top.children("objects", "object")}),
-        profiles=_sorted({key: _profile(node, key) for key, node in top.children("profiles", "profile")}),
-        extensions=_sorted(
+        classes=frozen_sorted({key: _item(node, key, True, roots) for key, node in top.children("classes", "class")}),
+        objects=frozen_sorted({key: _item(node, key, False, roots) for key, node in top.children("objects", "object")}),
+        profiles=frozen_sorted({key: _profile(node, key) for key, node in top.children("profiles", "profile")}),
+        extensions=frozen_sorted(
             {
                 key: Extension(
                     name=node.text("name"),
@@ -146,12 +147,10 @@ def _root(name: str, nodes: Mapping[str, "_Node"]) -> Root:
 
 def _item(node: "_Node", key: str, is_class: bool, roots: Mapping[str, Root]) -> ItemDef:
     attr_ctx = ("class" if is_class else "object") + ".attr"
-    constraints: list[Constraint] = []
-    for name, attributes in node.text_lists("constraints").items():
-        kind = CONSTRAINT_KINDS.get(name)
-        if kind is None:
-            raise ValueError(f"{node.path}.constraints: unknown constraint kind {name!r}")
-        constraints.append(Constraint(kind=kind, attributes=attributes))
+    constraints = [
+        Constraint(kind=constraint_kind(name, f"{node.path}.constraints"), attributes=attributes)
+        for name, attributes in node.entries("constraints", _Node.texts).items()
+    ]
     return ItemDef(
         key=key,
         name=node.text("name"),
@@ -160,7 +159,7 @@ def _item(node: "_Node", key: str, is_class: bool, roots: Mapping[str, Root]) ->
         extends=node.opt_text("extends"),
         extension=node.opt_text("extension"),
         deprecated=_deprecation(node),
-        attributes=_sorted(
+        attributes=frozen_sorted(
             {name: _attribute(child, name, roots) for name, child in node.children("attributes", attr_ctx)}
         ),
         profiles=frozenset(node.texts("profiles")),
@@ -170,25 +169,20 @@ def _item(node: "_Node", key: str, is_class: bool, roots: Mapping[str, Root]) ->
         category=node.text("category") if is_class else None,
         category_uid=node.integer("category_uid") if is_class else None,
         category_name=node.opt_text("category_name") if is_class else None,
-        associations=_sorted(node.text_lists("associations")),
-        class_observables=_sorted(node.int_map("observables") if is_class else {}),
+        associations=node.entries("associations", _Node.texts),
+        class_observables=node.entries("observables", _Node.integer) if is_class else frozen_sorted({}),
     )
 
 
 def _attribute(node: "_Node", name: str, roots: Mapping[str, Root]) -> Attribute:
     type_key = node.text("type")
-    requirement = node.opt_text("requirement")
-    try:
-        req = Requirement(requirement) if requirement is not None else Requirement.OPTIONAL
-    except ValueError:
-        raise ValueError(f"{node.path}.requirement: unknown value {requirement!r}") from None
     return Attribute(
         name=name,
         caption=node.text("caption"),
         type=type_key,
         object_type=node.opt_text("object_type"),
         is_array=node.flag("is_array"),
-        requirement=req,
+        requirement=parse_requirement(node.opt_text("requirement"), node.path),
         profiles=frozenset(node.texts("profiles")),
         sibling=node.opt_text("sibling"),
         enum=_enum(node, roots.get(type_key)),
@@ -208,13 +202,8 @@ def _enum(node: "_Node", root: Root | None) -> Mapping[EnumValue, EnumMember] | 
     if root not in (Root.INTEGER, Root.LONG, Root.STRING):
         raise ValueError(f"{node.path}.enum: enum on a {root or 'non-primitive'} type")
     out: dict[EnumValue, EnumMember] = {}
-    for raw_key, member in members.children_of_self(node.ctx + ".enum"):
-        value: EnumValue = raw_key
-        if root is not Root.STRING:
-            try:
-                value = int(raw_key)
-            except ValueError:
-                raise ValueError(f"{member.path}: enum key is not an integer") from None
+    for raw_key, member in members.members(node.ctx + ".enum"):
+        value = enum_key(raw_key, root, member.path)
         uid = member.opt_integer("uid")  # category_uid enums repeat their key; nothing else uses it
         if uid is not None and uid != value:
             raise ValueError(f"{member.path}.uid: {uid} does not match its key")
@@ -223,7 +212,7 @@ def _enum(node: "_Node", root: Root | None) -> Mapping[EnumValue, EnumMember] | 
             caption=member.text("caption"),
             deprecated=_deprecation(member),
         )
-    return _sorted(out)
+    return frozen_sorted(out)
 
 
 def _deprecation(node: "_Node") -> Deprecation | None:
@@ -243,45 +232,31 @@ def _profile(node: "_Node", key: str) -> Profile:
         name=node.text("name"),
         caption=node.text("caption"),
         extension=node.opt_text("extension"),
-        annotations=_sorted(node.text_map("annotations")),
+        annotations=node.entries("annotations", _Node.text),
     )
 
 
-def _sorted[K: int | str, V](items: Mapping[K, V]) -> Mapping[K, V]:
-    """Freeze a mapping in key order, so iteration never depends on compiler output order."""
-    return MappingProxyType(dict(sorted(items.items(), key=lambda kv: kv[0])))
+class _Node(JsonObject):
+    """One JSON object of the compiler output: the shared typed reads, plus key accounting."""
 
-
-def _as_list(value: object) -> list[object] | None:
-    return cast(list[object], value) if isinstance(value, list) else None
-
-
-def _kind(value: object) -> str:
-    return "null" if value is None else type(value).__name__
-
-
-class _Node:
-    """One JSON object of the compiler output: typed reads, key accounting, error paths."""
-
-    __slots__ = ("_account", "_data", "ctx", "path")
+    __slots__ = ("_account", "ctx")
 
     def __init__(self, data: object, ctx: str, path: str, account: KeyAccount) -> None:
-        if not isinstance(data, dict):
-            raise ValueError(f"{path}: expected an object, got {_kind(data)}")
-        self._data = cast(dict[str, object], data)
+        """Wrap one object read at path, recording its keys under ctx as seen."""
+        super().__init__(data, path)
         self._account = account
         self.ctx = ctx
-        self.path = path
         account.seen.update((ctx, key) for key in self._data)
 
     def _get(self, key: str) -> object:
         self._account.read.add((self.ctx, key))
         return self._data.get(key)
 
-    def _fail(self, key: str, expected: str, value: object) -> ValueError:
-        return ValueError(f"{self.path}.{key}: expected {expected}, got {_kind(value)}")
+    def _child(self, key: str) -> "_Node | None":
+        return self.opt_node(key, self.ctx + "." + key)
 
     def ignore(self, *keys: str) -> None:
+        """Record keys as read without reading them: display text the IR leaves out."""
         self._account.read.update((self.ctx, key) for key in keys)
 
     def peek_text(self, key: str) -> str | None:
@@ -289,75 +264,12 @@ class _Node:
         value = self._data.get(key)
         return value if isinstance(value, str) else None
 
-    def text(self, key: str) -> str:
-        value = self._get(key)
-        if not isinstance(value, str):
-            raise self._fail(key, "a string", value)
-        return value
-
-    def opt_text(self, key: str) -> str | None:
-        value = self._get(key)
-        if value is not None and not isinstance(value, str):
-            raise self._fail(key, "a string", value)
-        return value
-
-    def integer(self, key: str) -> int:
-        value = self._get(key)
-        if not isinstance(value, int) or isinstance(value, bool):
-            raise self._fail(key, "an integer", value)
-        return value
-
-    def opt_integer(self, key: str) -> int | None:
-        if self._get(key) is None:
-            return None
-        return self.integer(key)
-
-    def flag(self, key: str) -> bool:
-        value = self._get(key)
-        if value is None:
-            return False
-        if not isinstance(value, bool):
-            raise self._fail(key, "a boolean", value)
-        return value
-
-    def texts(self, key: str) -> tuple[str, ...]:
-        value = self._get(key)
-        if value is None:
-            return ()
-        items = _as_list(value)
-        if items is None or not all(isinstance(v, str) for v in items):
-            raise self._fail(key, "a list of strings", value)
-        return tuple(cast(list[str], items))
-
-    def scalar(self, key: str) -> ScalarValue | None:
-        value = self._get(key)
-        if value is not None and not isinstance(value, bool | int | float | str):
-            raise self._fail(key, "a scalar", value)
-        return value
-
-    def scalars(self, key: str) -> tuple[ScalarValue, ...] | None:
-        value = self._get(key)
-        if value is None:
-            return None
-        items = _as_list(value)
-        if items is None or not all(isinstance(v, bool | int | float | str) for v in items):
-            raise self._fail(key, "a list of scalars", value)
-        return tuple(cast(list[ScalarValue], items))
-
-    def range(self, key: str) -> tuple[int | float, int | float] | None:
-        value = self._get(key)
-        if value is None:
-            return None
-        items = _as_list(value) or []
-        if len(items) != 2 or not all(isinstance(v, int | float) and not isinstance(v, bool) for v in items):
-            raise self._fail(key, "a [min, max] pair", value)
-        low, high = cast(list[int | float], items)
-        return (low, high)
-
     def node(self, key: str, ctx: str) -> "_Node":
+        """Return the nested object at key, accounted under ctx."""
         return _Node(self._get(key), ctx, f"{self.path}.{key}", self._account)
 
     def opt_node(self, key: str, ctx: str) -> "_Node | None":
+        """Return the nested object at key, or None when absent."""
         if self._get(key) is None:
             return None
         return self.node(key, ctx)
@@ -365,33 +277,14 @@ class _Node:
     def children(self, key: str, ctx: str) -> Iterator[tuple[str, "_Node"]]:
         """Yield the entries of a JSON object whose values are objects, e.g. a classes table."""
         container = self.opt_node(key, ctx + ".map")
-        return iter(()) if container is None else container.children_of_self(ctx)
+        return iter(()) if container is None else container.members(ctx)
 
-    def children_of_self(self, ctx: str) -> Iterator[tuple[str, "_Node"]]:
+    def members(self, ctx: str) -> Iterator[tuple[str, "_Node"]]:
+        """Yield this object's own entries as nodes accounted under ctx, e.g. an enum's members."""
         for key, value in self._data.items():
             self._account.read.add((self.ctx, key))
             yield key, _Node(value, ctx, f"{self.path}.{key}", self._account)
 
-    def text_lists(self, key: str) -> dict[str, tuple[str, ...]]:
-        container = self.opt_node(key, self.ctx + "." + key)
-        if container is None:
-            return {}
-        return {k: container.texts(k) for k in list(container.names())}
-
-    def text_map(self, key: str) -> dict[str, str]:
-        container = self.opt_node(key, self.ctx + "." + key)
-        if container is None:
-            return {}
-        return {k: container.text(k) for k in list(container.names())}
-
-    def int_map(self, key: str) -> dict[str, int]:
-        container = self.opt_node(key, self.ctx + "." + key)
-        if container is None:
-            return {}
-        return {k: container.integer(k) for k in list(container.names())}
-
-    def names(self) -> Iterator[str]:
-        return iter(self._data)
-
     def empty(self) -> bool:
+        """Tell whether the object has no keys."""
         return not self._data

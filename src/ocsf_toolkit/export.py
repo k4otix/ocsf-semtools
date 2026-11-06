@@ -5,11 +5,9 @@ import json
 import warnings
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from types import MappingProxyType
 from typing import cast
 
 from ocsf_toolkit.ir import (
-    CONSTRAINT_KINDS,
     Attribute,
     Category,
     Constraint,
@@ -18,13 +16,19 @@ from ocsf_toolkit.ir import (
     EnumValue,
     Extension,
     ItemDef,
+    JsonObject,
     Profile,
     Provenance,
     Requirement,
     Root,
-    ScalarValue,
     SchemaIR,
     TypeDef,
+    as_list,
+    constraint_kind,
+    enum_key,
+    frozen_sorted,
+    json_kind,
+    parse_requirement,
 )
 
 IR_VERSION = "1.0"
@@ -75,6 +79,9 @@ def load_ir(source: Path | bytes) -> SchemaIR:
 
     A different ``ir_version`` major is refused. A newer minor is read, and fields this reader
     doesn't know are ignored with a warning naming them; at this minor or older they are an error.
+    A few display fields may be absent and read as defaults (an empty caption, deprecation since and
+    message, or extension version; an item, profile or extension name equal to its key), so a
+    hand-edited file can leave them out; the exporter always writes them.
     """
     data = source.read_bytes() if isinstance(source, Path) else source
     try:
@@ -235,9 +242,10 @@ class _Reader:
     def _fields(self, raw: object, path: str, allowed: set[str]) -> "_Fields":
         return _Fields(raw, path, allowed, self._ignored)
 
-    def _table(self, raw: object, path: str) -> dict[str, object]:
+    @staticmethod
+    def _table(raw: object, path: str) -> dict[str, object]:
         if not isinstance(raw, dict):
-            raise ValueError(f"{path}: expected an object, got {_kind(raw)}")
+            raise ValueError(f"{path}: expected an object, got {json_kind(raw)}")
         return cast(dict[str, object], raw)
 
     def schema(self, top: "_Fields") -> SchemaIR:
@@ -260,7 +268,7 @@ class _Reader:
                 extensions=prov.triples("extensions"),
             ),
             categories=self._map(s, "categories", self._category),
-            types=MappingProxyType(dict(sorted(types.items()))),
+            types=frozen_sorted(types),
             dictionary=self._map(s, "dictionary", lambda k, r, p: self._attribute(k, r, p, roots)),
             classes=self._map(s, "classes", lambda k, r, p: self._item(k, r, p, roots)),
             objects=self._map(s, "objects", lambda k, r, p: self._item(k, r, p, roots)),
@@ -273,7 +281,7 @@ class _Reader:
     ) -> Mapping[str, V]:  # fmt: skip
         path = f"{owner.path}.{key}"
         table = self._table(owner.value(key) or {}, path)
-        return MappingProxyType({name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)})
+        return frozen_sorted({name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)})
 
     def _deprecation(self, raw: object, path: str) -> Deprecation | None:
         if raw is None:
@@ -317,18 +325,13 @@ class _Reader:
     def _attribute(self, name: str, raw: object, path: str, roots: Mapping[str, Root]) -> Attribute:
         a = self._fields(raw, path, _ATTRIBUTE)
         type_key = a.text("type")
-        requirement = a.text("requirement", Requirement.OPTIONAL.value)
-        try:
-            req = Requirement(requirement)
-        except ValueError:
-            raise ValueError(f"{path}.requirement: unknown value {requirement!r}") from None
         return Attribute(
             name=name,
             caption=a.text("caption", ""),
             type=type_key,
             object_type=a.opt_text("object_type"),
             is_array=a.flag("is_array"),
-            requirement=req,
+            requirement=parse_requirement(a.text("requirement", Requirement.OPTIONAL.value), path),
             profiles=frozenset(a.texts("profiles")),
             sibling=a.opt_text("sibling"),
             enum=self._enum(a.value("enum"), f"{path}.enum", roots.get(type_key)),
@@ -345,34 +348,22 @@ class _Reader:
             return None
         members: dict[EnumValue, EnumMember] = {}
         for key, member_raw in self._table(raw, path).items():
-            value: EnumValue = key
-            if root is not Root.STRING:
-                try:
-                    value = int(key)
-                except ValueError:
-                    raise ValueError(f"{path}.{key}: enum key is not an integer") from None
+            value = enum_key(key, root, f"{path}.{key}")
             m = self._fields(member_raw, f"{path}.{key}", {"caption", "deprecated"})
             members[value] = EnumMember(
                 value=value,
                 caption=m.text("caption", ""),
                 deprecated=self._deprecation(m.value("deprecated"), f"{path}.{key}.deprecated"),
             )
-        return MappingProxyType(dict(sorted(members.items(), key=lambda kv: kv[0])))
+        return frozen_sorted(members)
 
     def _item(self, key: str, raw: object, path: str, roots: Mapping[str, Root]) -> ItemDef:
         i = self._fields(raw, path, _ITEM)
         constraints: list[Constraint] = []
         for n, c_raw in enumerate(i.list("constraints")):
             c = self._fields(c_raw, f"{path}.constraints[{n}]", {"kind", "attributes"})
-            name = c.text("kind")
-            kind = CONSTRAINT_KINDS.get(name)
-            if kind is None:
-                raise ValueError(f"{path}.constraints[{n}].kind: unknown kind {name!r}")
+            kind = constraint_kind(c.text("kind"), f"{c.path}.kind")
             constraints.append(Constraint(kind=kind, attributes=c.texts("attributes")))
-        associations = self._table(i.value("associations") or {}, f"{path}.associations")
-        assoc_fields = self._fields(associations, f"{path}.associations", set(associations))
-        observables = self._table(i.value("class_observables") or {}, f"{path}.class_observables")
-        obs_fields = self._fields(observables, f"{path}.class_observables", set(observables))
         return ItemDef(
             key=key,
             name=i.text("name", key),
@@ -389,20 +380,18 @@ class _Reader:
             category=i.opt_text("category"),
             category_uid=i.opt_integer("category_uid"),
             category_name=i.opt_text("category_name"),
-            associations=MappingProxyType({k: assoc_fields.texts(k) for k in sorted(associations)}),
-            class_observables=MappingProxyType({k: obs_fields.integer(k) for k in sorted(observables)}),
+            associations=i.entries("associations", _Fields.texts),
+            class_observables=i.entries("class_observables", _Fields.integer),
         )
 
     def _profile(self, key: str, raw: object, path: str) -> Profile:
         p = self._fields(raw, path, {"name", "caption", "extension", "annotations"})
-        annotations = self._table(p.value("annotations") or {}, f"{path}.annotations")
-        ann_fields = self._fields(annotations, f"{path}.annotations", set(annotations))
         return Profile(
             key=key,
             name=p.text("name", key),
             caption=p.text("caption", ""),
             extension=p.opt_text("extension"),
-            annotations=MappingProxyType({k: ann_fields.text(k) for k in sorted(annotations)}),
+            annotations=p.entries("annotations", _Fields.text),
         )
 
     def _extension(self, key: str, raw: object, path: str) -> Extension:
@@ -419,104 +408,53 @@ class _Reader:
 type _Decoder[V] = Callable[[str, object, str], V]
 
 
-def _kind(value: object) -> str:
-    return "null" if value is None else type(value).__name__
+class _Fields(JsonObject):
+    """One IR JSON object: the shared typed reads, plus the unknown-field policy."""
 
-
-def _as_list(value: object) -> list[object] | None:
-    return cast(list[object], value) if isinstance(value, list) else None
-
-
-class _Fields:
-    """One IR JSON object: unknown-field policy and typed reads with error paths."""
-
-    __slots__ = ("_data", "path")
+    __slots__ = ("_ignored",)
+    null_flag_is_false = False  # the exporter writes every flag, so a null one is damage
 
     def __init__(self, raw: object, path: str, allowed: set[str], ignored: list[str] | None) -> None:
-        if not isinstance(raw, dict):
-            raise ValueError(f"{path}: expected an object, got {_kind(raw)}")
-        self._data = cast(dict[str, object], raw)
-        self.path = path
+        """Wrap one object; fields outside allowed are an error, or recorded in ignored when it is given."""
+        super().__init__(raw, path)
+        self._ignored = ignored
         unknown = sorted(set(self._data) - allowed)
         if unknown and ignored is None:
             raise ValueError(f"{path}: unknown fields {unknown}")
         if ignored is not None:
             ignored.extend(f"{path}.{key}" for key in unknown)
 
-    def _fail(self, key: str, expected: str) -> ValueError:
-        return ValueError(f"{self.path}.{key}: expected {expected}, got {_kind(self._data[key])}")
+    def _child(self, key: str) -> "_Fields | None":
+        raw: object = self._data.get(key)
+        if not raw:
+            return None  # absent, or an empty table
+        path = f"{self.path}.{key}"
+        if not isinstance(raw, dict):
+            return _Fields(raw, path, set(), self._ignored)  # raises: expected an object
+        table = cast(dict[str, object], raw)
+        return _Fields(table, path, set(table), self._ignored)
 
     def value(self, key: str) -> object:
+        """Return a field's raw value, or None when absent."""
         return self._data.get(key)
 
-    def text(self, key: str, default: str | None = None) -> str:
-        value = self._data.get(key, default)
-        if not isinstance(value, str):
-            raise ValueError(f"{self.path}.{key}: expected a string, got {_kind(value)}")
-        return value
-
-    def opt_text(self, key: str) -> str | None:
-        return None if self._data.get(key) is None else self.text(key)
-
-    def integer(self, key: str) -> int:
-        value = self._data.get(key)
-        if not isinstance(value, int) or isinstance(value, bool):
-            raise ValueError(f"{self.path}.{key}: expected an integer, got {_kind(value)}")
-        return value
-
-    def opt_integer(self, key: str) -> int | None:
-        return None if self._data.get(key) is None else self.integer(key)
-
-    def flag(self, key: str) -> bool:
-        value = self._data.get(key, False)
-        if not isinstance(value, bool):
-            raise self._fail(key, "a boolean")
-        return value
-
     def list(self, key: str) -> list[object]:
+        """Return a list field; absent is empty."""
         value = self._data.get(key)
         if value is None:
             return []
-        items = _as_list(value)
+        items = as_list(value)
         if items is None:
-            raise self._fail(key, "a list")
+            raise self._fail(key, "a list", value)
         return items
 
-    def texts(self, key: str) -> tuple[str, ...]:
-        items = self.list(key)
-        if not all(isinstance(v, str) for v in items):
-            raise self._fail(key, "a list of strings")
-        return tuple(cast(list[str], items))
-
     def triples(self, key: str) -> tuple[tuple[str, str, str], ...]:
+        """Return a list of [name, source, sha256] string triples; absent is empty."""
         out: list[tuple[str, str, str]] = []
         for item in self.list(key):
-            parts = _as_list(item)
+            parts = as_list(item)
             if parts is None or len(parts) != 3 or not all(isinstance(v, str) for v in parts):
-                raise self._fail(key, "a list of [name, source, sha256] triples")
+                raise self._fail(key, "a list of [name, source, sha256] triples", self._data[key])
             name, source, sha = cast(list[str], parts)
             out.append((name, source, sha))
         return tuple(out)
-
-    def scalar(self, key: str) -> ScalarValue | None:
-        value = self._data.get(key)
-        if value is not None and not isinstance(value, bool | int | float | str):
-            raise self._fail(key, "a scalar")
-        return value
-
-    def scalars(self, key: str) -> tuple[ScalarValue, ...] | None:
-        if self._data.get(key) is None:
-            return None
-        items = self.list(key)
-        if not all(isinstance(v, bool | int | float | str) for v in items):
-            raise self._fail(key, "a list of scalars")
-        return tuple(cast(list[ScalarValue], items))
-
-    def range(self, key: str) -> tuple[int | float, int | float] | None:
-        if self._data.get(key) is None:
-            return None
-        items = self.list(key)
-        if len(items) != 2 or not all(isinstance(v, int | float) and not isinstance(v, bool) for v in items):
-            raise self._fail(key, "a [min, max] pair")
-        low, high = cast(list[int | float], items)
-        return (low, high)
