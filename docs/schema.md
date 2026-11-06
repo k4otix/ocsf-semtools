@@ -48,8 +48,8 @@ version, profiles and extensions.
 | `ir` | the underlying `SchemaIR` |
 | `classes`, `objects` | read-only mappings from key to `ResolvedItem` |
 | `categories`, `types` | read-only mappings of the schema's categories and data types |
-| `class_by_uid(uid)` | the class with that `class_uid`, or `None` |
-| `class_by_type_uid(type_uid)` | `(class, activity_id)` for a `type_uid`, or `None` |
+| `class_by_uid(uid)` | the class with that `class_uid`; `KeyError` if none |
+| `class_by_type_uid(type_uid)` | `(class, activity_id)` for a `type_uid`; `KeyError` if none |
 | `observable_markers()` | `(owner key, attribute) -> observable type_id` |
 
 ```pycon
