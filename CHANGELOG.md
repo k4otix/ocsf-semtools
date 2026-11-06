@@ -1,9 +1,14 @@
 # Changelog
 
-The library follows SemVer on its own contract only; OCSF schema versions are data: a new OCSF
-version is a minor release, never a major. One line per merged PR, taken from the PR title.
+The library follows SemVer on its own API. OCSF schema versions are data, so support for a new OCSF
+version ships as a minor release. One line per merged PR, taken from the PR title.
 
 ## Unreleased
+
+## 0.1.0a1
+
+The first alpha. Model packages `ocsf-toolkit-v1-7-0` and `ocsf-toolkit-v1-8-0` publish with it;
+`ocsf-toolkit-v1-9-0` follows with the next release.
 
 - Repository skeleton, `ocsf.lock` pinning OCSF 1.9.0, `ocsf-toolkit compile` and `ocsf-toolkit lock --add`.
 - Schema IR (`SchemaIR`), compiler-JSON loader with key accounting, canonical IR JSON (`ir_version` 1.0) and `load_ir`; `ocsf-toolkit ir export` / `ir check`; IR for OCSF 1.9.0 shipped in the package; `ocsf.lock` pins OCSF 1.0.0–1.9.0.
