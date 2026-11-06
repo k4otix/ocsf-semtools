@@ -1,8 +1,8 @@
 # Building and checking events
 
 Three entry points share one engine and one traversal of the event. They differ only in their
-`Policy`: what to fill in, whether to coerce, and what to do with unknown attributes. None of them
-stops at the first problem; each returns or raises a `Report` holding every finding.
+`Policy`: what to fill in, whether to coerce, and what to do with unknown attributes. Each returns
+or raises a `Report` that holds every finding.
 
 ```pycon
 >>> import json
@@ -24,8 +24,8 @@ stops at the first problem; each returns or raises a `Report` holding every find
 
 `build((schema, class_key), **fields)` constructs a conformant event dict. It fills everything the
 schema derives: class and category identity, `type_uid`, sibling labels such as `severity` beside
-`severity_id`, and `metadata.version`. If the result has errors it raises `ConformanceError`; it
-never returns a non-conformant event. With a [generated model class](models.md) instead of
+`severity_id`, and `metadata.version`. If the result has errors it raises `ConformanceError`, so
+every event it returns conforms. Given a [generated model class](models.md) in place of
 `(schema, class_key)`, it takes and returns typed instances.
 
 ```pycon
@@ -38,7 +38,7 @@ never returns a non-conformant event. With a [generated model class](models.md) 
 ### `parse`
 
 `parse(event, *, version=None, profiles=None, class_key=None, as_=None)` checks an event and returns
-`(event, report)`. It never raises on a bad event and changes nothing. The OCSF version, profiles
+`(event, report)`. It leaves the event as it is and puts every problem in the report. The OCSF version, profiles
 and class default to what the event says about itself: `metadata.version`, `metadata.profiles` and
 `class_uid`. With `as_=` a generated class, it returns an instance of that class, or `None` if the
 event has errors.

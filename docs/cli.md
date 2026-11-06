@@ -64,7 +64,7 @@ the resulting IR.
 ## The schema pipeline
 
 These commands maintain `ocsf.lock` and the shipped IRs, and are what CI runs. You need them for
-custom extensions or to work on the library itself, not to use it.
+custom extensions or to work on the library itself; using the library needs none of them.
 
 | Command | What it does |
 |---|---|

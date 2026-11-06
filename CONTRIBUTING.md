@@ -20,7 +20,7 @@ make schema       # ocsf-toolkit compile: rebuild build/compiled/ and check the 
 
 These architecture rules are binding: one event walker; import direction enforced by
 `.importlinter`; one exception type (`ConformanceError`); no `__getattr__` in core; thin entry points;
-a 13-module core budget; frozen mappings rather than accessor methods. A PR that needs to break one of
+a 13-module core budget; a query surface of frozen mappings. A PR that needs to break one of
 them argues for it in the description.
 
 Conventions:

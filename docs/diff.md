@@ -3,9 +3,9 @@
 ### `diff`
 
 `diff(a, b)` compares two IRs field by field and returns every difference, keyed by its path in the IR.
-Classes are matched by `class_uid` before key, so a class renamed at a stable uid shows up as a rename
-instead of a removal plus an addition. There are no similarity heuristics and no event migration:
-the diff is data for you to read or act on.
+Classes are matched by `class_uid` before key, so a class renamed at a stable uid shows up as one
+rename. The diff is data for you to read or act on; it uses no similarity heuristics and migrates no
+events.
 
 ```pycon
 >>> from ocsf_toolkit import diff, load

@@ -3,7 +3,7 @@
 The models are a projection of the schema: every class and object as a
 [msgspec](https://github.com/msgspec/msgspec) Struct, every enum as an `IntEnum` or `StrEnum` whose
 members are the OCSF captions. They are generated from the same IR the rest of the library uses, so
-the dict API and the typed API never disagree.
+the dict API and the typed API always agree.
 
 ## Model packages
 

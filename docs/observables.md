@@ -43,7 +43,7 @@ dst_endpoint.port 11 Port 443
 
 The report holds an `observable_mismatch` warning for each entry the event already lists that no
 attribute in the event backs. `max_nodes` caps the number of attribute visits; past it the walk stops
-with a `max_nodes_exceeded` finding instead of running on.
+and reports a `max_nodes_exceeded` finding.
 
 ### `Observable`
 
