@@ -1,0 +1,36 @@
+# Mirror of `make lint type` (.github/workflows/ci.yaml) so a commit fails fast, before CI does.
+# Install once after cloning:  uvx pre-commit install
+# Run by hand:                 uvx pre-commit run --all-files
+#
+# Every hook runs through `uv run`, inside the uv.lock environment CI uses, so the tool versions
+# come from uv.lock alone; there is no version to keep in sync here.
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+
+      - id: ruff
+        name: ruff check
+        entry: uv run ruff check
+        language: system
+        types: [python]
+        args: [--fix, --exit-non-zero-on-fix]
+
+      - id: lint-imports
+        name: import contracts
+        entry: uv run lint-imports
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: pyright
+        name: pyright (strict)
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: false

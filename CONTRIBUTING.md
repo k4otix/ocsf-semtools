@@ -14,6 +14,8 @@ make test         # pytest
 make schema       # ocsf-toolkit compile: rebuild build/compiled/ and check the lockfile hashes
 ```
 
+`uvx pre-commit install` runs the lint and type checks on every commit (`.pre-commit-config.yaml`).
+
 ## Rules that bind code
 
 These architecture rules are binding: one event walker; import direction enforced by
@@ -25,6 +27,9 @@ Conventions:
 
 - No runtime dependencies besides `msgspec`. The CLI uses `argparse`.
 - Each module's docstring states its single responsibility in one sentence.
+- Lines are at most 120 characters; ruff format sets the layout.
+- Every public module, class and function has a docstring whose first line is an imperative
+  summary (pydocstyle, pep257 convention). Tests are exempt.
 
 ## Pull requests
 
