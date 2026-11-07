@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 from dataclasses import replace
 from pathlib import Path
 
@@ -117,7 +118,7 @@ def test_synthetic_round_trip(ir: SchemaIR) -> None:
 def test_load_ir_from_path(ir: SchemaIR, tmp_path: Path) -> None:
     path = tmp_path / "ir.json"
     path.write_bytes(export_ir(ir))
-    assert load_ir(path) == ir
+    assert load_ir(path) == load_ir(str(path)) == ir
 
 
 # --- ir_version policy (architecture §3.4) ---------------------------------------------------
@@ -168,3 +169,27 @@ def test_garbage_is_refused(data: bytes, message: str) -> None:
 def test_bad_field_type_names_the_path(ir: SchemaIR) -> None:
     with pytest.raises(ValueError, match=r"\$\.schema\.classes\.finding\.uid: expected an integer"):
         load_ir(_with(ir, IR_VERSION, schema__classes__finding__uid="2001"))
+
+
+@pytest.mark.parametrize(("value", "constant"), [(math.nan, "NaN"), (math.inf, "Infinity"), (-math.inf, "-Infinity")])
+def test_non_finite_numbers_are_refused(ir: SchemaIR, value: float, constant: str) -> None:
+    with pytest.raises(ValueError, match=f"IR holds {constant}"):
+        load_ir(_with(ir, IR_VERSION, schema__classes__finding__uid=value))
+
+
+def test_nesting_too_deep_is_a_value_error() -> None:
+    with pytest.raises(ValueError, match="nested too deeply"):
+        load_ir(b"[" * 100_000)
+
+
+def test_a_table_of_the_wrong_kind_is_refused(ir: SchemaIR) -> None:
+    with pytest.raises(ValueError, match=r"\$\.schema\.classes: expected an object, got bool"):
+        load_ir(_with(ir, IR_VERSION, schema__classes=False))
+
+
+def test_an_enum_on_a_non_scalar_type_is_refused(ir: SchemaIR) -> None:
+    doc = json.loads(export_ir(ir))
+    attribute = next(iter(doc["schema"]["classes"]["finding"]["attributes"].values()))
+    attribute.update(type="boolean_t", object_type=None, enum={"1": {"caption": "one"}})
+    with pytest.raises(ValueError, match=r"\.enum: enum on a boolean_t type"):
+        load_ir(json.dumps(doc).encode())

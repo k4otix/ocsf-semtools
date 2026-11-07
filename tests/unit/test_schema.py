@@ -383,3 +383,31 @@ def test_section_1_5_no_object_consumer() -> None:
         "required",  # cloud: required under the cloud profile only
         "recommended",  # action_id: recommended under security_control in 1.9.0
     ]
+
+
+# --- an IR whose tables disagree is refused by resolve() --------------------------------------
+
+
+def _broken(ir: SchemaIR, **changes: object) -> SchemaIR:
+    return dataclasses.replace(ir, **changes)
+
+
+def test_resolve_refuses_an_ir_without_base_event(base: ResolvedSchema) -> None:
+    classes = {k: v for k, v in base.ir.classes.items() if k != "base_event"}
+    with pytest.raises(ValueError, match="no base_event"):
+        resolve(_broken(base.ir, classes=classes))
+
+
+def test_resolve_refuses_an_object_in_the_classes_table(base: ResolvedSchema) -> None:
+    classes = dict(base.ir.classes) | {"user": base.ir.objects["user"]}
+    with pytest.raises(ValueError, match=r"classes\.user\.is_class: False in the classes table"):
+        resolve(_broken(base.ir, classes=classes))
+
+
+def test_resolve_refuses_a_dangling_object_type(base: ResolvedSchema) -> None:
+    finding = base.ir.classes["detection_finding"]
+    attrs = dict(finding.attributes)
+    attrs["device"] = dataclasses.replace(attrs["device"], object_type="no_such_object")
+    classes = dict(base.ir.classes) | {"detection_finding": dataclasses.replace(finding, attributes=attrs)}
+    with pytest.raises(ValueError, match=r"detection_finding\.attributes\.device\.object_type: no object"):
+        resolve(_broken(base.ir, classes=classes))

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import warnings
 from collections.abc import Callable, Mapping
 from pathlib import Path
@@ -74,8 +75,12 @@ def digest(ir: SchemaIR) -> str:
     return hashlib.sha256(export_ir(ir)).hexdigest()
 
 
-def load_ir(source: Path | bytes) -> SchemaIR:
-    """Read IR JSON written by ``export_ir``.
+def _non_finite(constant: str) -> object:
+    raise ValueError(f"IR holds {constant}, which JSON does not allow")
+
+
+def load_ir(source: str | os.PathLike[str] | bytes) -> SchemaIR:
+    """Read IR JSON from a file path or from bytes, such as ``export_ir`` writes.
 
     A different ``ir_version`` major is refused. A newer minor is read, and fields this reader
     doesn't know are ignored with a warning naming them; at this minor or older they are an error.
@@ -83,9 +88,11 @@ def load_ir(source: Path | bytes) -> SchemaIR:
     message, or extension version; an item, profile or extension name equal to its key), so a
     hand-edited file can leave them out; the exporter always writes them.
     """
-    data = source.read_bytes() if isinstance(source, Path) else source
+    data = Path(source).read_bytes() if isinstance(source, str | os.PathLike) else source
     try:
-        raw: object = json.loads(data)
+        raw: object = json.loads(data, parse_constant=_non_finite)
+    except RecursionError:
+        raise ValueError("IR is nested too deeply to be an IR JSON document") from None
     except ValueError as exc:
         raise ValueError(f"IR is not JSON: {exc}") from exc
     document = cast(dict[str, object], raw) if isinstance(raw, dict) else {}
@@ -280,7 +287,8 @@ class _Reader:
         self, owner: "_Fields", key: str, decode: "_Decoder[V]"
     ) -> Mapping[str, V]:  # fmt: skip
         path = f"{owner.path}.{key}"
-        table = self._table(owner.value(key) or {}, path)
+        raw = owner.value(key)
+        table = self._table({} if raw is None else raw, path)
         return frozen_sorted({name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)})
 
     def _deprecation(self, raw: object, path: str) -> Deprecation | None:
@@ -346,6 +354,8 @@ class _Reader:
     def _enum(self, raw: object, path: str, root: Root | None) -> Mapping[EnumValue, EnumMember] | None:
         if raw is None:
             return None
+        if root not in (Root.INTEGER, Root.LONG, Root.STRING):  # the compiler loader's rule, for hand-made IRs
+            raise ValueError(f"{path}: enum on a {root.value if root else 'non-primitive'} type")
         members: dict[EnumValue, EnumMember] = {}
         for key, member_raw in self._table(raw, path).items():
             value = enum_key(key, root, f"{path}.{key}")

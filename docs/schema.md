@@ -118,8 +118,10 @@ records exactly where it came from:
 
 ### `load_ir`
 
-`load_ir(source)` reads IR JSON from a path or bytes, such as one written by
-`ocsf-toolkit ir export` or bundled in a generated model package.
+`load_ir(source)` reads IR JSON from a path (a `str` or `Path`) or from bytes, such as a file written
+by `ocsf-toolkit ir export` or bundled in a generated model package. Malformed JSON, NaN or infinity,
+and fields of the wrong type are a `ValueError` naming the key path; `resolve` also refuses an IR
+whose tables disagree, such as one with no `base_event` or an attribute naming a missing object.
 
 ### `export_ir`
 

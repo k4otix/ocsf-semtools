@@ -197,6 +197,7 @@ def _shipped(version: str) -> tuple[SchemaIR, str]:
 
 
 def _resolve(ir: SchemaIR, ir_digest: str, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedSchema:
+    _check_references(ir)
     if unknown := extensions - ir.extensions.keys():
         raise KeyError(f"unknown extensions {sorted(unknown)} for OCSF {ir.version}; known: {sorted(ir.extensions)}")
     usable = {key for key, p in ir.profiles.items() if p.extension in (None, *extensions)}
@@ -224,6 +225,22 @@ def _resolve(ir: SchemaIR, ir_digest: str, profiles: frozenset[str], extensions:
         categories=MappingProxyType({k: c for k, c in ir.categories.items() if active(c.extension)}),
         types=MappingProxyType({k: t for k, t in ir.types.items() if active(t.extension)}),
     )
+
+
+def _check_references(ir: SchemaIR) -> None:
+    """Refuse an IR whose tables disagree: a hand-made or edited one can, a compiled one can't."""
+    if "base_event" not in ir.classes:
+        raise ValueError("classes: no base_event, the class an event naming no class is checked as")
+    for table, items, is_class in (("classes", ir.classes, True), ("objects", ir.objects, False)):
+        for key, item in items.items():
+            if item.is_class is not is_class:
+                raise ValueError(f"{table}.{key}.is_class: {item.is_class} in the {table} table")
+            for name, a in item.attributes.items():
+                if a.object_type is not None and a.object_type not in ir.objects:
+                    raise ValueError(f"{table}.{key}.attributes.{name}.object_type: no object {a.object_type!r}")
+            type_uid = item.attributes.get("type_uid") if is_class else None
+            if type_uid is not None and type_uid.enum and not all(isinstance(v, int) for v in type_uid.enum):
+                raise ValueError(f"{table}.{key}.attributes.type_uid.enum: keys must be integers")
 
 
 def _item(ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedItem:
