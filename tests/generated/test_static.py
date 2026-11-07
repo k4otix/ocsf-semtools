@@ -1,4 +1,4 @@
-"""N4 / acc. #9 / S3: ruff and pyright strict over each generated tree, with no exclusions."""
+"""Ruff and pyright in strict mode over each generated tree, with no exclusions."""
 
 import json
 import os

@@ -1,4 +1,4 @@
-"""acc. #15: the library answers schema questions and holds no query, table-DDL or sink logic."""
+"""The library answers schema questions and holds no query, table-DDL or sink logic."""
 
 import re
 from pathlib import Path

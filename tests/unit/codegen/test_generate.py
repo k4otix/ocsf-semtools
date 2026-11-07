@@ -37,7 +37,7 @@ def test_one_module_per_item() -> None:
 
 
 def test_tree_is_ruff_clean(tmp_path: Path) -> None:
-    """N4: generator output is final text; no formatter or fixer runs over it."""
+    """Generator output is final text; no formatter or fixer runs over it."""
     out = generate(IR, package="pkg", out=tmp_path)
     for args in (["format", "--check"], ["check"]):
         cmd = [sys.executable, "-m", "ruff", *args, "--config", str(ROOT / "pyproject.toml")]

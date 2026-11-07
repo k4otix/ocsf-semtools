@@ -1,4 +1,4 @@
-"""Observables (R5, D#16): markers, extraction, notations, caller checks, merge, acc. #4."""
+"""Observables: markers, extraction, notations, caller checks, merge, and the max_nodes guard."""
 
 import copy
 import math
@@ -200,7 +200,7 @@ def test_merged_event_is_conformant(schema: ResolvedSchema) -> None:
     assert report.by_kind(Kind.OBSERVABLE_MISMATCH) == ()
 
 
-# --- the max_nodes guard (acc. #4) ----------------------------------------------------------
+# --- the max_nodes guard --------------------------------------------------------------------
 
 
 def _deep(n: int) -> dict[str, Any]:

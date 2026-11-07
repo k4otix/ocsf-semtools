@@ -37,11 +37,11 @@ def _kinds(found: Any) -> list[tuple[str, tuple[str | int, ...]]]:
     return [(f.kind.value, f.path) for f in found]
 
 
-# --- build ------------------------------------------------------------------------------------
+# --- build ----------------------------------------------------------------------------------
 
 
 def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -> None:
-    """Identity, type_uid and sibling labels are derived on a generated class too (acc. #12)."""
+    """Identity, type_uid and sibling labels are derived on a generated class too."""
     finding: Any = build(v1_9_0.DetectionFinding, **_fields(v1_9_0))
     assert isinstance(finding, v1_9_0.DetectionFinding)
     assert (finding.type_uid, finding.type_name) == (200401, "Detection Finding: Create")
@@ -61,7 +61,7 @@ def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -
 
 
 def test_enum_members_are_their_values(v1_9_0: ModuleType) -> None:
-    """Members are the schema's values, named from their captions (acc. #5)."""
+    """Members are the schema's values, named from their captions."""
     severity = _sub(v1_9_0, "enums").SeverityId
     assert severity.HIGH is severity(4)
     packet = importlib.import_module(f"{v1_9_0.__name__}.objects.packet")
@@ -99,7 +99,7 @@ def test_build_of_a_generated_class_raises_with_the_whole_report(v1_9_0: ModuleT
 
 
 def test_a_supplied_type_uid_that_disagrees_is_an_identity_conflict(v1_9_0: ModuleType) -> None:
-    """200499 is a valid type_uid, but not for activity 1 (acc. #12)."""
+    """200499 is a valid type_uid, but not for activity 1."""
     with pytest.raises(ConformanceError) as caught:
         build(v1_9_0.DetectionFinding, **_fields(v1_9_0, type_uid=200499))
     assert _kinds(caught.value.report.errors()) == [("identity_conflict", ("type_uid",))]
@@ -128,7 +128,7 @@ def test_build_refuses_positional_and_foreign_classes(v1_9_0: ModuleType) -> Non
         build(dict)  # type: ignore[call-overload]
 
 
-# --- parse(as_=...) ---------------------------------------------------------------------------
+# --- parse(as_=...) -------------------------------------------------------------------------
 
 
 def _wire(m: ModuleType) -> dict[str, Any]:
@@ -185,7 +185,7 @@ def test_parse_as_fixes_version_and_class(v1_9_0: ModuleType) -> None:
         parse({}, as_=v1_9_0.DetectionFinding, version="1.9.0")  # type: ignore[call-overload]
 
 
-# --- exact classes ------------------------------------------------------------------------------
+# --- exact classes --------------------------------------------------------------------------
 
 
 def test_exact_build_requires_what_its_profiles_require(v1_9_0_cloud: ModuleType) -> None:
@@ -217,7 +217,7 @@ def test_exact_build_refuses_a_profile_outside_its_set(v1_9_0_cloud: ModuleType)
     assert "1 conformance error(s)" in str(caught.value)
 
 
-# --- packages from an IR this library does not ship ---------------------------------------------
+# --- packages from an IR this library does not ship -----------------------------------------
 
 
 def test_a_bundled_ir_is_loaded_from_the_package(synthetic: ModuleType) -> None:

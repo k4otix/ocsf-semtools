@@ -1,4 +1,4 @@
-"""diff(): the uid rename pass (acc. #7), the generic structural diff, and its JSON form."""
+"""diff(): the uid rename pass, the generic structural diff, and its JSON form."""
 
 import json
 from typing import Any

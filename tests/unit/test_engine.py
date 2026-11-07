@@ -62,7 +62,7 @@ def test_policies_differ_only_in_behaviour(schema: ResolvedSchema) -> None:
     assert found[STRICT] == found[LENIENT] == found[REPAIR]
 
 
-# --- build ---------------------------------------------------------------------------------
+# --- build ----------------------------------------------------------------------------------
 
 
 def test_build_by_reference_raises_with_the_whole_report(schema: ResolvedSchema) -> None:
@@ -95,7 +95,7 @@ def test_build_never_mutates_nested_caller_dicts(schema: ResolvedSchema) -> None
     assert metadata == {"product": {"name": "p"}}
 
 
-# --- repair (D#15) -------------------------------------------------------------------------
+# --- repair: every change is a finding ------------------------------------------------------
 
 
 def test_every_repair_change_is_a_finding_with_its_action(schema: ResolvedSchema) -> None:
@@ -222,7 +222,7 @@ def test_repair_does_not_migrate_across_types(schema: ResolvedSchema) -> None:
     assert next(f for f in report.findings if f.path == ("comment",)).repair is None
 
 
-# --- parse: schema and class selection -----------------------------------------------------
+# --- parse: schema and class selection ------------------------------------------------------
 
 
 def test_version_and_profiles_come_from_metadata(schema: ResolvedSchema) -> None:
@@ -272,7 +272,7 @@ def test_explicit_class_key_wins(schema: ResolvedSchema) -> None:
     assert (Kind.IDENTITY_CONFLICT, ("class_uid",)) in {(f.kind, f.path) for f in report.errors()}
 
 
-# --- the report ----------------------------------------------------------------------------
+# --- the report -----------------------------------------------------------------------------
 
 
 def test_report_queries(schema: ResolvedSchema) -> None:
@@ -326,7 +326,7 @@ def test_every_kind_has_a_severity() -> None:
     assert set(Kind) - _SEVERITY.keys() == info
 
 
-# --- hostile structure: depth, cycles, shared nodes, size, non-dict input ---------------------
+# --- hostile structure: depth, cycles, shared nodes, size, non-dict input -------------------
 
 
 def _chain(depth: int) -> dict[str, Any]:
@@ -394,7 +394,7 @@ def test_an_event_that_is_not_a_dict_is_a_type_error(schema: ResolvedSchema, eve
             call()
 
 
-# --- extensions: from metadata.extensions, or a schema passed in ---------------------------------
+# --- extensions: from metadata.extensions, or a schema passed in ----------------------------
 
 
 def _prefetch(**metadata: Any) -> dict[str, Any]:
@@ -448,7 +448,7 @@ def test_schema_must_be_a_resolved_schema() -> None:
         repair(_prefetch(), schema="1.9.0")  # type: ignore[arg-type]
 
 
-# --- pickling: schemas, reports and the exception cross process boundaries ----------------------
+# --- pickling: schemas, reports and the exception cross process boundaries ------------------
 
 
 def test_a_shipped_schema_pickles_by_reference(schema: ResolvedSchema) -> None:

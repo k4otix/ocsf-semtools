@@ -1,4 +1,4 @@
-"""acc. #3: repair() undoes the damage it exists for, and repairing its output changes nothing.
+"""repair() undoes the damage it exists for, and repairing its output changes nothing.
 
 A conformant event is damaged in the ways repair() calls unambiguous: integers sent as strings or
 integral floats, booleans as strings, derived values dropped or contradicted, and attributes the

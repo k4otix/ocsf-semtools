@@ -11,7 +11,7 @@ from ocsf_toolkit.cli import _upstream, build_parser, compile, main
 from ocsf_toolkit.cli._upstream import Compiler
 from tests.unit.cli.support import Upstream, entry, git, write_lockfile
 
-# --- verify: version assertion + canonical sha256 ------------------------------------------
+# --- verify: version assertion + canonical sha256 -------------------------------------------
 
 OUTPUT = b'{"version": "1.9.0", "classes": {"z": 1, "a": {"y": [3, 1], "b": "\xc3\xa9"}}}'
 CANONICAL = '{"classes":{"a":{"b":"é","y":[3,1]},"z":1},"version":"1.9.0"}'.encode()
@@ -64,7 +64,7 @@ def test_verify_rejects_non_json() -> None:
         _upstream.verify(b"Traceback (most recent call last):", version="1.9.0", sha256=None)
 
 
-# --- compiler command ------------------------------------------------------------------------
+# --- compiler command -----------------------------------------------------------------------
 
 
 def test_compiler_argv_uses_pinned_uvx() -> None:
@@ -95,7 +95,7 @@ def test_compiler_cmd_override_appends_checkout() -> None:
     assert argv == ["/opt/py 3.14/bin/python", "-m", "ocsf_schema_compiler", "build/src"]
 
 
-# --- checkout cache --------------------------------------------------------------------------
+# --- checkout cache -------------------------------------------------------------------------
 
 
 def test_checkout_clones_commit_then_reuses_cache(tmp_path: Path, upstream: Upstream) -> None:
@@ -123,7 +123,7 @@ def test_checkout_failure_leaves_no_cache_entry(tmp_path: Path, upstream: Upstre
     assert list((tmp_path / "cache").iterdir()) == []
 
 
-# --- `ocsf-toolkit compile`, end to end ------------------------------------------------------
+# --- `ocsf-toolkit compile`, end to end -----------------------------------------------------
 
 
 def _lockfile(tmp_path: Path, upstream: Upstream, sha256: str) -> Path:

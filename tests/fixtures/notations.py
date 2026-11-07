@@ -1,4 +1,4 @@
-"""The five spellings of one observable path that upstream uses (architecture §0, §7.3)."""
+"""The five spellings of one observable path that upstream uses."""
 
 NOTATIONS = (
     "resources.uid",

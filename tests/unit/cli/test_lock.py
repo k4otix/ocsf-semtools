@@ -29,7 +29,7 @@ def test_committed_lockfile_is_canonical() -> None:
     assert lock.dumps(lock.loads(text)) == text
 
 
-# Commits verified independently in the design spikes (S2 and prior-art PROVENANCE.txt).
+# Upstream commits checked by hand against github.com/ocsf/ocsf-schema when they were pinned.
 PINS = {
     "1.0.0": ("v1.0.0", "9608805fe0b61035cb821bb9068096fe47fed12d"),
     "1.1.0": ("v1.1.0", "8ea34523a316c4bad7e360e870a23a8e5cb29bd5"),
@@ -167,7 +167,7 @@ def test_resolve_ref_missing() -> None:
         lock.resolve_ref("1.8.0", lock.parse_ls_remote(LS_REMOTE))
 
 
-# --- lock --add, offline against a local upstream ------------------------------------------
+# --- lock --add, offline against a local upstream -------------------------------------------
 
 
 def _add(tmp_path: Path, upstream: Upstream, compiler_cmd: str, version: str, ref: str | None = None) -> lock.Lockfile:

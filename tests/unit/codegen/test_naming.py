@@ -1,4 +1,4 @@
-"""Names in generated code: the caption -> member rule (acc. #5), fields, modules and classes."""
+"""Names in generated code: the caption -> member rule, fields, modules and classes."""
 
 import re
 
@@ -53,7 +53,7 @@ def test_members_that_still_collide_are_an_error() -> None:
 
 
 def test_every_1_9_0_enum_names_cleanly() -> None:
-    """Every 1.9.0 enum member is named from its caption, with no integer_4-style fallbacks (acc. #5)."""
+    """Every 1.9.0 enum member is named from its caption, with no integer_4-style fallbacks."""
     ir = load("1.9.0").ir
     attrs = [a for t in (ir.classes, ir.objects) for i in t.values() for a in i.attributes.values()]
     enums = [a.enum for a in (*attrs, *ir.dictionary.values()) if a.enum]

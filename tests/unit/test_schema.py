@@ -43,7 +43,7 @@ def everything(base: ResolvedSchema) -> ResolvedSchema:
     return load("1.9.0", profiles=base.ir.profiles, extensions=base.ir.extensions)
 
 
-# --- the resolution rule on the synthetic schema ---------------------------------------------
+# --- the resolution rule on the synthetic schema --------------------------------------------
 
 
 def test_profile_gated_attribute_needs_its_profile(ir: SchemaIR) -> None:
@@ -141,7 +141,7 @@ def test_markers_cover_only_present_attributes(ir: SchemaIR) -> None:
     assert ("finding", "cloud") not in resolve(ir).observable_markers
 
 
-# --- inputs ----------------------------------------------------------------------------------
+# --- inputs ---------------------------------------------------------------------------------
 
 
 def test_unknown_profile_or_extension_raises_keyerror(ir: SchemaIR) -> None:
@@ -174,7 +174,7 @@ def test_shipped_versions_match_the_lockfile() -> None:
     assert shipped_versions() == tuple(e.version for e in LOCKFILE.schemas if e.ir_sha256)
 
 
-# --- identity, caching and immutability ------------------------------------------------------
+# --- identity, caching and immutability -----------------------------------------------------
 
 
 def test_load_is_cached_on_the_active_set() -> None:
@@ -204,7 +204,7 @@ def test_resolved_schema_is_frozen(base: ResolvedSchema) -> None:
         base.classes["detection_finding"].attributes["x"] = None  # type: ignore[index]
 
 
-# --- OCSF 1.9.0: the facts verified in the design spike ------------------------------------
+# --- OCSF 1.9.0: the facts verified in the design spike -------------------------------------
 
 
 def test_no_profiles(base: ResolvedSchema) -> None:
@@ -303,8 +303,8 @@ def test_sibling_without_label_attribute_has_no_rule(everything: ResolvedSchema)
 # --- acceptance criteria --------------------------------------------------------------------
 
 
-def test_acc_11_schema_semantics_without_a_model() -> None:
-    """acc. #11 for ("1.9.0", "detection_finding", {"cloud"})."""
+def test_schema_semantics_without_a_model() -> None:
+    """Requirements, enums, siblings and identity of detection_finding under cloud, read as data."""
     schema = load("1.9.0", profiles={"cloud"})
     finding = schema.classes["detection_finding"]
     attributes = finding.attributes
@@ -324,7 +324,7 @@ def test_acc_11_schema_semantics_without_a_model() -> None:
     )
 
 
-def test_acc_12a_profiles_change_attributes_and_rules(base: ResolvedSchema) -> None:
+def test_profiles_change_attributes_and_rules(base: ResolvedSchema) -> None:
     plain = base.classes["detection_finding"]
     control = load("1.9.0", profiles={"security_control"}).classes["detection_finding"]
     assert "action_id" not in plain.attributes
@@ -359,9 +359,9 @@ NO_OBJECT_CONSUMER = textwrap.dedent(
 )
 
 
-def test_section_1_5_no_object_consumer() -> None:
-    """M2's done-criterion: every schema-determined value in the spec §1.5 translation block is
-    reachable as data, in a fresh interpreter that never imports msgspec."""
+def test_schema_values_are_data_without_msgspec() -> None:
+    """Every value a translation layer needs from the schema is reachable as data, in a fresh
+    interpreter that never imports msgspec."""
     result = subprocess.run(
         [sys.executable, "-c", NO_OBJECT_CONSUMER],
         capture_output=True,
@@ -385,7 +385,7 @@ def test_section_1_5_no_object_consumer() -> None:
     ]
 
 
-# --- an IR whose tables disagree is refused by resolve() --------------------------------------
+# --- an IR whose tables disagree is refused by resolve() ------------------------------------
 
 
 def test_resolve_refuses_an_ir_without_base_event(base: ResolvedSchema) -> None:

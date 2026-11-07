@@ -24,7 +24,7 @@ def ir() -> SchemaIR:
     return load_compiled(compiled_bytes(), PROVENANCE)
 
 
-# --- committed IR files (no build/ needed) -----------------------------------------------------
+# --- committed IR files (no build/ needed) --------------------------------------------------
 
 
 def test_some_ir_is_committed() -> None:
@@ -51,7 +51,7 @@ def test_every_committed_ir_has_a_lockfile_entry() -> None:
     assert files == sorted(f"ir-{v}.json" for v in COMMITTED)
 
 
-# --- rebuilt from build/compiled (gate 2 in test form) ------------------------------------------
+# --- rebuilt from build/compiled (gate 2 in test form) --------------------------------------
 
 
 @pytest.mark.parametrize("version", VERSIONS)
@@ -69,7 +69,7 @@ def test_rebuilt_ir_matches_committed(version: str) -> None:
     assert built == (DATA_DIR / f"ir-{version}.json").read_bytes()
 
 
-# --- canonical form ---------------------------------------------------------------------------
+# --- canonical form -------------------------------------------------------------------------
 
 
 def test_canonical_form(ir: SchemaIR) -> None:
@@ -121,7 +121,7 @@ def test_load_ir_from_path(ir: SchemaIR, tmp_path: Path) -> None:
     assert load_ir(path) == load_ir(str(path)) == ir
 
 
-# --- ir_version policy (architecture §3.4) ---------------------------------------------------
+# --- ir_version: a newer minor is read, another major refused -------------------------------
 
 
 def _with(ir: SchemaIR, version: str, **extra: object) -> bytes:

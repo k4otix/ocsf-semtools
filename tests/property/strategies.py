@@ -1,4 +1,4 @@
-"""Hypothesis strategies drawn from the IR (acc. #3, S5): fields build() makes a conformant event of.
+"""Hypothesis strategies drawn from the IR: fields build() makes a conformant event of.
 
 Everything comes from the resolved schema. Required attributes are always drawn and the rest are
 sampled; enum attributes take their members' values; arrays hold up to three elements. Nesting is

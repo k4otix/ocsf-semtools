@@ -15,7 +15,7 @@ from tests.fixtures.compiled import PROVENANCE, compiled, compiled_bytes
 KNOWN_JUNK = {"1.0.0": {("object.attr", "description:"), ("object.attr", "name")}}
 
 
-# --- key accounting: every key in the compiler output is read or deliberately ignored ---------
+# --- key accounting: every key in the compiler output is read or deliberately ignored -------
 
 
 @pytest.mark.parametrize("version", VERSIONS)
@@ -52,7 +52,7 @@ def test_ignored_keys_are_display_or_derivable() -> None:
     )
 
 
-# --- quirks (architecture §3.2) on the synthetic schema ------------------------------------------
+# --- upstream quirks the loader handles, on the synthetic schema ----------------------------
 
 
 @pytest.fixture(scope="module")
@@ -232,7 +232,7 @@ def test_bytes_that_are_not_json() -> None:
         load_compiled(b"INFO: Compiling schema", PROVENANCE)
 
 
-# --- facts about real OCSF 1.9.0 that later milestones lean on -------------------------------
+# --- facts about real OCSF 1.9.0 that the rest of the library relies on ---------------------
 
 
 def test_1_9_0_shape(ir_1_9_0: SchemaIR) -> None:

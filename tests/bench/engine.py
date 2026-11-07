@@ -1,4 +1,4 @@
-"""S1: engine throughput per core, at 2-20 KB of JSON (`make bench`, not CI).
+"""Engine throughput per core, at 2-20 KB of JSON (`make bench`, not CI).
 
 The corpus is drawn by the property-test strategies: every core class of the newest model-window
 version under each of its test profile sets, kept when its JSON falls in a size bucket. Each rate is
@@ -6,7 +6,7 @@ the best of five passes over a bucket.
 
 The target is for the ingest path, decode + parse, and is a cost per attribute visit: the engine
 walks an event once, so its cost follows the attributes it holds, not its bytes. At BUDGET_US per
-visit, 1,000 events/s holds for events of up to 1000 / BUDGET_US attributes (architecture §11 S1).
+visit, 1,000 events/s holds for events of up to 1000 / BUDGET_US attributes.
 """
 
 import platform
@@ -29,7 +29,7 @@ from ocsf_toolkit.walk import Visit, walk
 from tests.fixtures.packages import generated_class, import_generated
 from tests.property.strategies import WINDOW, fields, profile_sets
 
-BUDGET_US = 2.5  # microseconds per attribute visit, decode + parse (architecture §11 S1)
+BUDGET_US = 2.5  # microseconds per attribute visit, decode + parse
 VERSION = WINDOW[-1]
 BUCKETS = {"~3 KB": (2_000, 4_000), "~12 KB": (10_000, 14_000), "~20 KB": (18_000, 24_000)}
 PER_BUCKET = 40

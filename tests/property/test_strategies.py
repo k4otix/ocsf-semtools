@@ -1,4 +1,4 @@
-"""S5: what makes the IR strategies finite holds for every model-window version."""
+"""What makes the IR strategies finite holds for every model-window version."""
 
 import pytest
 

@@ -1,6 +1,6 @@
-"""Events for the conformance tests: a conformant detection_finding and spec §1.5's error classes.
+"""Events for the conformance tests: a conformant detection_finding and one fixture per error class.
 
-Ported from docs/prior-art/probes/fixtures.py. Every caption and identity constant is read from
+Every caption and identity constant is read from
 the shipped IR rather than written by hand, so a fixture cannot drift from the schema it targets.
 """
 
@@ -77,7 +77,7 @@ def profiled_detection_finding(schema: ResolvedSchema) -> dict[str, Any]:
 
 
 def error_fixtures(schema: ResolvedSchema) -> dict[str, dict[str, Any]]:
-    """Spec §1.5's error classes (acc. #14), one defect each on the conformant base."""
+    """One fixture per error class, each a single defect on the conformant base."""
     b = base_detection_finding(schema)
     out: dict[str, dict[str, Any]] = {}
 

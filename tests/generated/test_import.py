@@ -1,4 +1,4 @@
-"""S4 laziness and acc. #1: each dist imports on demand, and installs into a clean environment."""
+"""Each dist imports its modules on demand, and installs into a clean environment."""
 
 import json
 import shutil
@@ -44,7 +44,7 @@ def test_classes_load_on_demand(dist: Dist) -> None:
 @pytest.mark.network
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_installs_into_a_clean_environment(dist: Dist, tmp_path: Path) -> None:
-    """Install the dist and the core into a fresh venv; msgspec comes as a declared dependency (acc. #1)."""
+    """Install the dist and the core into a fresh venv; msgspec comes as a declared dependency."""
     requires = tomllib.loads((dist.root / "pyproject.toml").read_text())["project"]["dependencies"]
     venv = tmp_path / "venv"
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, str(venv)], check=True)

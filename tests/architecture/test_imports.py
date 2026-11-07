@@ -1,4 +1,4 @@
-"""Architecture rules (architecture §0.2) that can be checked mechanically over the core source."""
+"""The architecture rules (CONTRIBUTING.md) that can be checked mechanically over the core source."""
 
 import ast
 from collections.abc import Iterator

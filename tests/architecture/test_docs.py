@@ -1,4 +1,4 @@
-"""Repo plan §3: a name enters ``__all__`` only with a docs page. Each public name is a heading in
+"""A name enters ``__all__`` only with a docs page. Each public name is a heading in
 docs/*.md, and every page the README links to exists. (The pages' examples run as doctests.)"""
 
 import re

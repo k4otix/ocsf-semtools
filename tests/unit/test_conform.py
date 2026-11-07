@@ -1,4 +1,4 @@
-"""Conformance: spec §1.5's error classes (acc. #14), many problems in one pass (acc. #13), R12."""
+"""Conformance: each error class, many problems in one pass, and the caller deciding what is fatal."""
 
 import json
 import math
@@ -210,7 +210,7 @@ def test_lenient_never_changes_the_event(schema: ResolvedSchema) -> None:
     assert repr(event) == before
 
 
-# --- numbers: finite floats, 64-bit integers, values too large to print ------------------------
+# --- numbers: finite floats, 64-bit integers, values too large to print ---------------------
 
 
 def _location(**fields: Any) -> dict[str, Any]:

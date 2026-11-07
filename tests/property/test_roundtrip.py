@@ -1,4 +1,4 @@
-"""acc. #3: every class of every model-window version survives build -> JSON -> parse unchanged.
+"""Every class of every model-window version survives build -> JSON -> parse unchanged.
 
 Dict events for each core class, and typed instances of the generated class for the same fields:
 build -> to_builtins -> JSON -> parse(as_=) gives back an equal instance.

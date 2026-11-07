@@ -1,4 +1,4 @@
-"""Derivation: identity (acc. #12), the §5.2 sibling rules row by row (acc. #12b), *_dt."""
+"""Derivation: class identity, the sibling rules row by row, list siblings, profiles and *_dt timestamps."""
 
 import copy
 from datetime import UTC, datetime, timedelta, timezone
@@ -24,7 +24,7 @@ def _at(report: Report, path: Path) -> list[Kind]:
     return [f.kind for f in report.findings if f.path == path and f.kind is not Kind.FILLED]
 
 
-# --- identity (acc. #12, R4a) --------------------------------------------------------------
+# --- class identity and type_uid ------------------------------------------------------------
 
 
 def test_class_and_activity_id_are_enough_for_every_identity_field(schema: ResolvedSchema) -> None:
@@ -55,7 +55,7 @@ def test_class_constants_cannot_be_supplied_inconsistently(attr: str, value: obj
     assert _at(report, (attr,)) == [Kind.IDENTITY_CONFLICT]
 
 
-# --- §5.2 sibling rules -------------------------------------------------------------------
+# --- sibling rules: an _id and its label ----------------------------------------------------
 
 
 def test_in_enum_without_label_fills_the_caption() -> None:
@@ -128,7 +128,7 @@ def test_wrongly_typed_id_derives_nothing() -> None:
     assert _at(report, ("severity_id",)) == [Kind.TYPE_MISMATCH]
 
 
-# --- list siblings (D-12) and the owning type (D-13) ---------------------------------------
+# --- list siblings, and the owning type's enum ----------------------------------------------
 
 
 def _malware(**fields: Any) -> dict[str, Any]:
@@ -182,7 +182,7 @@ def test_type_uid_without_an_enum_derives_through_the_class_registry() -> None:
     assert _at(report, ("finding_info", "related_events", 0, "type_name")) == [Kind.SIBLING_CONFLICT]
 
 
-# --- profiles: no rule for an attribute outside the resolved class (acc. #12a) -------------
+# --- profiles: no rule for an attribute outside the resolved class --------------------------
 
 
 def test_no_sibling_rule_for_a_profile_gated_out_attribute() -> None:
@@ -197,7 +197,7 @@ def test_no_sibling_rule_for_a_profile_gated_out_attribute() -> None:
     assert report.ok()
 
 
-# --- metadata --------------------------------------------------------------------------------
+# --- metadata -------------------------------------------------------------------------------
 
 
 def test_metadata_version_and_profiles() -> None:
@@ -215,7 +215,7 @@ def test_metadata_version_and_profiles() -> None:
     assert (out["metadata"]["version"], out["metadata"]["profiles"]) == ("1.9.0", [])
 
 
-# --- timestamps (D#17) ---------------------------------------------------------------------
+# --- timestamps: *_dt twins and datetime inputs ---------------------------------------------
 
 DATETIME = frozenset({"datetime"})
 
@@ -278,7 +278,7 @@ def test_a_finding_keeps_its_own_copy_of_a_derived_list() -> None:
     assert "changed" not in cast(list[str], filled.expected)
 
 
-# --- malformed input derive must leave alone, for conform to report ------------------------------
+# --- malformed input derive must leave alone, for conform to report -------------------------
 
 
 @pytest.mark.parametrize("profiles", ["cloud", [1], {"cloud": True}])
