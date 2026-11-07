@@ -46,6 +46,7 @@ line here, written for users, in the commit that makes it.
 
 ### Fixed
 
+- Generated code was not ruff-format stable for a required field whose line passed the width, which only long custom names reach; `generate()` now also refuses class, enum and field names over 100 characters, so every line can wrap.
 - `generate()` lost the package it was replacing when both the swap and the restore failed; it now keeps it and names where it is.
 - `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a
   wrong-typed attribute of an inactive profile. Such values are checked now, and objects under them

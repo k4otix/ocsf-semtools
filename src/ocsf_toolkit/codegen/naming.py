@@ -17,16 +17,28 @@ RESERVED = frozenset(
 )
 
 
+# Every generated line wraps to the 120-character width as ruff format would, so long as no name in
+# it is longer than this; OCSF's longest is under 60.
+MAX_NAME = 100
+
+
+def fits(name: str, what: str) -> str:
+    """Return a generated name, or refuse one too long for its lines to wrap to the width."""
+    if len(name) > MAX_NAME:
+        raise ValueError(f"{what} {name[:40]}... is {len(name)} characters; generated names are at most {MAX_NAME}")
+    return name
+
+
 def class_name(name: str) -> str:
     """Return the class name of an item key: ``detection_finding`` -> ``DetectionFinding``."""
-    return "".join(part.capitalize() for part in name.split("_"))
+    return fits("".join(part.capitalize() for part in name.split("_")), "class name")
 
 
 def field_name(attr: str) -> str:
     """Return the Python name of an attribute: keywords take a trailing underscore (``from_``)."""
     if not attr.isidentifier() or not attr.islower() or attr.startswith("_") or attr in RESERVED:
         raise ValueError(f"attribute name {attr!r} cannot be a generated field")
-    return f"{attr}_" if keyword.iskeyword(attr) else attr
+    return fits(f"{attr}_" if keyword.iskeyword(attr) else attr, "field name")
 
 
 def module_name(name: str) -> str:

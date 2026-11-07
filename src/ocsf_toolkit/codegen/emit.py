@@ -234,6 +234,8 @@ def _field(f: Field, imports: Imports) -> list[str]:
     inner = annotation.removeprefix("list[").removesuffix("]")
     if not tail and annotation.startswith("list[") and len(f"        {inner}") <= WIDTH:
         return [f"    {f.name}: list[", f"        {inner}", "    ]"]
+    if not tail and len(f"        {annotation}") <= WIDTH:  # a required field: parenthesized, as with a default
+        return [f"    {f.name}: (", f"        {annotation}", "    )"]
     return [f"{line}  # noqa: E501"]
 
 

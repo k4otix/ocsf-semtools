@@ -21,7 +21,7 @@ from ocsf_toolkit.codegen.emit import (
     struct_class,
 )
 from ocsf_toolkit.codegen.layout import Place, exports, plan
-from ocsf_toolkit.codegen.naming import class_name, field_name
+from ocsf_toolkit.codegen.naming import class_name, field_name, fits
 from ocsf_toolkit.codegen.types import OPEN_OBJECT, annotation
 from ocsf_toolkit.export import export_ir
 from ocsf_toolkit.ir import ItemDef, Requirement, SchemaIR
@@ -273,7 +273,7 @@ class _Generator:
             self.shared[name] = EnumClass(name, f"{entry.caption}: the dictionary enum.", a.enum)
             imports.enums.add(name)
             return name
-        name = class_name(self.defs[item.key].name) + class_name(a.name)
+        name = fits(class_name(self.defs[item.key].name) + class_name(a.name), "enum name")
         local.append(EnumClass(name, f"{a.caption} of {item.key}.", a.enum))
         return name
 

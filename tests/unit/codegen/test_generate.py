@@ -45,6 +45,45 @@ def test_tree_is_ruff_clean(tmp_path: Path) -> None:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+LONG_CLASS = "detection_finding_with_a_long_name_" + "x" * 21  # DetectionFindingWithALongNameXxx..., 50
+
+
+def _with_long_names(class_name: str, attribute: str) -> SchemaIR:
+    finding = IR.classes["detection_finding"]
+    attrs = dict(finding.attributes)
+    attrs[attribute] = dataclasses.replace(attrs["severity_id"], name=attribute, sibling=None)  # its own enum
+    attrs[attribute + "s"] = dataclasses.replace(attrs["evidences"], name=attribute + "s")  # a list of objects
+    item = dataclasses.replace(finding, name=class_name, attributes=attrs)
+    return dataclasses.replace(IR, classes={**IR.classes, "detection_finding": item})
+
+
+def test_long_names_are_ruff_clean(tmp_path: Path) -> None:
+    """Names that push lines past the width take the wrapping paths no shipped schema reaches."""
+    # a 50-character class name wraps the Struct's head; a 90-character enum name wraps its fields
+    long = _with_long_names(LONG_CLASS, "an_attribute_named_at_length_" + "y" * 16)
+    tree = render(long, package="pkg")
+    module = tree[next(path for path in tree if path.startswith("classes/detection_finding_with_a_long_name"))]
+    path = tmp_path / "detection_finding.py"
+    path.write_bytes(module)
+    for args in (["format", "--check"], ["check"]):
+        cmd = [sys.executable, "-m", "ruff", *args, "--config", str(ROOT / "pyproject.toml"), str(path)]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    ("class_name", "attribute", "what"),
+    [
+        ("detection_finding_" + "x" * 100, "short", "class name"),
+        (LONG_CLASS, "an_attribute_" * 9, "field name"),
+        (LONG_CLASS, "an_attribute_named_at_length_" + "y" * 40, "enum name"),
+    ],
+)
+def test_a_name_too_long_to_wrap_is_refused(class_name: str, attribute: str, what: str) -> None:
+    with pytest.raises(ValueError, match=f"{what} .* characters; generated names are at most 100"):
+        render(_with_long_names(class_name, attribute), package="pkg")
+
+
 def test_class_module_shape() -> None:
     text = _text(TREE, "classes/detection_finding.py")
     for line in (
