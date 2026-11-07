@@ -2,7 +2,6 @@
 
 import argparse
 import re
-import subprocess
 import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
@@ -193,12 +192,7 @@ def add(
     if not _VERSION.fullmatch(version):
         raise ValueError(f"OCSF version must look like x.y.z, got {version!r}")
     _check_repo(repo, "--repo")
-    listing = subprocess.run(
-        ["git", "ls-remote", "--tags", "--heads", repo],
-        check=True,
-        stdout=subprocess.PIPE,
-        text=True,
-    ).stdout
+    listing = _upstream.run_git("ls-remote", "--tags", "--heads", repo)
     ref_name, commit = resolve_ref(version, parse_ls_remote(listing), ref)
     pinned = next((e for e in lock.schemas if e.version == version), None)
     if pinned is not None:

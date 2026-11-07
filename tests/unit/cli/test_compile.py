@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -216,3 +217,37 @@ def test_compile_record_writes_the_new_hash(
     assert lock.find(lock.read(path), "1.9.0").compiled_sha256 == FAKE_SHA
     assert f"1.9.0: recorded compiled_sha256 {FAKE_SHA}" in capsys.readouterr().out
     assert main(argv) == 0
+
+
+def test_without_git_the_error_says_so(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PATH", str(tmp_path))  # nothing on it
+    with pytest.raises(OSError, match="git not found"):
+        _upstream.checkout("file:///nowhere", "0" * 40, tmp_path / "cache")
+
+
+def test_without_uv_the_error_names_compiler_cmd(
+    tmp_path: Path, upstream: Upstream, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    only_git = tmp_path / "bin"
+    only_git.mkdir()
+    git = shutil.which("git")
+    assert git is not None
+    (only_git / "git").symlink_to(git)
+    monkeypatch.setenv("PATH", str(only_git))
+    commit = upstream.commits["1.9.0"]
+    with pytest.raises(OSError, match=r"uvx not found: install uv .* or pass --compiler-cmd"):
+        _upstream.compiled_output(
+            repo=upstream.url,
+            commit=commit,
+            version="1.9.0",
+            sha256=None,
+            compiler=Compiler("1.1.1", "3.14"),
+            build_dir=tmp_path / "build",
+        )
+
+
+def test_a_broken_cached_checkout_says_to_delete_it(tmp_path: Path) -> None:
+    commit = "0" * 40
+    (tmp_path / commit).mkdir()  # a directory, but no git repository
+    with pytest.raises(ValueError, match="not a usable git checkout; delete it and retry"):
+        _upstream.checkout("file:///nowhere", commit, tmp_path)

@@ -54,16 +54,19 @@ def checkout(repo: str, commit: str, cache_dir: Path) -> Path:
     """Return a checkout of ``repo`` at ``commit``, reusing ``cache_dir/<commit>`` when present."""
     dest = cache_dir / commit
     if dest.is_dir():
-        head = _git("rev-parse", "HEAD", cwd=dest)
+        try:
+            head = run_git("rev-parse", "HEAD", cwd=dest)
+        except subprocess.CalledProcessError:
+            raise ValueError(f"{dest} is not a usable git checkout; delete it and retry") from None
         if head != commit:
             raise ValueError(f"{dest} is a checkout of {head}, not {commit}; delete it and retry")
         return dest
     cache_dir.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp(dir=cache_dir, prefix=f".{commit[:12]}-"))
     try:
-        _git("init", "--quiet", cwd=tmp)
-        _git("fetch", "--quiet", "--depth", "1", "--", repo, commit, cwd=tmp)
-        _git("-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD", cwd=tmp)
+        run_git("init", "--quiet", cwd=tmp)
+        run_git("fetch", "--quiet", "--depth", "1", "--", repo, commit, cwd=tmp)
+        run_git("-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD", cwd=tmp)
         tmp.rename(dest)
     finally:
         if tmp.exists():
@@ -134,10 +137,17 @@ def compiled_output(
     src = checkout(repo, commit, build_dir / "ocsf-schema")
     argv = compiler_argv(src, compiler, extensions)
     print(f"{version}: {shlex.join(argv)}", file=sys.stderr)
-    output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
+    try:
+        output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
+    except FileNotFoundError:
+        raise OSError(f"{argv[0]} not found: install uv (https://docs.astral.sh/uv/), or pass --compiler-cmd") from None
     return verify(output, version=version, sha256=sha256)
 
 
-def _git(*args: str, cwd: Path) -> str:
-    result = subprocess.run(["git", *args], cwd=cwd, check=True, stdout=subprocess.PIPE, text=True)
+def run_git(*args: str, cwd: Path | None = None) -> str:
+    """Run git and return its stripped output; a missing git says how to get one."""
+    try:
+        result = subprocess.run(["git", *args], cwd=cwd, check=True, stdout=subprocess.PIPE, text=True)
+    except FileNotFoundError:
+        raise OSError("git not found: compiling an OCSF schema needs git on PATH") from None
     return result.stdout.strip()

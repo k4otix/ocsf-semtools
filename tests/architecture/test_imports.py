@@ -1,6 +1,7 @@
 """The architecture rules (CONTRIBUTING.md) that can be checked mechanically over the core source."""
 
 import ast
+import configparser
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -8,8 +9,10 @@ from typing import Any
 import pytest
 from importlinter.cli import lint_imports
 
+from ocsf_toolkit.cli import lock
+from ocsf_toolkit.cli.trees import package_name
 from tests.architecture.support import PACKAGE, SOURCES
-from tests.conftest import ROOT
+from tests.conftest import LOCKFILE, ROOT
 
 CORE = {
     "ir",
@@ -105,3 +108,12 @@ def test_engine_run_is_exactly_one_walk(monkeypatch: pytest.MonkeyPatch) -> None
         engine.run(multi_error_fixture(schema), schema, "detection_finding", policy)
         assert len(calls) == 1
         assert len(calls[0]) == len(set(map(repr, calls[0])))
+
+
+def test_the_generated_package_contract_names_every_model_window_package() -> None:
+    """A new OCSF version's package must join the list, or core could import it unnoticed."""
+    config = configparser.ConfigParser()
+    config.read(ROOT / ".importlinter")
+    forbidden = set(config["importlinter:contract:no-generated-packages"]["forbidden_modules"].split())
+    window = {package_name(version) for version in lock.window(LOCKFILE)}
+    assert sorted(window - forbidden) == []

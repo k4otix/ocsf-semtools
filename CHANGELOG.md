@@ -47,6 +47,7 @@ line here, written for users, in the commit that makes it.
 
 ### Fixed
 
+- A missing `git` or `uv` was reported as `[Errno 2] No such file or directory`; the error now says what to install, or to pass `--compiler-cmd`, and a broken cached checkout says to delete it.
 - `generate()` accepted a class or enum named `Literal`, `Struct`, `IntEnum`, `StrEnum` or `Any`, which shadowed the module's import and broke it at import time; such names are refused.
 - `ocsf-toolkit generate --ext` needed `ocsf.lock` in the current directory, which only a checkout of this repository has; it takes the pin from the shipped IR when there is none. An extension's hash leaves out hidden files such as `.git`, so a git operation no longer changes it.
 - Generated code was not ruff-format stable for a required field whose line passed the width, which only long custom names reach; `generate()` now also refuses class, enum and field names over 100 characters, so every line can wrap.

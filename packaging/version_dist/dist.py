@@ -221,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     """Run one release-tooling action from the command line; return the exit status."""
     parser = argparse.ArgumentParser(prog="dist.py", description=__doc__)
     actions = parser.add_subparsers(dest="action", required=True)
-    r = actions.add_parser("render", help="write a dist's pyproject.toml, README.md and LICENSE")
+    r = actions.add_parser("render", help="write a dist's pyproject.toml, README.md, LICENSE and NOTICE")
     r.add_argument("--ocsf", required=True)
     r.add_argument("--version", required=True, help="the core version generating the dist")
     r.add_argument("--out", required=True, type=Path)
@@ -233,14 +233,18 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--version", required=True, help="the version of the core in this checkout")
     k.add_argument("--wheels", type=Path, help="use dist wheels from here instead of PyPI")
     args = parser.parse_args(argv)
-    if args.action == "render":
-        render(args.ocsf, args.version, args.out)
-    elif args.action == "check-wheels":
-        check_wheels(args.wheels)
-    elif args.action == "compat":
-        compat(args.version, args.wheels)
-    elif args.action == "unpublished":
-        print(" ".join(unpublished(args.version)))
+    try:
+        if args.action == "render":
+            render(args.ocsf, args.version, args.out)
+        elif args.action == "check-wheels":
+            check_wheels(args.wheels)
+        elif args.action == "compat":
+            compat(args.version, args.wheels)
+        elif args.action == "unpublished":
+            print(" ".join(unpublished(args.version)))
+    except (ValueError, OSError, subprocess.CalledProcessError) as exc:  # urllib's errors are OSErrors
+        print(f"dist.py: error: {exc}", file=sys.stderr)
+        return 2
     return 0
 
 

@@ -4,34 +4,35 @@
 # Run by hand:                 uvx pre-commit run --all-files
 #
 # Every hook runs through `uv run`, inside the uv.lock environment CI uses, so the tool versions
-# come from uv.lock alone; there is no version to keep in sync here.
+# come from uv.lock alone; there is no version to keep in sync here. --locked fails a commit whose
+# pyproject.toml no longer matches uv.lock, as CI's uv sync --locked would.
 
 repos:
   - repo: local
     hooks:
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format
+        entry: uv run --locked ruff format
         language: system
         types: [python]
 
       - id: ruff
         name: ruff check
-        entry: uv run ruff check
+        entry: uv run --locked ruff check
         language: system
         types: [python]
         args: [--fix, --exit-non-zero-on-fix]
 
       - id: lint-imports
         name: import contracts
-        entry: uv run lint-imports
+        entry: uv run --locked lint-imports
         language: system
         types: [python]
         pass_filenames: false
 
       - id: pyright
         name: pyright (strict)
-        entry: uv run pyright
+        entry: uv run --locked pyright
         language: system
         types: [python]
         pass_filenames: false
