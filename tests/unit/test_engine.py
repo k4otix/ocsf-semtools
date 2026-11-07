@@ -36,9 +36,9 @@ from tests.fixtures.events import (
 
 
 def test_the_three_presets() -> None:
-    assert Policy(fill=True, overwrite=False, coerce=False, unknown="error") == STRICT
-    assert Policy(fill=False, overwrite=False, coerce=False, unknown="report") == LENIENT
-    assert Policy(fill=True, overwrite=True, coerce=True, unknown="relocate") == REPAIR
+    assert Policy(fill=True, overwrite=False, coerce=False, relocate=False) == STRICT
+    assert Policy(fill=False, overwrite=False, coerce=False, relocate=False) == LENIENT
+    assert Policy(fill=True, overwrite=True, coerce=True, relocate=True) == REPAIR
 
 
 @pytest.mark.parametrize("policy", [STRICT, REPAIR])

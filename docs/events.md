@@ -1,8 +1,9 @@
 # Building and checking events
 
-Three entry points share one engine and one traversal of the event. They differ only in their
-`Policy`: what to fill in, whether to coerce, and what to do with unknown attributes. Each returns
-or raises a `Report` that holds every finding.
+Three entry points share one engine and one traversal of the event, so they find the same problems
+in it. They differ in what they change: `build` fills in what the schema derives, `parse` changes
+nothing, and `repair` also corrects what it safely can. Each returns or raises a `Report` that holds
+every finding.
 
 ```pycon
 >>> import json
@@ -97,29 +98,16 @@ full `Report`; `str(error)` names the errors.
 
 ```
 
-## Policies
+## What each entry point changes
 
-### `Policy`
-
-`Policy(fill, overwrite, coerce, unknown)` says what the engine does with what it finds. The three
-entry points use the three constants below; nothing else differs between them.
-
-### `STRICT`
-
-### `LENIENT`
-
-### `REPAIR`
-
-```pycon
->>> from ocsf_toolkit import LENIENT, REPAIR, STRICT
->>> STRICT  # build
-Policy(fill=True, overwrite=False, coerce=False, unknown='error')
->>> LENIENT  # parse
-Policy(fill=False, overwrite=False, coerce=False, unknown='report')
->>> REPAIR  # repair
-Policy(fill=True, overwrite=True, coerce=True, unknown='relocate')
-
-```
+| | `build` | `parse` | `parse(as_=...)` | `repair` |
+|---|---|---|---|---|
+| fills derived values (identity, labels, `*_dt`, `metadata.version`) | yes | no | no | yes |
+| replaces a derived value that conflicts with the schema | no | no | no | yes |
+| coerces `"4"` to `4`, `"true"` to `True`, `4.0` to `4` | no | no | no | yes |
+| moves a deprecated attribute to its one successor | no | no | no | yes |
+| moves unknown attributes into `unmapped` | no | no | yes | yes |
+| raises `ConformanceError` on errors | yes | no | no | no |
 
 ## Reports
 

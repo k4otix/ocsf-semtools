@@ -5,6 +5,8 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 
 ## Unreleased
 
+- Removed from the public API: `Policy`, `STRICT`, `LENIENT` and `REPAIR`. No function accepted them; [Building and checking events](docs/events.md) says what each entry point changes.
+
 ## 0.1.0a2
 
 - Publishes model package `ocsf-toolkit-v1-9-0`.

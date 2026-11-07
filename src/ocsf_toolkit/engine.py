@@ -5,7 +5,7 @@ import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal, cast, final
+from typing import Any, cast, final
 
 from ocsf_toolkit.conform import Checks, as_integer, check
 from ocsf_toolkit.derive import derive
@@ -23,17 +23,20 @@ FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Policy:
-    """How the engine treats what it finds: build, parse and repair differ only in their policy."""
+    """What a run may change in the event; each entry point in ``ocsf_toolkit.models`` picks one.
+
+    Every run reports the same findings; a policy decides only which of them it also acts on.
+    """
 
     fill: bool  # derive identity, siblings, *_dt, metadata.version; accept datetime timestamps
     overwrite: bool  # conflicting derived values <- the schema's; 1:1 deprecation migrations
     coerce: bool  # "4"->4, "true"->True, integral float->int
-    unknown: Literal["error", "report", "relocate"]
+    relocate: bool  # unknown attributes move into the class's unmapped
 
 
-STRICT = Policy(fill=True, overwrite=False, coerce=False, unknown="error")
-LENIENT = Policy(fill=False, overwrite=False, coerce=False, unknown="report")
-REPAIR = Policy(fill=True, overwrite=True, coerce=True, unknown="relocate")
+STRICT = Policy(fill=True, overwrite=False, coerce=False, relocate=False)  # build
+LENIENT = Policy(fill=False, overwrite=False, coerce=False, relocate=False)  # parse
+REPAIR = Policy(fill=True, overwrite=True, coerce=True, relocate=True)  # repair
 
 
 @final
@@ -88,7 +91,7 @@ def run(
     event: dict[str, Any], schema: ResolvedSchema, class_key: str | None, policy: Policy
 ) -> tuple[dict[str, Any], Report]:
     """Walk the event once, deriving and checking; a policy that changes the event works on a copy."""
-    mutates = policy.fill or policy.overwrite or policy.coerce or policy.unknown == "relocate"
+    mutates = policy.fill or policy.overwrite or policy.coerce or policy.relocate
     out = copy.deepcopy(event) if mutates else event
     item, identity, findings = _root_class(out, schema, class_key, coerce=policy.coerce)
     checks = Checks(
@@ -97,7 +100,7 @@ def run(
         root_item=item,
         coerce=policy.coerce,
         datetimes=policy.fill,
-        relocate=policy.unknown == "relocate",
+        relocate=policy.relocate,
         migrate=policy.overwrite,
     )
     marks = markers(schema, item)

@@ -11,15 +11,11 @@ def test_all_is_exact() -> None:
         "ConformanceError",
         "Finding",
         "Kind",
-        "LENIENT",
         "Observable",
-        "Policy",
-        "REPAIR",
         "Report",
         "ResolvedAttribute",
         "ResolvedItem",
         "ResolvedSchema",
-        "STRICT",
         "SchemaDiff",
         "SchemaIR",
         "__version__",
@@ -69,9 +65,7 @@ def test_build_parse_and_repair_share_one_report_type() -> None:
         assert all(isinstance(f, ocsf_toolkit.Finding) for f in report.findings)
 
 
-def test_policies_and_the_one_exception() -> None:
-    presets = (ocsf_toolkit.STRICT, ocsf_toolkit.LENIENT, ocsf_toolkit.REPAIR)
-    assert all(isinstance(p, ocsf_toolkit.Policy) for p in presets)
+def test_the_one_exception() -> None:
     assert ocsf_toolkit.Kind("sibling_conflict") is ocsf_toolkit.Kind.SIBLING_CONFLICT
     schema = ocsf_toolkit.load("1.9.0")
     with pytest.raises(ocsf_toolkit.ConformanceError) as raised:

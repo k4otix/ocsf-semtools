@@ -31,7 +31,7 @@ if TYPE_CHECKING:  # imported where used: reading a schema never loads the model
 
 type ClassRef = tuple[ResolvedSchema, str]  # (schema, class key), for building without models
 
-_AS_STRUCT = dataclasses.replace(LENIENT, unknown="relocate")  # a Struct has no field for them
+_AS_STRUCT = dataclasses.replace(LENIENT, relocate=True)  # a Struct has no field for unknown attributes
 _BUNDLED_IR = "ir.json"  # written by codegen into every generated package
 
 
