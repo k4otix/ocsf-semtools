@@ -142,7 +142,12 @@ def test_repair_restores_and_is_idempotent(case: tuple[str, str], data: st.DataO
 
     fixed, report = repair(damaged)
     assert report.errors() == ()
-    expected, _ = repair(event)
+    expected, untouched = repair(event)
+    # a conformant event changes only by moving deprecated attributes to their successors
+    changes = {f.repair.action for f in untouched.findings if f.repair is not None}
+    assert changes <= {"migrate"}
+    if not changes:
+        assert expected == event
     if relocated:
         moves = _migrations(report)
         relocated = {_moved(key, moves): value for key, value in relocated.items()}

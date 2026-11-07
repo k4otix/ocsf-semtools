@@ -160,10 +160,47 @@ def test_symlinks_block_replacement(tmp_path: Path) -> None:
     assert (outside / "keep.py").read_text() == "keep"
 
 
-def test_a_failed_write_leaves_the_old_package(tmp_path: Path) -> None:
+def test_a_render_that_fails_writes_nothing(tmp_path: Path) -> None:
     out = generate(IR, package="pkg", out=tmp_path)
     before = sorted(p.relative_to(out) for p in out.rglob("*"))
     with pytest.raises(KeyError, match="unknown profiles"):
         generate(IR, package="pkg", out=tmp_path, profiles=["nope"])
     assert sorted(p.relative_to(out) for p in out.rglob("*")) == before
     assert sorted(p.name for p in tmp_path.iterdir()) == ["pkg"]
+
+
+def _snapshot(root: Path) -> dict[Path, bytes]:
+    return {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+
+
+def _failing_renames(monkeypatch: pytest.MonkeyPatch, into: Path, times: int) -> None:
+    """Make the next ``times`` renames onto ``into`` fail, as a full disk would."""
+    real, left = Path.rename, [times]
+
+    def rename(self: Path, target: Path) -> Path:
+        if Path(target) == into and left[0]:
+            left[0] -= 1
+            raise OSError("disk full")
+        return real(self, target)
+
+    monkeypatch.setattr(Path, "rename", rename)
+
+
+def test_a_failed_swap_puts_the_old_package_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = generate(IR, package="pkg", out=tmp_path, profiles=["cloud"])
+    before = _snapshot(out)
+    _failing_renames(monkeypatch, out, times=1)
+    with pytest.raises(OSError, match="disk full"):
+        generate(IR, package="pkg", out=tmp_path)  # superset classes: different files
+    assert _snapshot(out) == before
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["pkg"]  # the staging directory is gone
+
+
+def test_a_package_that_cant_be_put_back_is_kept(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = generate(IR, package="pkg", out=tmp_path, profiles=["cloud"])
+    before = _snapshot(out)
+    _failing_renames(monkeypatch, out, times=2)
+    with pytest.raises(OSError, match=r"nor put it back; it is at (.+)") as caught:
+        generate(IR, package="pkg", out=tmp_path)
+    kept = Path(str(caught.value).rsplit("it is at ", 1)[1])
+    assert _snapshot(kept) == before

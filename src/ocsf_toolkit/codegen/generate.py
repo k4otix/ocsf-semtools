@@ -70,11 +70,14 @@ def _install(files: Mapping[str, bytes], target: Path) -> None:
     """Write the files as the directory target, replacing whatever generated package is there.
 
     Everything is staged in a directory created here, so the only tree ever deleted is that one:
-    the new files on failure, or the replaced (verified generated) package on success.
+    the new files on failure, or the replaced (verified generated) package on success. If the
+    previous package can't be put back after a failed swap, the staging directory is kept and the
+    error names where that package is.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(dir=target.parent, prefix=f".{target.name}-"))
     old = staging / "replaced"
+    keep = False
     try:
         new = staging / target.name
         for name, data in files.items():
@@ -87,10 +90,15 @@ def _install(files: Mapping[str, bytes], target: Path) -> None:
             new.rename(target)
         except OSError:
             if old.exists() and not target.exists():
-                old.rename(target)  # put the previous package back
+                try:
+                    old.rename(target)  # put the previous package back
+                except OSError as restore:
+                    keep = True
+                    raise OSError(f"could not replace {target}, nor put it back; it is at {old}") from restore
             raise
     finally:
-        shutil.rmtree(staging)
+        if not keep:
+            shutil.rmtree(staging)
 
 
 def _foreign(target: Path) -> list[Path]:
