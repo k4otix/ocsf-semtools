@@ -47,9 +47,9 @@ def test_generate_exact_from_an_ir_file(tmp_path: Path) -> None:
         (["--ext", "missing-dir"], "not a directory"),
     ],
 )
-def test_errors_exit_one(tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], message: str) -> None:
+def test_errors_exit_two(tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], message: str) -> None:
     argv = ["generate", "1.9.0", "--package", "m", "--out", str(tmp_path), *extra]
-    assert main(argv) == 1
+    assert main(argv) == 2
     assert message in capsys.readouterr().err
 
 

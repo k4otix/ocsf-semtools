@@ -63,7 +63,8 @@ jobs:
                 status=0
                 category=$(uv run ocsf-toolkit diff --semver "$RUNNER_TEMP/$name" "$path") \
                   || status=$?
-                [ "$status" -le 1 ] || exit "$status" # 1 only means the IRs differ
+                [ "$status" -le 1 ] || exit "$status" # 1 means the IRs differ; 2 is a failed run
+                [ -n "$category" ] || { echo "::error::no release category for $name"; exit 1; }
                 echo "- $name: $category"
               fi
             done

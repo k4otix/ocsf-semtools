@@ -25,7 +25,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run one command and return its exit status; an expected failure prints one line to stderr."""
+    """Run one command and return its exit status: 0 clean, 1 findings or differences, 2 the command failed.
+
+    A failure (bad input, a missing file, an unknown version, profile or class) prints one line to
+    stderr, as argparse does for a usage error, which also exits 2.
+    """
     args = build_parser().parse_args(argv)
     try:
         status: int = args.run(args)
@@ -35,7 +39,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         # interpreter's own flush at exit doesn't raise again, and stop quietly.
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         return 1
+    except KeyError as exc:  # its str() quotes the message
+        print(f"ocsf-toolkit: error: {exc.args[0] if exc.args else exc}", file=sys.stderr)
+        return 2
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
-        return 1
+        return 2
     return status

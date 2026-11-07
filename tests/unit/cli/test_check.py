@@ -83,7 +83,7 @@ def test_bad_selection_fails_once(
     events: Path, capsys: pytest.CaptureFixture[str], option: list[str], message: str
 ) -> None:
     argv = ["check", "--version", "1.9.0", *option, str(events)]
-    assert main(argv) == 1
+    assert main(argv) == 2
     assert message in capsys.readouterr().err
 
 

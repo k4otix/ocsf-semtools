@@ -45,7 +45,7 @@ def _run(workspace: Path, *args: str) -> int:
 
 
 def test_export_requires_record_for_a_new_ir(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert _run(workspace, "export", VERSION) == 1
+    assert _run(workspace, "export", VERSION) == 2
     assert "pass --record to accept it" in capsys.readouterr().err
     assert not (workspace / "data").exists()
 
@@ -67,7 +67,7 @@ def test_export_record_then_check(workspace: Path, capsys: pytest.CaptureFixture
 def test_check_fails_on_tampered_ir(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(workspace, "export", VERSION, "--record") == 0
     (workspace / "data" / f"ir-{VERSION}.json").write_text("{}\n")
-    assert _run(workspace, "check", VERSION) == 1
+    assert _run(workspace, "check", VERSION) == 2
     assert "does not match the IR rebuilt" in capsys.readouterr().err
 
 
@@ -75,26 +75,26 @@ def test_check_fails_on_changed_ir(workspace: Path, capsys: pytest.CaptureFixtur
     path = workspace / "ocsf.lock"
     lockfile = lock.read(path)
     lock.write(path, replace(lockfile, schemas=(replace(lockfile.schemas[0], ir_sha256="f" * 64),)))
-    assert _run(workspace, "check", VERSION) == 1
+    assert _run(workspace, "check", VERSION) == 2
     assert "the loader or the compiled schema changed" in capsys.readouterr().err
 
 
 def test_check_without_recorded_ir(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert _run(workspace, "check", VERSION) == 1
+    assert _run(workspace, "check", VERSION) == 2
     assert "has no ir_sha256" in capsys.readouterr().err
-    assert _run(workspace, "check") == 1
+    assert _run(workspace, "check") == 2
     assert "no lockfile entry has an ir_sha256" in capsys.readouterr().err
 
 
 def test_missing_compiled_schema(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     (workspace / "build" / "compiled" / f"schema-{VERSION}.json").unlink()
-    assert _run(workspace, "export", VERSION, "--record") == 1
+    assert _run(workspace, "export", VERSION, "--record") == 2
     assert f"run `ocsf-toolkit compile {VERSION}` first" in capsys.readouterr().err
 
 
 def test_stale_compiled_schema(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     (workspace / "build" / "compiled" / f"schema-{VERSION}.json").write_text("{}")
-    assert _run(workspace, "export", VERSION, "--record") == 1
+    assert _run(workspace, "export", VERSION, "--record") == 2
     assert "does not match compiled_sha256" in capsys.readouterr().err
 
 
@@ -102,7 +102,7 @@ def test_toolchain_ir_version_must_match(workspace: Path, capsys: pytest.Capture
     path = workspace / "ocsf.lock"
     lockfile = lock.read(path)
     lock.write(path, replace(lockfile, toolchain=replace(lockfile.toolchain, ir_version="2.0")))
-    assert _run(workspace, "export", VERSION, "--record") == 1
+    assert _run(workspace, "export", VERSION, "--record") == 2
     assert "ir_version is 2.0, this library writes 1.0" in capsys.readouterr().err
 
 

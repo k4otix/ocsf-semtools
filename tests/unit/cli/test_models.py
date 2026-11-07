@@ -46,12 +46,12 @@ def test_record_then_check(lockfile: Path, capsys: pytest.CaptureFixture[str]) -
 
 
 def test_check_fails_when_no_hash_is_recorded(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert _run(lockfile, "check") == 1
+    assert _run(lockfile, "check") == 2
     assert "lockfile has none; review the change" in capsys.readouterr().err
 
 
 def test_check_refuses_a_version_outside_the_window(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert _run(lockfile, "check", "1.8.0") == 1
+    assert _run(lockfile, "check", "1.8.0") == 2
     assert "outside the model window" in capsys.readouterr().err
 
 
@@ -66,7 +66,7 @@ def test_check_compares_a_built_dist(lockfile: Path, capsys: pytest.CaptureFixtu
     assert _run(lockfile, "check") == 0
     assert f"{package} == lockfile" in capsys.readouterr().out
     (package / "enums.py").write_text("# edited\n")
-    assert _run(lockfile, "check") == 1
+    assert _run(lockfile, "check") == 2
     assert "rerun `make dists`" in capsys.readouterr().err
     shutil.rmtree(package)  # an absent dist is not checked
     assert _run(lockfile, "check") == 0

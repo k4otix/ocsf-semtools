@@ -1,7 +1,15 @@
 # Command line
 
-`ocsf-toolkit` is installed with the package. Every command has `--help`. Commands exit 0 on success,
-1 on a finding or check that failed, and print errors as `ocsf-toolkit: error: ...`.
+`ocsf-toolkit` is installed with the package. Every command has `--help`.
+
+| Exit status | Meaning |
+|---|---|
+| 0 | done: the events are clean, the IRs are equal, the gates pass |
+| 1 | `check` found an error in an event, or `diff` found a difference |
+| 2 | the command couldn't do its job: a usage error, a missing file, an unknown version, profile or class, or a schema pipeline gate that failed |
+
+A failure prints one line, `ocsf-toolkit: error: ...`, to stderr. So a script can tell bad data
+(1) from a broken run (2).
 
 ## Working with events and schemas
 
@@ -26,8 +34,8 @@ event in the form of `Report.to_dict()`.
 
 ### `diff`
 
-What changed between two OCSF versions, or two IR files. It exits 0 when they are equal and 1 when
-they differ, like diff(1).
+What changed between two OCSF versions, or two IR files. It exits 0 when they are equal, 1 when they
+differ and 2 when one can't be read, like diff(1).
 
 ```shell
 ocsf-toolkit diff 1.1.0 1.3.0

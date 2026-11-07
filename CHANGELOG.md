@@ -8,6 +8,7 @@ line here, written for users, in the commit that makes it.
 
 ### Changed
 
+- The command line exits 2 when a command can't do its job: a usage error, a missing file, an unknown version, profile or class, or a failed pipeline gate. Exit 1 now means only that `check` found an error or `diff` a difference.
 - `parse` and `repair` read extensions from `metadata.extensions`, so an event of an extension class
   such as `win/prefetch_query` is checked against that class; before, it was checked as `base_event`.
   Both also take `schema=`, a schema from `load()` or `resolve()`, for custom extensions.

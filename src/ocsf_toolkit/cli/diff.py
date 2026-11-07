@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import sys
 
 from ocsf_toolkit.cli._common import AddParser, Options, printable, source_ir
 from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
@@ -29,13 +28,8 @@ def register(add_parser: AddParser, shared: Options) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    """Print the diff of two IRs; return 0 when they are equal, 1 when they differ, 2 when one can't be read."""
-    try:
-        old, new = source_ir(args.old), source_ir(args.new)
-    except (ValueError, OSError) as exc:
-        print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
-        return 2
-    result = diff(old, new)
+    """Print the diff of two IRs; return 0 when they are equal and 1 when they differ."""
+    result = diff(source_ir(args.old), source_ir(args.new))
     if args.semver:
         category, counted = semver(result)
         print(f"{category} ({counted} change(s) outside provenance)")

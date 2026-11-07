@@ -168,7 +168,7 @@ def test_compile_command_fails_closed_on_hash_mismatch(
         "--compiler-cmd",
         compiler_cmd,
     ]
-    assert main(argv) == 1
+    assert main(argv) == 2
     assert "compiler output changed" in capsys.readouterr().err
     assert not (build / "compiled").exists()
 
@@ -177,7 +177,7 @@ def test_compile_command_unknown_version(
     tmp_path: Path, upstream: Upstream, capsys: pytest.CaptureFixture[str]
 ) -> None:
     path = _lockfile(tmp_path, upstream, FAKE_SHA)
-    assert main(["compile", "1.8.0", "--lock", str(path)]) == 1
+    assert main(["compile", "1.8.0", "--lock", str(path)]) == 2
     assert "1.8.0 is not in the lockfile" in capsys.readouterr().err
 
 
