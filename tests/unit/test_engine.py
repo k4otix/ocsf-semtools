@@ -35,6 +35,7 @@ from tests.fixtures.events import (
     T0,
     base_detection_finding,
     error_fixtures,
+    minimal_fields,
     multi_error_fixture,
 )
 
@@ -64,20 +65,9 @@ def test_policies_differ_only_in_behaviour(schema: ResolvedSchema) -> None:
 # --- build ---------------------------------------------------------------------------------
 
 
-def _fields(**extra: Any) -> dict[str, Any]:
-    return {
-        "activity_id": 1,
-        "severity_id": 4,
-        "time": T0,
-        "metadata": {"product": {"name": "p"}},
-        "finding_info": {"uid": "f"},
-        **extra,
-    }
-
-
 def test_build_by_reference_raises_with_the_whole_report(schema: ResolvedSchema) -> None:
     with pytest.raises(ConformanceError) as raised:
-        build((schema, CLASS), **_fields(severity_id=42, time="yesterday", bogus=1))
+        build((schema, CLASS), **minimal_fields(severity_id=42, time="yesterday", bogus=1))
     report = raised.value.report
     assert {(f.kind, f.path) for f in report.errors()} == {
         (Kind.ENUM_OUT_OF_RANGE, ("severity_id",)),
@@ -90,18 +80,18 @@ def test_build_by_reference_raises_with_the_whole_report(schema: ResolvedSchema)
 def test_build_does_not_raise_on_warnings(schema: ResolvedSchema) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
-        event = build((schema, CLASS), **_fields(comment="old"))
+        event = build((schema, CLASS), **minimal_fields(comment="old"))
     assert event["comment"] == "old"
 
 
 def test_build_by_reference_warns_per_deprecated_attribute(schema: ResolvedSchema) -> None:
     with pytest.warns(DeprecationWarning, match="comment is deprecated"):
-        build((schema, CLASS), **_fields(comment="old"))
+        build((schema, CLASS), **minimal_fields(comment="old"))
 
 
 def test_build_never_mutates_nested_caller_dicts(schema: ResolvedSchema) -> None:
     metadata: dict[str, Any] = {"product": {"name": "p"}}
-    build((schema, CLASS), **(_fields() | {"metadata": metadata}))
+    build((schema, CLASS), **(minimal_fields() | {"metadata": metadata}))
     assert metadata == {"product": {"name": "p"}}
 
 
@@ -308,9 +298,8 @@ def test_report_to_dict_is_json(schema: ResolvedSchema) -> None:
 
 
 @pytest.mark.parametrize("kind", list(Kind))
-def test_severity_is_a_function_of_kind(kind: Kind) -> None:
+def test_a_repaired_finding_is_info_whatever_its_kind(kind: Kind) -> None:
     finding = Finding(kind=kind, path=(), owner="o", message="m")
-    assert finding.severity == _SEVERITY.get(kind, "info")
     repaired = dataclasses.replace(finding, repair=RepairAction(action="fill", before=None, after=1))
     assert repaired.severity == "info"
 

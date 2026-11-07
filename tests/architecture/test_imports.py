@@ -8,9 +8,9 @@ from typing import Any
 import pytest
 from importlinter.cli import lint_imports
 
+from tests.architecture.support import PACKAGE, SOURCES
 from tests.conftest import ROOT
 
-PACKAGE = ROOT / "src" / "ocsf_toolkit"
 CORE = {
     "ir",
     "loader",
@@ -26,7 +26,6 @@ CORE = {
     "codegen",
     "cli",
 }
-SOURCES = sorted(p for p in PACKAGE.rglob("*.py") if p.name != "_version.py")
 
 
 def _tree(path: Path) -> ast.Module:
@@ -72,10 +71,7 @@ VISITORS = ("derive", "conform", "observables", "engine", "models")
 @pytest.mark.parametrize("name", VISITORS)
 def test_only_walk_traverses_an_event(name: str) -> None:
     """Rule 1, statically: no while loop and no self-recursive function outside walk.py."""
-    path = PACKAGE / f"{name}.py"
-    if not path.is_file():
-        pytest.skip(f"{name}.py arrives in a later milestone")
-    tree = _tree(path)
+    tree = _tree(PACKAGE / f"{name}.py")  # a renamed module fails here instead of skipping
     assert not [n.lineno for n in ast.walk(tree) if isinstance(n, ast.While)]
     recursive = [
         f.name

@@ -109,7 +109,7 @@ def test_iterative_walk_handles_depth_beyond_the_recursion_limit(schema: Resolve
     assert len(visits) == 3001
 
 
-@pytest.mark.parametrize(("limit", "tripped"), [(12, False), (11, True), (1, True)])
+@pytest.mark.parametrize(("limit", "tripped"), [(12, False), (11, True), (1, True)])  # _event() makes 12 visits
 def test_max_nodes_counts_attribute_visits(schema: ResolvedSchema, limit: int, tripped: bool) -> None:
     out = list(walk(_event(), schema.classes["detection_finding"], schema, max_nodes=limit))
     attribute_visits = [v for v in out if isinstance(v, Visit) and v.attr is not None]

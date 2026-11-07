@@ -18,12 +18,13 @@ from hypothesis import HealthCheck, settings
 from hypothesis import strategies as st
 
 from ocsf_toolkit import ResolvedAttribute, ResolvedItem, ResolvedSchema, load
+from ocsf_toolkit.cli import lock
 from ocsf_toolkit.derive import OTHER
 from ocsf_toolkit.ir import Requirement, Root
 from ocsf_toolkit.walk import OPEN_OBJECT
 from tests.conftest import LOCKFILE
 
-WINDOW = [e.version for e in LOCKFILE.schemas if e.ship_models]
+WINDOW = lock.window(LOCKFILE)
 
 # `ci`, the default, is derandomized so a failure reproduces from the test id alone; `thorough`
 # searches with fresh randomness and the example database (HYPOTHESIS_PROFILE=thorough).

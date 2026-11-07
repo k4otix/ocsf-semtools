@@ -2,6 +2,9 @@
 
 import io
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -94,3 +97,15 @@ def test_control_characters_from_the_input_are_escaped(tmp_path: Path, capsys: p
     assert "\x1b" not in out
     assert "\x9b" not in out
     assert "\\x1b[2J" in out
+
+
+def test_reports_do_not_depend_on_the_hash_seed(events: Path) -> None:
+    """Set and dict order varies with PYTHONHASHSEED; the output must not."""
+    outputs: list[str] = []
+    for seed in ("1", "2"):
+        argv = ["check", "--version", "1.9.0", "--json", str(events)]
+        command = [sys.executable, "-c", f"from ocsf_toolkit.cli import main; raise SystemExit(main({argv!r}))"]
+        env = {**os.environ, "PYTHONHASHSEED": seed}
+        outputs.append(subprocess.run(command, capture_output=True, text=True, env=env, check=False).stdout)
+    assert outputs[0]
+    assert outputs[0] == outputs[1]

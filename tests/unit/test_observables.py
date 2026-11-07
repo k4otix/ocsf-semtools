@@ -21,9 +21,6 @@ def _names(found: tuple[Observable, ...]) -> list[tuple[str, int, str | None]]:
     return [(o.name, o.type_id, o.value) for o in found]
 
 
-# --- the marker table -----------------------------------------------------------------------
-
-
 # --- extraction -----------------------------------------------------------------------------
 
 

@@ -5,10 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import ROOT
-
-PACKAGE = ROOT / "src" / "ocsf_toolkit"
-SOURCES = sorted(p for p in PACKAGE.rglob("*.py") if p.name != "_version.py")
+from tests.architecture.support import PACKAGE, SOURCES
 
 # Query languages, analytics stores and DDL. "table" alone is not banned: a lookup table or a
 # TOML table is ordinary vocabulary; a table *definition* is not.

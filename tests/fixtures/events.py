@@ -13,6 +13,18 @@ T0 = 1_762_000_000_000  # epoch ms, 2025-11-01T12:26:40Z
 CLASS = "detection_finding"
 
 
+def minimal_fields(**extra: Any) -> dict[str, Any]:
+    """Return the fewest detection_finding fields build() needs, with ``extra`` on top."""
+    return {
+        "activity_id": 1,
+        "severity_id": 4,
+        "time": T0,
+        "metadata": {"product": {"name": "p"}},
+        "finding_info": {"uid": "f"},
+        **extra,
+    }
+
+
 def caption(schema: ResolvedSchema, owner: str, attr: str, value: int) -> str:
     item = schema.ir.classes.get(owner) or schema.ir.objects[owner]  # unfiltered: any profile
     enum = item.attributes[attr].enum

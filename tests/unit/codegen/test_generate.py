@@ -243,3 +243,9 @@ def test_a_package_that_cant_be_put_back_is_kept(tmp_path: Path, monkeypatch: py
         generate(IR, package="pkg", out=tmp_path)
     kept = Path(str(caught.value).rsplit("it is at ", 1)[1])
     assert _snapshot(kept) == before
+
+
+def test_the_golden_module_matches_a_fresh_render() -> None:
+    """A generator change shows up as a reviewable diff of tests/golden; copy the new render in."""
+    golden = ROOT / "tests" / "golden" / "detection_finding_1_9_0.py"
+    assert TREE["classes/detection_finding.py"].decode() == golden.read_text()

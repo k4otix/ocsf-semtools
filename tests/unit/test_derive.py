@@ -11,7 +11,7 @@ from ocsf_toolkit.engine import LENIENT, REPAIR, STRICT, ConformanceError, Polic
 from ocsf_toolkit.models import build
 from ocsf_toolkit.schema import ResolvedSchema, load
 from ocsf_toolkit.walk import Kind, Path
-from tests.fixtures.events import CLASS, T0, base_detection_finding, caption
+from tests.fixtures.events import CLASS, T0, base_detection_finding, caption, minimal_fields
 
 
 def _run(
@@ -24,22 +24,11 @@ def _at(report: Report, path: Path) -> list[Kind]:
     return [f.kind for f in report.findings if f.path == path and f.kind is not Kind.FILLED]
 
 
-def _minimal(**fields: Any) -> dict[str, Any]:
-    return {
-        "activity_id": 1,
-        "severity_id": 4,
-        "time": T0,
-        "metadata": {"product": {"name": "p"}},
-        "finding_info": {"uid": "f"},
-        **fields,
-    }
-
-
 # --- identity (acc. #12, R4a) --------------------------------------------------------------
 
 
 def test_class_and_activity_id_are_enough_for_every_identity_field(schema: ResolvedSchema) -> None:
-    event = build((schema, CLASS), **_minimal())
+    event = build((schema, CLASS), **minimal_fields())
     expected = base_detection_finding(schema)
     identity = ("class_uid", "class_name", "category_uid", "category_name", "activity_name")
     for attr in (*identity, "type_uid", "type_name", "severity"):
@@ -49,9 +38,9 @@ def test_class_and_activity_id_are_enough_for_every_identity_field(schema: Resol
 
 def test_type_uid_is_never_a_caller_input(schema: ResolvedSchema) -> None:
     with pytest.raises(ConformanceError) as raised:
-        build((schema, CLASS), **_minimal(type_uid=200403))
+        build((schema, CLASS), **minimal_fields(type_uid=200403))
     assert [(f.kind, f.path) for f in raised.value.report.errors()] == [(Kind.IDENTITY_CONFLICT, ("type_uid",))]
-    out, report = _run(_minimal(type_uid=200403), REPAIR)
+    out, report = _run(minimal_fields(type_uid=200403), REPAIR)
     assert out["type_uid"] == 200401
     assert out["type_name"] == "Detection Finding: Create"
     assert report.ok()
@@ -62,7 +51,7 @@ def test_type_uid_is_never_a_caller_input(schema: ResolvedSchema) -> None:
     [("class_uid", 2005), ("class_name", "X"), ("category_uid", 3), ("category_name", "Y")],
 )
 def test_class_constants_cannot_be_supplied_inconsistently(attr: str, value: object) -> None:
-    _, report = _run(_minimal(**{attr: value}), LENIENT)
+    _, report = _run(minimal_fields(**{attr: value}), LENIENT)
     assert _at(report, (attr,)) == [Kind.IDENTITY_CONFLICT]
 
 
@@ -70,21 +59,21 @@ def test_class_constants_cannot_be_supplied_inconsistently(attr: str, value: obj
 
 
 def test_in_enum_without_label_fills_the_caption() -> None:
-    out, _ = _run(_minimal(severity_id=3))
+    out, _ = _run(minimal_fields(severity_id=3))
     assert out["severity"] == "Medium"
-    out, report = _run(_minimal(severity_id=3), LENIENT)
+    out, report = _run(minimal_fields(severity_id=3), LENIENT)
     assert "severity" not in out
     assert _at(report, ("severity",)) == []
 
 
 def test_in_enum_with_matching_label_is_ok() -> None:
-    _, report = _run(_minimal(severity_id=3, severity="Medium"), LENIENT)
+    _, report = _run(minimal_fields(severity_id=3, severity="Medium"), LENIENT)
     assert _at(report, ("severity",)) == []
 
 
 @pytest.mark.parametrize(("policy", "after"), [(STRICT, "Critical"), (REPAIR, "Medium")])
 def test_in_enum_with_conflicting_label(policy: Policy, after: str) -> None:
-    out, report = _run(_minimal(severity_id=3, severity="Critical"), policy)
+    out, report = _run(minimal_fields(severity_id=3, severity="Critical"), policy)
     [finding] = [f for f in report.findings if f.path == ("severity",)]
     assert (finding.kind, finding.expected, finding.actual) == (
         Kind.SIBLING_CONFLICT,
@@ -96,45 +85,45 @@ def test_in_enum_with_conflicting_label(policy: Policy, after: str) -> None:
 
 
 def test_other_without_label_stays_absent() -> None:
-    out, report = _run(_minimal(severity_id=99))
+    out, report = _run(minimal_fields(severity_id=99))
     assert "severity" not in out
     assert _at(report, ("severity",)) == []
 
 
 @pytest.mark.parametrize("policy", [STRICT, LENIENT, REPAIR])
 def test_other_with_label_is_preserved_and_never_compared(policy: Policy) -> None:
-    out, report = _run(_minimal(severity_id=99, severity="Spicy"), policy)
+    out, report = _run(minimal_fields(severity_id=99, severity="Spicy"), policy)
     assert out["severity"] == "Spicy"
     assert _at(report, ("severity",)) == []
 
 
 def test_activity_other_takes_type_name_from_the_callers_label() -> None:
-    out, report = _run(_minimal(activity_id=99, activity_name="Triage"))
+    out, report = _run(minimal_fields(activity_id=99, activity_name="Triage"))
     assert (out["type_uid"], out["type_name"]) == (200499, "Detection Finding: Triage")
     assert report.ok()
-    out, report = _run(_minimal(activity_id=99, activity_name="Triage", type_name="Mine"), REPAIR)
+    out, report = _run(minimal_fields(activity_id=99, activity_name="Triage", type_name="Mine"), REPAIR)
     assert out["type_name"] == "Mine"
     assert _at(report, ("type_name",)) == []
 
 
 def test_unknown_id_derives_unknown_and_flags_an_empty_label() -> None:
-    out, _ = _run(_minimal(severity_id=0))
+    out, _ = _run(minimal_fields(severity_id=0))
     assert out["severity"] == "Unknown"
-    _, report = _run(_minimal(severity_id=0, severity=""), LENIENT)
+    _, report = _run(minimal_fields(severity_id=0, severity=""), LENIENT)
     assert _at(report, ("severity",)) == [Kind.SIBLING_CONFLICT]
     assert _at(report, ("severity_id",)) == [Kind.SEMANTICALLY_EMPTY_ENUM]
     assert next(f for f in report.findings if f.path == ("severity_id",)).severity == "info"
 
 
 def test_out_of_range_id_derives_nothing() -> None:
-    out, report = _run(_minimal(severity_id=42, severity="Bogus"), REPAIR)
+    out, report = _run(minimal_fields(severity_id=42, severity="Bogus"), REPAIR)
     assert out["severity"] == "Bogus"
     assert _at(report, ("severity_id",)) == [Kind.ENUM_OUT_OF_RANGE]
     assert _at(report, ("severity",)) == []
 
 
 def test_wrongly_typed_id_derives_nothing() -> None:
-    out, report = _run(_minimal(severity_id=True))
+    out, report = _run(minimal_fields(severity_id=True))
     assert "severity" not in out
     assert _at(report, ("severity_id",)) == [Kind.TYPE_MISMATCH]
 
@@ -143,7 +132,7 @@ def test_wrongly_typed_id_derives_nothing() -> None:
 
 
 def _malware(**fields: Any) -> dict[str, Any]:
-    return _minimal(malware=[{"name": "m", **fields}])
+    return minimal_fields(malware=[{"name": "m", **fields}])
 
 
 def _classifications(schema: ResolvedSchema, *ids: int) -> list[str]:
@@ -185,11 +174,11 @@ def test_derivation_attaches_to_the_nested_owner() -> None:
 
 def test_type_uid_without_an_enum_derives_through_the_class_registry() -> None:
     related = {"uid": "r", "type_uid": 300201}
-    out, _ = _run(_minimal(finding_info={"uid": "f", "related_events": [related]}))
+    out, _ = _run(minimal_fields(finding_info={"uid": "f", "related_events": [related]}))
     derived = out["finding_info"]["related_events"][0]
     assert derived["type_name"] == "Authentication: Logon"
     related["type_name"] = "Authentication: Logoff"
-    _, report = _run(_minimal(finding_info={"uid": "f", "related_events": [related]}), LENIENT)
+    _, report = _run(minimal_fields(finding_info={"uid": "f", "related_events": [related]}), LENIENT)
     assert _at(report, ("finding_info", "related_events", 0, "type_name")) == [Kind.SIBLING_CONFLICT]
 
 
@@ -197,11 +186,11 @@ def test_type_uid_without_an_enum_derives_through_the_class_registry() -> None:
 
 
 def test_no_sibling_rule_for_a_profile_gated_out_attribute() -> None:
-    out, report = _run(_minimal(action_id=2))
+    out, report = _run(minimal_fields(action_id=2))
     assert "action" not in out
     assert _at(report, ("action_id",)) == [Kind.PROFILE_MISMATCH]
     out, report = _run(
-        _minimal(action_id=2, metadata={"product": {"name": "p"}, "profiles": ["security_control"]}),
+        minimal_fields(action_id=2, metadata={"product": {"name": "p"}, "profiles": ["security_control"]}),
         profiles=frozenset({"security_control"}),
     )
     assert out["action"] == "Denied"
@@ -212,13 +201,13 @@ def test_no_sibling_rule_for_a_profile_gated_out_attribute() -> None:
 
 
 def test_metadata_version_and_profiles() -> None:
-    out, _ = _run(_minimal(), profiles=frozenset({"host", "cloud"}))
+    out, _ = _run(minimal_fields(), profiles=frozenset({"host", "cloud"}))
     assert out["metadata"]["version"] == "1.9.0"
     assert out["metadata"]["profiles"] == ["cloud", "host"]
-    out, _ = _run(_minimal())
+    out, _ = _run(minimal_fields())
     assert "profiles" not in out["metadata"]
 
-    event = _minimal(metadata={"product": {"name": "p"}, "version": "1.8.0", "profiles": ["x"]})
+    event = minimal_fields(metadata={"product": {"name": "p"}, "version": "1.8.0", "profiles": ["x"]})
     _, report = _run(copy.deepcopy(event), LENIENT)
     assert _at(report, ("metadata", "version")) == [Kind.IDENTITY_CONFLICT]
     assert _at(report, ("metadata", "profiles")) == [Kind.PROFILE_MISMATCH]
@@ -240,42 +229,42 @@ def test_rfc3339() -> None:
 
 
 def test_dt_twins_derive_only_under_the_datetime_profile() -> None:
-    out, _ = _run(_minimal(), profiles=DATETIME)
+    out, _ = _run(minimal_fields(), profiles=DATETIME)
     assert out["time_dt"] == "2025-11-01T12:26:40.000Z"
-    out, _ = _run(_minimal())
+    out, _ = _run(minimal_fields())
     assert "time_dt" not in out
 
 
 def test_dt_twin_compares_instants_not_spelling() -> None:
-    _, report = _run(_minimal(time_dt="2025-11-01T13:26:40+01:00"), LENIENT, DATETIME)
+    _, report = _run(minimal_fields(time_dt="2025-11-01T13:26:40+01:00"), LENIENT, DATETIME)
     assert _at(report, ("time_dt",)) == []
-    out, report = _run(_minimal(time_dt="2020-01-01T00:00:00Z"), REPAIR, DATETIME)
+    out, report = _run(minimal_fields(time_dt="2020-01-01T00:00:00Z"), REPAIR, DATETIME)
     assert _at(report, ("time_dt",)) == [Kind.SIBLING_CONFLICT]
     assert out["time_dt"] == "2025-11-01T12:26:40.000Z"
 
 
 def test_aware_datetime_becomes_epoch_ms() -> None:
     moment = datetime(2025, 11, 1, 13, 26, 40, tzinfo=timezone(timedelta(hours=1)))
-    out, report = _run(_minimal(time=moment), profiles=DATETIME)
+    out, report = _run(minimal_fields(time=moment), profiles=DATETIME)
     assert out["time"] == T0
     assert out["time_dt"] == "2025-11-01T12:26:40.000Z"
     assert report.ok()
-    assert _run(_minimal(time=datetime(2025, 11, 1, tzinfo=UTC)))[0]["time"] == T0 - 44_800_000
+    assert _run(minimal_fields(time=datetime(2025, 11, 1, tzinfo=UTC)))[0]["time"] == T0 - 44_800_000
 
 
 @pytest.mark.parametrize("policy", [STRICT, LENIENT])
 def test_naive_datetime_and_lenient_datetime_are_mismatches(policy: Policy) -> None:
     naive = datetime(2025, 11, 1)  # naive on purpose
-    _, report = _run(_minimal(time=naive), policy)
+    _, report = _run(minimal_fields(time=naive), policy)
     assert _at(report, ("time",)) == [Kind.TYPE_MISMATCH]
     if policy is LENIENT:
         aware = datetime(2025, 11, 1, tzinfo=UTC)
-        assert _at(_run(_minimal(time=aware), policy)[1], ("time",)) == [Kind.TYPE_MISMATCH]
+        assert _at(_run(minimal_fields(time=aware), policy)[1], ("time",)) == [Kind.TYPE_MISMATCH]
 
 
 @pytest.mark.parametrize("activity_id", [-1, 7, 10**30])
 def test_no_type_uid_from_an_activity_the_class_lacks(activity_id: int) -> None:
-    out, report = _run(_minimal(activity_id=activity_id), REPAIR)
+    out, report = _run(minimal_fields(activity_id=activity_id), REPAIR)
     assert "type_uid" not in out
     assert ("activity_id",) in {f.path for f in report.errors()}
 
@@ -294,7 +283,7 @@ def test_a_finding_keeps_its_own_copy_of_a_derived_list() -> None:
 
 @pytest.mark.parametrize("profiles", ["cloud", [1], {"cloud": True}])
 def test_malformed_metadata_profiles_are_left_for_conform(profiles: object) -> None:
-    event = _minimal(metadata={"product": {"name": "p"}, "profiles": profiles})
+    event = minimal_fields(metadata={"product": {"name": "p"}, "profiles": profiles})
     out, report = _run(event, REPAIR)
     assert out["metadata"]["profiles"] == profiles
     assert ("metadata", "profiles") in {f.path[:2] for f in report.errors()}
@@ -313,6 +302,6 @@ def test_a_list_sibling_whose_label_is_not_a_list_is_a_type_mismatch() -> None:
 
 
 def test_activity_other_without_a_name_derives_no_type_name() -> None:
-    out, _ = _run(_minimal(activity_id=99), REPAIR)
+    out, _ = _run(minimal_fields(activity_id=99), REPAIR)
     assert out["type_uid"] == 200499
     assert "type_name" not in out
