@@ -7,7 +7,7 @@ import json
 import pickle
 import warnings
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -518,7 +518,7 @@ def test_unmapped_null_receives_relocations(schema: ResolvedSchema) -> None:
 @pytest.mark.parametrize("ref", [(), ("1.9.0", CLASS), (None, CLASS, 1)])
 def test_a_malformed_class_reference_is_a_type_error(ref: tuple[object, ...]) -> None:
     with pytest.raises(TypeError, match=r"a class reference is \(ResolvedSchema, class key\)"):
-        build(ref)  # type: ignore[call-overload]
+        build(cast(Any, ref))
 
 
 def test_an_unknown_class_key_names_the_schema(schema: ResolvedSchema) -> None:

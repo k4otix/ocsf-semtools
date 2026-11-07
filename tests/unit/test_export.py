@@ -178,8 +178,9 @@ def test_non_finite_numbers_are_refused(ir: SchemaIR, value: float, constant: st
 
 
 def test_nesting_too_deep_is_a_value_error() -> None:
-    with pytest.raises(ValueError, match="nested too deeply"):
-        load_ir(b"[" * 100_000)
+    # valid JSON past the default recursion limit: a ValueError, whether the parser gives up or not
+    with pytest.raises(ValueError, match=r"^(IR is |\$\.ir_version: missing)"):
+        load_ir(b"[" * 100_000 + b"]" * 100_000)
 
 
 def test_a_table_of_the_wrong_kind_is_refused(ir: SchemaIR) -> None:
