@@ -49,6 +49,7 @@ ocsf-toolkit = "ocsf_toolkit.cli:main"
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-randomly",
     "hypothesis",
     "pyright",
     "ruff",

@@ -16,11 +16,16 @@ from tests.fixtures.packages import import_generated
 TIME = 1_700_000_000_000
 
 
+def _sub(m: ModuleType, name: str) -> Any:
+    """Import a module of a generated package: the package root resolves only class names lazily."""
+    return importlib.import_module(f"{m.__name__}.{name}")
+
+
 def _fields(m: ModuleType, **extra: Any) -> dict[str, Any]:
-    objects = m.objects
+    objects = _sub(m, "objects")
     return {
-        "activity_id": m.classes.detection_finding.DetectionFindingActivityId.CREATE,
-        "severity_id": m.enums.SeverityId.HIGH,
+        "activity_id": _sub(m, "classes.detection_finding").DetectionFindingActivityId.CREATE,
+        "severity_id": _sub(m, "enums").SeverityId.HIGH,
         "time": TIME,
         "metadata": objects.Metadata(product=objects.Product(name="p", vendor_name="v")),
         "finding_info": {"uid": "f-1", "title": "t"},  # nested dicts are accepted at runtime
@@ -45,7 +50,7 @@ def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -
         "High",
         "1.9.0",
     )
-    assert isinstance(finding.finding_info, v1_9_0.objects.FindingInfo)
+    assert isinstance(finding.finding_info, _sub(v1_9_0, "objects").FindingInfo)
     wire = msgspec.json.decode(msgspec.json.encode(finding))
     assert {k: wire[k] for k in ("class_uid", "class_name", "category_uid", "category_name")} == {
         "class_uid": 2004,
@@ -57,7 +62,7 @@ def test_build_returns_an_instance_with_everything_derived(v1_9_0: ModuleType) -
 
 def test_enum_members_are_their_values(v1_9_0: ModuleType) -> None:
     """Members are the schema's values, named from their captions (acc. #5)."""
-    severity = v1_9_0.enums.SeverityId
+    severity = _sub(v1_9_0, "enums").SeverityId
     assert severity.HIGH is severity(4)
     packet = importlib.import_module(f"{v1_9_0.__name__}.objects.packet")
     assert packet.PacketFormatId.N_5VIEWS == 6  # caption "5Views"
@@ -65,7 +70,7 @@ def test_enum_members_are_their_values(v1_9_0: ModuleType) -> None:
 
 def test_build_accepts_datetimes_and_keyword_aliases(v1_9_0: ModuleType) -> None:
     moment = datetime(2026, 11, 3, tzinfo=UTC)
-    email = v1_9_0.objects.Email(from_="a@example.com")
+    email = _sub(v1_9_0, "objects").Email(from_="a@example.com")
     activity: Any = build(
         v1_9_0.EmailActivity,
         activity_id=1,
@@ -216,7 +221,7 @@ def test_exact_build_refuses_a_profile_outside_its_set(v1_9_0_cloud: ModuleType)
 
 
 def test_a_bundled_ir_is_loaded_from_the_package(synthetic: ModuleType) -> None:
-    finding: Any = build(synthetic.Finding, severity_id=0, method=synthetic.classes.finding.FindingMethod.GET)
+    finding: Any = build(synthetic.Finding, severity_id=0, method=_sub(synthetic, "classes.finding").FindingMethod.GET)
     assert (finding.method, finding.severity_id) == ("GET", 0)
 
 
