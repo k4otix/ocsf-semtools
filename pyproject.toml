@@ -5,27 +5,42 @@ build-backend = "hatchling.build"
 [project]
 name = "ocsf-toolkit"
 dynamic = ["version"]
-description = "Version-pinned OCSF schema semantics: substrate, derivation, conformance, observables, diff, and generated msgspec models."
+description = "Version-pinned OCSF schema for Python: build, check and repair events, extract observables, diff versions, and generate typed msgspec models."
 readme = "README.md"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12"
 authors = [{ name = "Eddie Allan" }]
-keywords = ["ocsf", "security", "schema", "msgspec"]
+keywords = [
+    "ocsf",
+    "open-cybersecurity-schema-framework",
+    "security",
+    "siem",
+    "schema",
+    "validation",
+    "observables",
+    "msgspec",
+]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
 dependencies = ["msgspec>=0.22,<1"]
 
 [project.urls]
+Documentation = "https://github.com/k4otix/ocsf-toolkit/tree/main/docs"
 Repository = "https://github.com/k4otix/ocsf-toolkit"
+Issues = "https://github.com/k4otix/ocsf-toolkit/issues"
 Changelog = "https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md"
 
 [project.scripts]

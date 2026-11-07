@@ -180,4 +180,6 @@ derived from the schema, and profiles treated as part of an event's identity.
 
 ## License
 
-Apache-2.0.
+Apache-2.0. The bundled schema data is compiled from the [OCSF schema](https://github.com/ocsf/ocsf-schema),
+© OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](NOTICE) carries its notice.
+ocsf-toolkit is an independent project with no affiliation to OCSF.

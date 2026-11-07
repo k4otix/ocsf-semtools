@@ -117,6 +117,7 @@ def test_sdist_holds_only_the_allowlist(tmp_path: Path) -> None:
         "CONTRIBUTING.md",
         "LICENSE",
         "Makefile",
+        "NOTICE",
         "docs",
         "PKG-INFO",
         "README.md",

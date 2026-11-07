@@ -61,7 +61,8 @@ def render(ocsf: str, version: str, out: Path) -> None:
         for key, value in values.items():
             text = text.replace(key, value)
         (out / name).write_text(text, encoding="utf-8")
-    shutil.copyfile(ROOT / "LICENSE", out / "LICENSE")
+    for name in ("LICENSE", "NOTICE"):
+        shutil.copyfile(ROOT / name, out / name)
 
 
 def wheel_tree(wheel: Path | bytes, package: str) -> dict[str, bytes]:

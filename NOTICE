@@ -1,0 +1,19 @@
+ocsf-toolkit
+Copyright 2026 Eddie Allan
+
+This product bundles schema data compiled from the Open Cybersecurity Schema Framework (OCSF)
+schema, https://github.com/ocsf/ocsf-schema, and its model packages are generated from that data.
+The OCSF schema is licensed under the Apache License, Version 2.0, and carries this notice:
+
+    Open Cybersecurity Schema Framework
+
+    Copyright © OCSF a Series of LF Projects, LLC
+    For web site terms of use, trademark policy and other project policies please see https://lfprojects.org.
+
+    This project includes the ICD Schema developed by Symantec, a division of Broadcom.
+
+    Licensed under the Apache 2 license.
+    Refer to the Apache 2 license in the file LICENSE.
+
+ocsf-toolkit is an independent project. It is not affiliated with or endorsed by OCSF or
+LF Projects, LLC.
