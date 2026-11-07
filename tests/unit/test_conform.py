@@ -101,6 +101,18 @@ def test_profile_gated_attribute_without_its_profile(schema: ResolvedSchema) -> 
     )
 
 
+def test_an_inactive_profile_attribute_is_still_type_checked(schema: ResolvedSchema) -> None:
+    event = base_detection_finding(schema) | {"verdict_id": "yes", "cloud": {"provider": 5}}
+    found = {(f.kind, f.path) for f in _check(event).findings if f.path[:1] in (("verdict_id",), ("cloud",))}
+    assert found == {
+        (Kind.PROFILE_MISMATCH, ("verdict_id",)),
+        (Kind.TYPE_MISMATCH, ("verdict_id",)),
+        (Kind.PROFILE_MISMATCH, ("cloud",)),
+        (Kind.TYPE_MISMATCH, ("cloud", "provider")),
+        (Kind.MISSING_RECOMMENDED, ("cloud", "region")),  # the object is walked like any other
+    }
+
+
 def test_nested_and_indexed_paths(schema: ResolvedSchema) -> None:
     event = base_detection_finding(schema)
     event["metadata"]["product"]["nope"] = 1

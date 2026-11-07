@@ -92,24 +92,19 @@ def _plain(value: object, ra: ResolvedAttribute) -> bool:
 
 
 def _unknown(visit: Visit, attr: str, checks: Checks) -> list[Finding]:
-    declared = _item_def(checks.schema, visit.owner).attributes.get(attr)
-    if (
-        declared is not None
-        and declared.profiles
-        and (declared.extension is None or declared.extension in checks.schema.extensions)
-    ):
-        return [
-            Finding(
-                kind=Kind.PROFILE_MISMATCH,
-                path=visit.path,
-                owner=visit.owner.key,
-                message=f"{dotted(visit.path)} belongs to profiles {sorted(declared.profiles)},"
-                f" none of which is active",
-                tier=declared.requirement,
-                expected=sorted(declared.profiles),
-                actual=sorted(checks.schema.profiles),
-            )
-        ]
+    declared = visit.owner.inactive.get(attr)
+    if declared is not None:
+        mismatch = Finding(
+            kind=Kind.PROFILE_MISMATCH,
+            path=visit.path,
+            owner=visit.owner.key,
+            message=f"{dotted(visit.path)} belongs to profiles {sorted(declared.profiles)}, none of which is active",
+            tier=declared.requirement,
+            expected=sorted(declared.profiles),
+            actual=sorted(checks.schema.profiles),
+        )
+        # its value is checked all the same: a superset model class has a typed field for it
+        return [mismatch] if visit.value is None else [mismatch, *_value(visit, declared, checks)]
     key = dotted(visit.path)
     unmapped = checks.root.get(UNMAPPED, {})
     can_move = (

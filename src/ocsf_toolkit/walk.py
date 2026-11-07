@@ -197,8 +197,11 @@ def is_int(value: object) -> TypeGuard[int]:
 def _children(
     owner: ResolvedItem, attr: str, node: dict[str, Any], path: Path, schema: ResolvedSchema
 ) -> Sequence[tuple[ResolvedItem, dict[str, Any], Path]]:
-    """Return the object nodes an attribute holds after its visit, to walk next."""
-    ra = owner.attributes.get(attr)
+    """Return the object nodes an attribute holds after its visit, to walk next.
+
+    An attribute of an inactive profile is walked too: its value is checked though the profile is off.
+    """
+    ra = owner.attributes.get(attr) or owner.inactive.get(attr)
     if ra is None or ra.object_type is None or ra.object_type == OPEN_OBJECT or attr not in node:
         return ()  # unknown, a primitive, free-form JSON, or moved away by a visitor
     child = schema.objects.get(ra.object_type)

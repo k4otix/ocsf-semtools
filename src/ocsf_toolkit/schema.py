@@ -66,6 +66,9 @@ class ResolvedItem:
     is_class: bool
     identity: ClassIdentity | None  # classes only
     attributes: Mapping[str, ResolvedAttribute]
+    # attributes only inactive profiles add, resolved with no profile active: an event that uses one
+    # gets a profile_mismatch, and its value is still checked against the declaration
+    inactive: Mapping[str, ResolvedAttribute]
     constraints: tuple[Constraint, ...]  # members absent under the active set removed
     # id attribute -> how it derives its label; only pairs whose two attributes are both present
     siblings: Mapping[str, SiblingSpec] = field(init=False, repr=False, compare=False)
@@ -214,11 +217,15 @@ def _resolve(ir: SchemaIR, ir_digest: str, profiles: frozenset[str], extensions:
 
 
 def _item(ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedItem:
-    attributes = {
-        name: _attribute(ir, item.key, a, profiles)
-        for name, a in item.attributes.items()
-        if (not a.profiles or a.profiles & profiles) and (a.extension is None or a.extension in extensions)
-    }
+    attributes: dict[str, ResolvedAttribute] = {}
+    inactive: dict[str, ResolvedAttribute] = {}
+    for name, a in item.attributes.items():
+        if a.extension is not None and a.extension not in extensions:
+            continue
+        if not a.profiles or a.profiles & profiles:
+            attributes[name] = _attribute(ir, item.key, a, profiles)
+        else:
+            inactive[name] = _attribute(ir, item.key, a, profiles)
     # A constraint member names an attribute or a dotted path into one; members whose attribute
     # is gated out are dropped, so no rule is ever emitted for an absent attribute (acc. #12a).
     # Members naming no attribute at all are upstream data and kept as declared.
@@ -235,6 +242,7 @@ def _item(ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: fro
         is_class=item.is_class,
         identity=_identity(item) if item.is_class else None,
         attributes=MappingProxyType(attributes),
+        inactive=MappingProxyType(inactive),
         constraints=tuple(constraints),
     )
 

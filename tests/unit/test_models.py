@@ -105,6 +105,17 @@ def test_build_of_a_generated_class_warns_per_deprecated_attribute(v1_9_0: Modul
         build(v1_9_0.DetectionFinding, **_fields(v1_9_0, comment="old"))
 
 
+def test_an_inactive_profile_attribute_of_the_wrong_type_is_a_finding(v1_9_0: ModuleType) -> None:
+    """A superset class has a field for it, so the value must be checked before it is converted."""
+    with pytest.raises(ConformanceError) as caught:
+        build(v1_9_0.DetectionFinding, **_fields(v1_9_0, verdict_id="yes"))
+    assert ("type_mismatch", ("verdict_id",)) in _kinds(caught.value.report.errors())
+    event = msgspec.json.decode(msgspec.json.encode(build(v1_9_0.DetectionFinding, **_fields(v1_9_0))))
+    instance, report = parse(event | {"cloud": {"provider": 5}}, as_=v1_9_0.DetectionFinding)
+    assert instance is None
+    assert ("type_mismatch", ("cloud", "provider")) in _kinds(report.errors())
+
+
 def test_build_refuses_positional_and_foreign_classes(v1_9_0: ModuleType) -> None:
     with pytest.raises(TypeError, match="keyword arguments only"):
         build(v1_9_0.DetectionFinding, 1)
@@ -196,7 +207,7 @@ def test_exact_parse_refuses_attributes_outside_its_profiles(v1_9_0_cloud: Modul
 def test_exact_build_refuses_a_profile_outside_its_set(v1_9_0_cloud: ModuleType) -> None:
     cloud = {"provider": "aws", "region": "eu-west-1"}
     with pytest.raises(ConformanceError) as caught:
-        build(v1_9_0_cloud.DetectionFinding, **_fields(v1_9_0_cloud, cloud=cloud, actor={}))
+        build(v1_9_0_cloud.DetectionFinding, **_fields(v1_9_0_cloud, cloud=cloud, actor={"user": {"name": "a"}}))
     assert _kinds(caught.value.report.by_kind(Kind.PROFILE_MISMATCH)) == [("profile_mismatch", ("actor",))]
     assert "1 conformance error(s)" in str(caught.value)
 

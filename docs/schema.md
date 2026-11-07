@@ -79,7 +79,8 @@ ClassIdentity(class_uid=2004, class_name='Detection Finding', category_uid=2, ca
 ```
 
 `identity` is `None` for objects. `siblings` maps each `_id` attribute to its label attribute, with
-the enum that derives one from the other.
+the enum that derives one from the other. `inactive` holds the attributes that only inactive profiles
+add: an event that uses one gets a `profile_mismatch` warning, and its value is still checked.
 
 ### `ResolvedAttribute`
 

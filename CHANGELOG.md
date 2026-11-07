@@ -6,6 +6,7 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 ## Unreleased
 
 - Removed from the public API: `Policy`, `STRICT`, `LENIENT` and `REPAIR`. No function accepted them; [Building and checking events](docs/events.md) says what each entry point changes.
+- Fixed: `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a wrong-typed attribute of an inactive profile. Such values are now checked, and objects under them walked; `ResolvedItem.inactive` holds their declarations.
 
 ## 0.1.0a2
 
