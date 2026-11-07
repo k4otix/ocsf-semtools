@@ -69,12 +69,13 @@ def test_wheel_tree_is_the_package_only() -> None:
     assert dist.wheel_tree(buffer.getvalue(), "pkg") == {"__init__.py": b"a", "sub/m.py": b"b"}
 
 
-def _wheel(requires: str, files: dict[str, bytes]) -> bytes:
+def _wheel(requires: str, files: dict[str, bytes], version: str = "0.1.0") -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for name, data in files.items():
             z.writestr(f"pkg/{name}", data)
-        z.writestr("pkg-0.1.0.dist-info/METADATA", f"Name: pkg\nRequires-Dist: {requires}\n")
+        metadata = f"Name: pkg\nVersion: {version}\nRequires-Dist: {requires}\n"
+        z.writestr(f"pkg-{version}.dist-info/METADATA", metadata)
     return buffer.getvalue()
 
 
@@ -101,6 +102,22 @@ def test_needs_release() -> None:
     assert not dist.needs_release(current, "pkg", tree, "0.1.1")  # same tree, core admitted
     assert dist.needs_release(current, "pkg", "0" * 64, "0.1.1")  # the tree changed
     assert dist.needs_release(current, "pkg", tree, "0.2.0")  # core outside its range
+
+
+@pytest.mark.parametrize(
+    ("published", "core", "needed"),
+    [
+        ("0.1.0a2", "0.1.0", True),  # a final core: the alpha dist is released again, as final
+        ("0.1.0a2", "0.1.0a3", False),  # a pre-release core keeps the alpha dist
+        ("0.1.0a2", "0.1.1.dev3+g21e5c7c", False),  # a dry run's dev version is no final release
+        ("0.1.0", "0.1.1", False),  # a final dist stays
+        ("0.1.0rc1", "0.1.0.post1", True),  # a post release is final
+    ],
+)
+def test_a_final_core_releases_a_prerelease_dist_again(published: str, core: str, needed: bool) -> None:
+    files = {"__init__.py": b"x"}
+    wheel = _wheel("ocsf-toolkit<0.2,>=0.1.0a1", files, version=published)
+    assert dist.needs_release(wheel, "pkg", dist.files_sha256(files), core) is needed
 
 
 @pytest.mark.network  # the build backend comes from PyPI unless uv has it cached

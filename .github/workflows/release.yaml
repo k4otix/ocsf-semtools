@@ -1,7 +1,8 @@
 # Release: on a v* tag, run the schema gates, build core and every model-window dist twice
 # (byte-identical, SOURCE_DATE_EPOCH), check each wheel holds the tree ocsf.lock pins, publish core
-# plus the dists PyPI lacks (a new tree, or a core outside the published dist's range) through
-# trusted publishing, and attach ocsf.lock and SHA256SUMS to a GitHub release.
+# plus the dists PyPI lacks (a new tree, a core outside the published dist's range, or a final core
+# whose published dist is a pre-release) through trusted publishing, and attach ocsf.lock and
+# SHA256SUMS to a GitHub release.
 # workflow_dispatch runs everything up to the publish step and publishes nothing. A tag also needs a
 # successful ci.yaml run on its commit before the approval.
 #

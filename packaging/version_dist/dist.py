@@ -89,6 +89,17 @@ def check_wheels(wheels: list[Path]) -> None:
         print(f"{found[0].name}: ok  tree == models_tree_sha256 {entry.models_tree_sha256}")
 
 
+def _metadata(wheel: bytes) -> str:
+    with zipfile.ZipFile(io.BytesIO(wheel)) as z:
+        (metadata,) = [n for n in z.namelist() if n.endswith(".dist-info/METADATA")]
+        return z.read(metadata).decode()
+
+
+def is_final(version: str) -> bool:
+    """Tell whether a version is a final release: no alpha, beta, rc or dev segment (a post release is final)."""
+    return re.fullmatch(r"\d+(\.\d+)*(\.post\d+)?", version.split("+", 1)[0]) is not None
+
+
 def _release(version: str) -> tuple[int, ...]:
     match = re.match(r"\d+(\.\d+)*", version)
     if match is None:
@@ -101,12 +112,10 @@ def admits(wheel: bytes, core: str) -> bool:
 
     Only the upper bound can exclude a newer core; the lower bound was met when the wheel shipped.
     """
-    with zipfile.ZipFile(io.BytesIO(wheel)) as z:
-        (metadata,) = [n for n in z.namelist() if n.endswith(".dist-info/METADATA")]
-        text = z.read(metadata).decode()
+    text = _metadata(wheel)
     found = re.search(r"^Requires-Dist: ocsf-toolkit\b(.*)$", text, re.MULTILINE)
     if found is None:
-        raise ValueError(f"{metadata} does not require ocsf-toolkit")
+        raise ValueError("the wheel's METADATA does not require ocsf-toolkit")
     upper = re.search(r"<\s*([0-9.]+)", found[1])
     if upper is None:
         return False  # an exact pin from before ranges: never admits another core
@@ -116,10 +125,19 @@ def admits(wheel: bytes, core: str) -> bool:
 
 
 def needs_release(published: bytes | None, package: str, tree_sha256: str, core: str) -> bool:
-    """Tell whether a dist must be released again: PyPI has none, holds another tree, or excludes this core."""
+    """Tell whether a dist must be released again.
+
+    It must when PyPI has none, holds another tree, or excludes this core, and when a final core
+    meets a pre-release dist: a stable release doesn't leave its models installable only with --pre.
+    """
     if published is None:
         return True
-    return files_sha256(wheel_tree(published, package)) != tree_sha256 or not admits(published, core)
+    if files_sha256(wheel_tree(published, package)) != tree_sha256 or not admits(published, core):
+        return True
+    found = re.search(r"^Version: (\S+)$", _metadata(published), re.MULTILINE)
+    if found is None:
+        raise ValueError(f"{package}: the wheel's METADATA has no Version")
+    return is_final(core) and not is_final(found[1])
 
 
 def _latest_wheel(dist: str) -> tuple[str, bytes] | None:

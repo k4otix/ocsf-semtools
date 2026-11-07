@@ -18,7 +18,9 @@ while the library is in alpha):
 
 Packages for different versions install side by side. Each one bundles the IR it was generated from
 and requires the core minor release it was generated with: patch releases of the core install under
-an existing model package, and a new minor republishes the packages in the window.
+an existing model package, and a new minor republishes the packages in the window. A final core
+release also republishes any package whose newest release is a pre-release, so the stable core never
+needs `--pre` for its models.
 
 **Leaving the window.** When a new OCSF release ships, the oldest package leaves the window and gets
 no further releases, so it stays on the core minor it last required. To use a newer core with that
