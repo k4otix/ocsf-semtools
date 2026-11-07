@@ -28,11 +28,16 @@ def test_every_docs_heading_is_public() -> None:
     assert sorted(_documented() - public - commands) == []
 
 
+REPO_FILES = "https://github.com/k4otix/ocsf-toolkit/blob/main/"
+
+
 def test_readme_links_resolve() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    targets = re.findall(r"\]\(((?:docs/)?[\w./-]+\.(?:md|lock))\)", readme)
+    # absolute, so they work on PyPI too, where the README is the project page
+    targets = re.findall(rf"\]\({re.escape(REPO_FILES)}([\w./-]+)\)", readme)
     assert targets
     assert [t for t in targets if not (ROOT / t).is_file()] == []
+    assert re.findall(r"\]\((?!https?://|#)([^)]+)\)", readme) == []  # no relative link left
     for page in PAGES:
         for target in re.findall(r"\]\(([\w-]+\.md)\)", page.read_text(encoding="utf-8")):
             assert (DOCS / target).is_file(), f"{page.name} links to missing {target}"

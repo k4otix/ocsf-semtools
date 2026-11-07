@@ -63,7 +63,10 @@ version, profiles and extensions.
 
 ### `ResolvedItem`
 
-A class or an object, holding only the attributes present under the active profiles and extensions.
+A class or an object, holding only the attributes present under the active profiles and extensions:
+`key` (such as `detection_finding` or `win/prefetch_query`), `name`, `caption`, `is_class`, `identity`,
+`attributes`, `inactive`, `constraints` (the `at_least_one` and `just_one` rules, without members
+the active set removes) and `siblings`.
 
 ```pycon
 >>> finding = schema.classes["detection_finding"]
@@ -86,7 +89,10 @@ add: an event that uses one gets a `profile_mismatch` warning, and its value is 
 
 One attribute as it applies under the active set: `name`, `caption`, `type`, `object_type`,
 `is_array`, `requirement`, `enum`, `sibling`, `observable`, `deprecated`, `profiles` (the profiles that
-mention it), `gated_by` (the active profiles it depends on), `extension` and `owner`.
+mention it), `gated_by` (the active profiles it depends on), `extension`, `group` (OCSF's grouping,
+such as `primary` or `context`), `default`, `suppress_checks` (checks the schema turns off for it),
+`root` (the primitive type its type resolves to, `None` for an object) and `owner` (the key of the
+item it was resolved on).
 
 ```pycon
 >>> severity = finding.attributes["severity_id"]
@@ -104,8 +110,10 @@ mention it), `gated_by` (the active profiles it depends on), `extension` and `ow
 ### `SchemaIR`
 
 The schema intermediate representation: one OCSF version as frozen dataclasses, before any profile or
-extension is chosen. Every shipped version is an IR file inside the package, and its provenance
-records exactly where it came from:
+extension is chosen. It holds `version`, `compile_version` (the format version of the compiler output it was read from),
+`provenance`, and read-only mappings by key of `categories`, `types`, `dictionary` (attribute
+definitions), `classes`, `objects`, `profiles` and `extensions`. Every shipped version is an IR file
+inside the package, and its provenance records exactly where it came from:
 
 ```pycon
 >>> provenance = schema.ir.provenance

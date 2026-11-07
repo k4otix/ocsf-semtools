@@ -20,6 +20,8 @@ event, so you don't maintain it by hand.
 
 ```
 
+## Extracting observables
+
 ### `extract`
 
 `extract(event, schema, class_key=None, *, max_nodes=100_000)` returns `(observables, report)` in the
@@ -46,6 +48,8 @@ attribute in the event backs. `max_nodes` caps the number of attribute visits; p
 and reports a `max_nodes_exceeded` finding, and the result is partial. `max_nodes=None` walks the
 whole event.
 
+## The entries
+
 ### `Observable`
 
 `Observable(name, type_id, type, value)`: `name` is the attribute path in OCSF's dotted notation,
@@ -57,6 +61,8 @@ value.
 {'name': 'dst_endpoint.port', 'type_id': 11, 'type': 'Port', 'value': '443'}
 
 ```
+
+## Writing them into the event
 
 ### `merge`
 

@@ -7,17 +7,23 @@ the dict API and the typed API always agree.
 
 ## Model packages
 
-One package per OCSF version, for the newest three releases. Install the ones you produce:
+One package per OCSF version, for the newest three releases. Install the ones you produce (`--pre`
+while the library is in alpha):
 
 | Install | Import |
 |---|---|
-| `pip install ocsf-toolkit-v1-9-0` | `ocsf_toolkit_v1_9_0` |
-| `pip install ocsf-toolkit-v1-8-0` | `ocsf_toolkit_v1_8_0` |
-| `pip install ocsf-toolkit-v1-7-0` | `ocsf_toolkit_v1_7_0` |
+| `pip install --pre ocsf-toolkit-v1-9-0` | `ocsf_toolkit_v1_9_0` |
+| `pip install --pre ocsf-toolkit-v1-8-0` | `ocsf_toolkit_v1_8_0` |
+| `pip install --pre ocsf-toolkit-v1-7-0` | `ocsf_toolkit_v1_7_0` |
 
 Packages for different versions install side by side. Each one bundles the IR it was generated from
-and requires a range of `ocsf-toolkit` versions, so upgrading the core doesn't force a new model
-package.
+and requires the core minor release it was generated with: patch releases of the core install under
+an existing model package, and a new minor republishes the packages in the window.
+
+**Leaving the window.** When a new OCSF release ships, the oldest package leaves the window and gets
+no further releases, so it stays on the core minor it last required. To use a newer core with that
+OCSF version, move to a newer model package, use the dict API, which covers every shipped release, or
+generate the models yourself: `ocsf-toolkit generate 1.7.0 --package my_models --out src/`.
 
 ```python
 from ocsf_toolkit import build, parse
@@ -37,8 +43,7 @@ Layout of a package:
 | `ext.<extension>.<key>` | classes and objects an extension adds |
 | `enums` | enums defined once in the OCSF dictionary, such as `SeverityId` |
 
-Importing one class loads only that class's module. Every package passes ruff and pyright in strict
-mode with no exclusions.
+Every package passes ruff and pyright in strict mode with no exclusions.
 
 **Superset classes.** The published packages are generated for no particular profile set. Every
 attribute any profile adds is present and optional, and `build` enforces what the event's own

@@ -6,7 +6,8 @@ that schema, the library builds events and derives everything the schema compute
 reports every deviation it finds, extracts observables, and diffs two versions. Typed
 [msgspec](https://github.com/msgspec/msgspec) models are generated from the same schema.
 
-**Status: alpha.** The API may change before 0.1.0.
+**Status: alpha.** Minor releases before 1.0 may change the API, and the
+[changelog](https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md) lists every change.
 
 ## Install
 
@@ -16,7 +17,7 @@ pip install --pre ocsf-toolkit-v1-9-0   # optional: typed models for OCSF 1.9.0 
 ```
 
 `ocsf-toolkit generate` builds a model package for any other version or extension set (see
-[Command line](docs/cli.md)).
+[Command line](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/cli.md)).
 
 Python 3.12 or newer. The only runtime dependency is msgspec.
 
@@ -137,25 +138,27 @@ The models pass pyright in strict mode, and importing one class loads only that 
 
 ## More
 
-- [Schema as data](docs/schema.md): required attributes, enums and captions, siblings, profiles,
+- [Schema as data](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/schema.md): required attributes, enums and captions, siblings, profiles,
   class identity, all without building an event.
-- [Building and checking events](docs/events.md): `build`, `parse`, `repair`, policies and reports.
-- [Observables](docs/observables.md): extracting and merging the observables an event carries.
-- [Schema diff](docs/diff.md): what changed between two OCSF versions, renames included.
-- [Typed models](docs/models.md): the model packages, and generating your own (custom extensions
+- [Building and checking events](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/events.md): `build`, `parse`, `repair`, what each one changes,
+  and reports.
+- [Observables](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/observables.md): extracting and merging the observables an event carries.
+- [Schema diff](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/diff.md): what changed between two OCSF versions, renames included.
+- [Typed models](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/models.md): the model packages, and generating your own (custom extensions
   and exact profile sets).
-- [Command line](docs/cli.md): `check`, `diff`, `generate` and the schema pipeline.
+- [Command line](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/cli.md): `check`, `diff`, `generate` and the schema pipeline.
 
 ## How versions work
 
-Every OCSF release is pinned by upstream commit in [`ocsf.lock`](ocsf.lock) and compiled with the
-official `ocsf-schema-compiler`. CI recompiles each one and checks it byte for byte against the
+Every OCSF release is pinned by upstream commit in [`ocsf.lock`](https://github.com/k4otix/ocsf-toolkit/blob/main/ocsf.lock) and compiled with the
+official `ocsf-schema-compiler`. CI recompiles each one and checks its canonical sha256 against the
 lockfile. Core ships the schema of every release, so you can check, repair and diff events of any of
 them and extract their observables. Typed models ship for the newest three releases, one package
 each, so you install only the versions you produce.
 
-The library's own version follows SemVer on its API. Support for a new OCSF release ships as a minor
-release of the library.
+The library's own version follows SemVer on its API; before 1.0, a minor release may change it.
+Support for a new OCSF release ships as a minor release of the library. A model package requires the
+core minor it was generated with, so patch releases of the core install under it unchanged.
 
 ## Why not an existing library?
 
@@ -181,5 +184,5 @@ derived from the schema, and profiles treated as part of an event's identity.
 ## License
 
 Apache-2.0. The bundled schema data is compiled from the [OCSF schema](https://github.com/ocsf/ocsf-schema),
-© OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](NOTICE) carries its notice.
+© OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](https://github.com/k4otix/ocsf-toolkit/blob/main/NOTICE) carries its notice.
 ocsf-toolkit is an independent project with no affiliation to OCSF.

@@ -1,44 +1,89 @@
 # Changelog
 
-The library follows SemVer on its own API. OCSF schema versions are data, so support for a new OCSF
-version ships as a minor release. One line per merged PR, taken from the PR title.
+The library follows SemVer on its own API; before 1.0, a minor release may change it. OCSF schema
+versions are data, so support for a new OCSF version ships as a minor release. Each change gets a
+line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
-- Every package now carries a NOTICE with the OCSF schema's attribution, as its Apache-2.0 license asks of work derived from it. Package metadata says Alpha, describes the library plainly, and links the documentation and issue tracker.
-- Releases build with a pinned backend (`packaging/build-requirements.txt`), so a tag rebuilds to its published hashes; a release also requires a passing ci.yaml run on the tagged commit.
-- Removed from the public API: `Policy`, `STRICT`, `LENIENT` and `REPAIR`. No function accepted them; [Building and checking events](docs/events.md) says what each entry point changes.
-- Fixed: `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a wrong-typed attribute of an inactive profile. Such values are now checked, and objects under them walked; `ResolvedItem.inactive` holds their declarations.
-- Fixed: events nested deeper than Python's recursion limit raised `RecursionError` from `build` and `repair`, and an event holding a cycle made `parse` and `repair` hang. An object reached twice is now a `repeated_node` error and walked once, and every run stops after `max_nodes` attribute visits (100,000 by default; `parse`, `repair` and `extract` take `max_nodes=`).
-- An event that is not a dict raises `TypeError`.
-- Conformance now enforces numbers as OCSF defines them: NaN and the infinities are a `type_mismatch` for `float_t`, and `integer_t` and `long_t` values must fit in a signed 64-bit integer. An event that passed before may now report these errors. `Report.to_dict()` always returns valid JSON, writing non-finite values as strings.
-- Enum values in `enum_out_of_range` messages and `expected` are listed in numeric order.
-- `parse` and `repair` read extensions from `metadata.extensions`, so an event of an extension class such as `win/prefetch_query` is checked against it; before, it was checked as `base_event`. Both also take `schema=`, a schema from `load()` or `resolve()`, for custom extensions.
-- New in the public API: `RepairAction` (the type of `Finding.repair`), `export_ir`, and `ConformanceError.fatal`, the findings that stopped a build. `ResolvedSchema`, `Report` and `ConformanceError` can be pickled.
-- Fixed: `Report.by_kind("filled")` returned nothing; it now matches a `Kind` or its name.
-- Fixed: observables were read before coercion, so `repair` reported a caller entry for a coerced value as unfounded; a deprecated value moved into a successor present as null was never checked.
-- `load_ir` reads a `str` path as a path, and refuses NaN, infinity, an enum on a non-scalar type and a table of the wrong kind; `resolve` refuses an IR with no `base_event`, an item in the wrong table, an attribute naming a missing object, or non-integer `type_uid` keys. Each is a `ValueError` with the key path, where some crashed later before.
-- Fixed: `repair` reported unknown attributes instead of relocating them when the event had `unmapped: null`. A malformed `(schema, class key)` reference is a `TypeError`, and an unknown `class_key` names the schema. A diff no longer lists a renamed class's `key` as a separate change, and sorts integer keys numerically.
-- Fixed: `type_uid` was derived from an `activity_id` the class doesn't define, so `activity_id=-1` produced a plausible `type_uid` such as 400099.
-- Fixed: a timezone-aware `datetime` with no UTC instant (such as year 1 at +01:00) raised `OverflowError`; an integer too long to print raised `ValueError` from a message.
+### Changed
 
-## 0.1.0a2
+- `parse` and `repair` read extensions from `metadata.extensions`, so an event of an extension class
+  such as `win/prefetch_query` is checked against that class; before, it was checked as `base_event`.
+  Both also take `schema=`, a schema from `load()` or `resolve()`, for custom extensions.
+- Conformance enforces numbers as OCSF defines them: NaN and the infinities are a `type_mismatch` for
+  `float_t`, and `integer_t` and `long_t` values must fit in a signed 64-bit integer. An event that
+  passed before may now report these errors.
+- An object an event holds twice, through a cycle or under two paths, is a `repeated_node` error and
+  is walked once. Every run stops after `max_nodes` attribute visits, 100,000 by default; `parse`,
+  `repair` and `extract` take `max_nodes=`, and `None` walks everything.
+- An event that is not a dict raises `TypeError`; a malformed `(schema, class key)` reference is a
+  `TypeError`, and an unknown `class_key` is a `KeyError` naming the schema.
+- `load_ir` reads a `str` as a path, and refuses NaN, infinity, an enum on a non-scalar type and a
+  table of the wrong kind. `resolve` refuses an IR with no `base_event`, an item in the wrong table,
+  an attribute naming a missing object, or non-integer `type_uid` keys. Each is a `ValueError` naming
+  the key path.
+- Enum values in `enum_out_of_range` messages and in `expected` are listed in numeric order.
+- `Report.to_dict()` always returns valid JSON, writing non-finite values as strings.
+- A diff lists a renamed class once, without a separate change to its `key`, and sorts integer keys
+  numerically.
+- Every package carries a NOTICE with the OCSF schema's attribution. Package metadata says Alpha and
+  links the documentation and issue tracker.
+- Releases build with a pinned backend (`packaging/build-requirements.txt`), so a tag rebuilds to its
+  published hashes, and a release requires a passing CI run on the tagged commit.
 
-- Publishes model package `ocsf-toolkit-v1-9-0`.
+### Added
 
-## 0.1.0a1
+- `RepairAction` (the type of `Finding.repair`), `export_ir`, and `ConformanceError.fatal`, the
+  findings that stopped a build.
+- `ResolvedItem.inactive`: the attributes that only inactive profiles add.
+- `ResolvedSchema`, `Report` and `ConformanceError` can be pickled, so they cross process boundaries.
 
-The first alpha. Model packages `ocsf-toolkit-v1-7-0` and `ocsf-toolkit-v1-8-0` publish with it;
-`ocsf-toolkit-v1-9-0` follows with the next release.
+### Removed
 
-- Repository skeleton, `ocsf.lock` pinning OCSF 1.9.0, `ocsf-toolkit compile` and `ocsf-toolkit lock --add`.
-- Schema IR (`SchemaIR`), compiler-JSON loader with key accounting, canonical IR JSON (`ir_version` 1.0) and `load_ir`; `ocsf-toolkit ir export` / `ir check`; IR for OCSF 1.9.0 shipped in the package; `ocsf.lock` pins OCSF 1.0.0–1.9.0.
-- `load()` / `resolve()` → `ResolvedSchema`: profile- and extension-aware attribute sets, class identity, sibling pairs, `type_uid` registry and observable markers, reachable without a model.
-- `build()`, `parse()` and `repair()` on event dicts under the `STRICT`, `LENIENT` and `REPAIR` policies: one traversal (`walk()`) that derives what the schema computes and reports every deviation as a `Finding` of a `Kind` in a `Report`; only `build()` raises, and only `ConformanceError`. `ocsf-toolkit check` reports on JSON Lines files.
-- Observables: `extract()` and `merge()` → `Observable`, with value validation.
-- `diff()` → `SchemaDiff`: a structural diff of two IRs with classes matched by uid, so a renamed class shows as a rename; `ocsf-toolkit diff`, with `--json` and `--semver` (the release category for a re-pinned IR). IRs for OCSF 1.1.0, 1.3.0 and 1.7.0 shipped.
-- `generate()` and `ocsf-toolkit generate`: an OCSF version or IR projected into a typed package of msgspec Structs, superset by default or exact for a `--profiles` set, with `--ext` for custom extensions; `build()` and `parse()` accept and return the generated classes.
-- Model dists `ocsf-toolkit-v1-7-0`, `-v1-8-0` and `-v1-9-0`, each bundling its IR and requiring a range of core versions, so a core release republishes a dist only when its generated tree changes. `ocsf-toolkit models check` / `record` pin each tree in `ocsf.lock`; `lock --add` keeps models for the newest three versions. IRs for every OCSF release from 1.0.0 to 1.9.0 ship in core.
-- Release workflow: reproducible sdists and wheels, PyPI trusted publishing, and a GitHub release with `ocsf.lock` and `SHA256SUMS`.
-- Property tests (Hypothesis, strategies drawn from the IR): dict and typed round trips for every core class of the model-window versions, and repair undoing unambiguous damage idempotently. Fixes they found: a typed `build()` reads profiles from a `Metadata` Struct, and `repair()` finds the class from a `class_uid`/`type_uid` it coerces. `make bench` measures engine throughput; the engine walks at about 2 µs per attribute (1.55× faster than its first cut).
-- README with installation and a worked example, and API docs in `docs/` (schema, events, observables, diff, typed models, CLI); every example runs as a doctest.
+- `Policy`, `STRICT`, `LENIENT` and `REPAIR` from the public API. No function accepted them;
+  [Building and checking events](docs/events.md) says what each entry point changes.
+
+### Fixed
+
+- `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a
+  wrong-typed attribute of an inactive profile. Such values are checked now, and objects under them
+  walked.
+- Events nested deeper than Python's recursion limit raised `RecursionError` from `build` and
+  `repair`, and an event holding a cycle made `parse` and `repair` hang.
+- `type_uid` was derived from an `activity_id` the class doesn't define, so `activity_id=-1` produced
+  a plausible `type_uid` such as 400099.
+- Observables were read before coercion, so `repair` reported a caller entry for a coerced value as
+  unfounded.
+- A deprecated value moved into a successor present as null was never checked.
+- `repair` reported unknown attributes instead of relocating them when the event had `unmapped: null`.
+- `Report.by_kind("filled")` returned nothing; it matches a `Kind` or its name.
+- A timezone-aware `datetime` with no UTC instant, such as year 1 at +01:00, raised `OverflowError`,
+  and an integer too long to print raised `ValueError` from a message.
+
+## 0.1.0a2 (2026-11-06)
+
+- Publishes the model package `ocsf-toolkit-v1-9-0`.
+
+## 0.1.0a1 (2026-11-06)
+
+The first alpha, with the model packages `ocsf-toolkit-v1-7-0` and `ocsf-toolkit-v1-8-0`.
+
+- Every OCSF release from 1.0.0 to 1.9.0 ships as data. `load()` resolves a version under a set of
+  profiles and extensions into a `ResolvedSchema`: classes, objects, attribute requirements, enums,
+  sibling pairs, class identity and observable markers, with no model needed.
+- `build()` constructs a conformant event and derives what the schema computes: class identity,
+  `type_uid`, sibling labels, `*_dt` timestamps and `metadata.version`. It raises one exception,
+  `ConformanceError`, carrying the full report.
+- `parse()` checks an event and reports every deviation as a `Finding` in a `Report`; `repair()`
+  returns a normalized copy, with every change recorded as a finding.
+- `extract()` and `merge()` derive an event's observables from the schema and check the ones it
+  already lists.
+- `diff()` compares two OCSF versions or IRs, matching classes by uid so a renamed class shows as a
+  rename.
+- `generate()` writes a typed package of msgspec Structs for any version or IR, including one with
+  your own extensions; `build()` and `parse()` take and return its classes.
+- The `ocsf-toolkit` command line: `check`, `diff` (with `--json` and `--semver`), `generate`, and the
+  schema pipeline commands that maintain `ocsf.lock` and the shipped IRs.
+- Releases are reproducible, publish to PyPI through trusted publishing, and attach `ocsf.lock` and
+  `SHA256SUMS` to a GitHub release.

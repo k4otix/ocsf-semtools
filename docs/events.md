@@ -26,7 +26,8 @@ every finding.
 `build((schema, class_key), **fields)` constructs a conformant event dict. It fills everything the
 schema derives: class and category identity, `type_uid`, sibling labels such as `severity` beside
 `severity_id`, and `metadata.version`. If the result has errors it raises `ConformanceError`, so
-every event it returns conforms. Given a [generated model class](models.md) in place of
+every event it returns conforms. For each deprecated attribute or enum value it uses, it emits a
+`DeprecationWarning` naming the replacement. Given a [generated model class](models.md) in place of
 `(schema, class_key)`, it takes and returns typed instances.
 
 ```pycon
@@ -39,8 +40,8 @@ every event it returns conforms. Given a [generated model class](models.md) in p
 ### `parse`
 
 `parse(event, *, version=None, profiles=None, class_key=None, schema=None, as_=None, max_nodes=100_000)`
-checks an event and returns `(event, report)`. It leaves the event as it is, and returns that same
-dict, and puts every problem in the report. The OCSF version, profiles, extensions and class default
+checks an event and returns `(event, report)`: the same dict it was given, unchanged, and a report of
+every problem in it. The OCSF version, profiles, extensions and class default
 to what the event says about itself: `metadata.version`, `metadata.profiles`, the names in
 `metadata.extensions`, and `class_uid` (then `type_uid`). An event that names no class this schema
 knows is checked as `base_event`. `schema=` reads the event against a schema you resolved yourself,
@@ -60,10 +61,10 @@ the schema, so `version`, `class_key` and `schema` are a `TypeError`.
 
 ### `repair`
 
-`repair(event, *, version=None, profiles=None, class_key=None, schema=None, max_nodes=100_000)` reads
-the schema the way `parse` does, and returns a normalized copy and a report in which every change is a finding
-with its `repair` action (before and after). It fills derived values, coerces values whose meaning
-is unambiguous, and moves attributes the schema doesn't know into `unmapped`.
+`repair(event, *, version=None, profiles=None, class_key=None, schema=None, max_nodes=100_000)` picks
+the schema the way `parse` does, and returns a normalized copy and a report in which every change is
+a finding with its `repair` action (before and after). It fills derived values, coerces values whose
+meaning is unambiguous, and moves attributes the schema doesn't know into `unmapped`.
 
 ```pycon
 >>> received = {
@@ -77,16 +78,14 @@ is unambiguous, and moves attributes the schema doesn't know into `unmapped`.
 ... }
 >>> fixed, report = repair(received)
 >>> for finding in report.findings[:3]:
-...     print(finding.kind.value, finding.path, finding.repair.before, "->", finding.repair.after)
-coerced ('activity_id',) 1 -> 1
+...     print(finding.kind.value, finding.path, f"{finding.repair.before!r} -> {finding.repair.after!r}")
+coerced ('activity_id',) '1' -> 1
 relocated ('vendor_field',) ('vendor_field',) -> ('unmapped', 'vendor_field')
-filled ('class_name',) None -> Detection Finding
+filled ('class_name',) None -> 'Detection Finding'
 >>> fixed["activity_id"], fixed["unmapped"], report.ok()
 (1, {'vendor_field': 'x'}, True)
 
 ```
-
-The first line shows the string `"1"` coerced to the integer `1`; both print as `1`.
 
 ### `ConformanceError`
 
@@ -120,9 +119,10 @@ and a `ResolvedSchema`, can be pickled, so it crosses process boundaries.
 
 ### `Report`
 
-Every finding from one run. `ok()` is true when nothing is an error; `errors()` returns the findings
-of severity `error`; `by_kind(kind)` filters by `Kind`; `to_dict()` gives a JSON-ready form, which
-is also what `ocsf-toolkit check --json` prints.
+Every finding from one run: `findings` in walk order, the `schema` the event was read against, and
+the `class_key` it was checked as. `ok()` is true when nothing is an error; `errors()` returns the
+findings of severity `error`; `by_kind(kind)` filters by a `Kind` or its name; `to_dict()` gives a
+form that is always valid JSON, which is also what `ocsf-toolkit check --json` prints.
 
 ### `Finding`
 

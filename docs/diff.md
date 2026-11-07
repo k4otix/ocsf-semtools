@@ -1,11 +1,13 @@
 # Schema diff
 
+## Comparing two versions
+
 ### `diff`
 
-`diff(old, new)` compares two IRs field by field and returns every difference, keyed by its path in the IR.
-Classes are matched by `class_uid` before key, so a class renamed at a stable uid shows up as one
-rename. The diff is data for you to read or act on; it uses no similarity heuristics and migrates no
-events.
+`diff(old, new)` compares two [IRs](schema.md#the-ir) field by field and returns every difference,
+keyed by its path in the IR. Classes are matched by `class_uid`, then by key, so a class renamed at a
+stable uid shows up as one rename. Matching is exact, and the result is data for you to read or act
+on, such as deciding how to migrate your own events.
 
 ```pycon
 >>> from ocsf_toolkit import diff, load
@@ -39,6 +41,8 @@ win/registry_key_info -> win/registry_key_query
 win/registry_value_info -> win/registry_value_query
 
 ```
+
+## The result
 
 ### `SchemaDiff`
 

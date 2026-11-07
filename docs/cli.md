@@ -41,7 +41,7 @@ changed classes.account_change.attributes.duration.caption: "Duration" -> "Durat
 renamed classes.win/prefetch_info -> win/prefetch_query
 ```
 
-`--semver` prints only the release category for replacing A with B, ignoring provenance: `patch` when
+`--semver` prints only the release category for moving from OLD to NEW, ignoring provenance: `patch` when
 nothing changed, `minor` when everything changed is an addition, `major` otherwise.
 
 ### `generate`
