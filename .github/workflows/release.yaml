@@ -50,6 +50,8 @@ jobs:
           fetch-depth: 0 # hatch-vcs derives the version from the tag
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: "0.11.32" # the uv that builds releases; bumped by hand
+          python-version: "3.14" # the interpreter every release step runs on
           enable-cache: false # release artifacts never build from a restored cache
       - run: uv sync --locked
       - name: Version
@@ -57,7 +59,7 @@ jobs:
         env:
           TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
-          version=$(uvx --quiet --with hatch-vcs hatchling version)
+          version=$(make --no-print-directory version) # hatch-vcs, with the pinned backend
           if [ -n "$TAG" ] && [ "v$version" != "$TAG" ]; then
             echo "tag $TAG builds version $version"
             exit 1
@@ -70,7 +72,7 @@ jobs:
           uv run pytest
       - name: Build (gate 3, wheels checked against ocsf.lock)
         run: make wheels
-      - name: Build again and compare (reproducible from the lockfile)
+      - name: Build again and compare (reproducible with the pinned backend)
         run: |
           make wheels WHEELS=build/wheels-again
           diff <(cd build/wheels && sha256sum ./*) <(cd build/wheels-again && sha256sum ./*)
