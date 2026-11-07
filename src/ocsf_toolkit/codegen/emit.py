@@ -82,8 +82,8 @@ def string(text: str) -> str:
 
 def docstring(text: str, indent: str) -> list[str]:
     """Return a docstring as ruff leaves it: one line if it fits, else wrapped paragraphs."""
-    # schema text is data: control characters (a \r would end a line) become spaces
-    text = "".join(c if c.isprintable() or c == "\n" else " " for c in text)
+    # schema text is data: control characters (a \r would end a line) and invisible spaces become spaces
+    text = "".join(" " if _hidden(c) else c for c in text)
     text = text.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').rstrip()
     if text.endswith('"'):
         text += " "
@@ -106,6 +106,34 @@ def docstring(text: str, indent: str) -> list[str]:
             break_on_hyphens=False,
         )
     return [*lines, f'{indent}"""']
+
+
+# Code points a docstring must not hold as they are, as a fixed table: str.isprintable() follows
+# each Python's Unicode version, and a tree that differed by Python would fail its pinned hash.
+# Controls (C0 but the newline that separates paragraphs, DEL, C1), line and paragraph separators,
+# and the invisible spaces and format characters (no-break and em spaces, zero-width joiners, BOM).
+_HIDDEN = frozenset(
+    [
+        *range(0x0A),
+        *range(0x0B, 0x20),
+        *range(0x7F, 0xA1),
+        0xAD,
+        0x1680,
+        *range(0x2000, 0x2010),
+        0x2028,
+        0x2029,
+        0x202F,
+        0x205F,
+        *range(0x2060, 0x2065),
+        0x3000,
+        0xFEFF,
+    ]
+)
+
+
+def _hidden(c: str) -> bool:
+    """Tell whether a docstring must not hold a character as it is: see ``_HIDDEN``."""
+    return ord(c) in _HIDDEN or 0xD800 <= ord(c) <= 0xDFFF  # a lone surrogate can't be encoded
 
 
 def enum_class(e: EnumClass, imports: Imports) -> list[str]:

@@ -82,3 +82,12 @@ def test_string_literals_hold_any_text(text: str) -> None:
 def test_docstrings_hold_no_line_breaking_characters() -> None:
     [line] = docstring("caption\rimport os", "    ")
     assert line == '    """caption import os"""'
+
+
+def test_docstring_hides_controls_and_invisible_spaces_by_a_fixed_table() -> None:
+    """Replaced by code point, not str.isprintable(), which changes with each Python's Unicode version."""
+    text = "a\rb\u00a0c\u200bd\u2028e\x85f\ufeffg"
+    assert docstring(text, "") == ['"""a b c d e f g"""']
+    assert docstring("x\n\ny", "") == ['"""x', "", "y", '"""']  # paragraphs keep their newlines
+    unassigned = "\U000e0080"  # unassigned in every Unicode version so far, so not printable today
+    assert docstring(unassigned, "") == [f'"""{unassigned}"""']  # kept: no table decides it
