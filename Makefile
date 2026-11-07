@@ -1,24 +1,33 @@
-.PHONY: setup format lint type test bench schema ir lock version generate dists wheels compat test-generated clean
+.PHONY: help setup format lint type test bench schema ir lock version generate dists wheels compat test-generated clean
 
 UV ?= uv
 
+# list the targets, each with the first line of its comment
+help:
+	@awk '/^# / { if (!c) c = substr($$0, 3); next } /^[a-z][a-z-]*:/ { n = $$1; sub(/:.*/, "", n); \
+		if (c) printf "  %-15s %s\n", n, c } { c = "" }' $(firstword $(MAKEFILE_LIST))
+
+# create the dev environment in .venv
 setup:
 	$(UV) sync
 
+# rewrite the code the way ruff formats and fixes it
 format:
 	$(UV) run ruff format .
 	$(UV) run ruff check --fix .
 
+# ruff format --check, ruff check, and the import contracts
 lint:
 	$(UV) run ruff format --check .
 	$(UV) run ruff check .
 	$(UV) run lint-imports
 
-# pyright strict is the blocking gate; mypy strict is informational.
+# pyright strict, the blocking gate, then mypy strict, informational
 type:
 	$(UV) run pyright
 	-$(UV) run mypy
 
+# the test suite, in random order, with the doctests in README.md and docs/
 test:
 	$(UV) run pytest
 
@@ -35,8 +44,8 @@ schema:
 ir:
 	$(UV) run ocsf-toolkit ir export $(VERSION) $(if $(RECORD),--record)
 
-# pin a new OCSF version (REF= for a branch or tag of another name), ship its IR, move the model
-# window and record its trees; safe to run again after a step fails
+# pin a new OCSF version, ship its IR and move the model window; safe to rerun after a failure
+# (REF= pins a branch or tag of another name)
 lock:
 	@test -n "$(VERSION)" || { echo "usage: make lock VERSION=x.y.z"; exit 2; }
 	$(UV) run ocsf-toolkit lock --add $(VERSION) $(if $(REF),--ref $(REF))
@@ -46,7 +55,7 @@ lock:
 # The model dist for one OCSF version as an installable project in build/dists/<package>/.
 # Nothing here deletes: `generate` replaces <package>/ only if every file in it is generated,
 # and the rendered project files are overwritten by name. The dist requires the core version
-# building it, up to the next generated-code contract break.
+# building it, up to its next minor release.
 OCSF ?= 1.9.0
 PACKAGE = ocsf_toolkit_v$(subst .,_,$(OCSF))
 DIST = build/dists/$(PACKAGE)
@@ -64,6 +73,7 @@ VERSION_CMD = $(UV) tool run --quiet --constraints $(BUILD_CONSTRAINTS) --with h
 version:
 	@$(VERSION_CMD)
 
+# one model dist, OCSF=x.y.z (default 1.9.0), in build/dists/
 generate:
 	@echo "$(OCSF)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "OCSF must be x.y.z"; exit 2; }
 	mkdir -p $(DIST)
@@ -78,7 +88,9 @@ dists:
 	$(UV) run ocsf-toolkit models check
 
 # core and every model-window dist as sdist and wheel in build/wheels/, each wheel checked
+# (WHEELS must not exist yet: wheels left from an earlier commit would be checked too)
 wheels: dists
+	@test ! -e $(WHEELS) || { echo "$(WHEELS) exists; run make clean, or pass WHEELS=<new dir>"; exit 2; }
 	$(UV) build --quiet --out-dir $(WHEELS)
 	for v in $(WINDOW); do \
 		$(UV) build --quiet --out-dir $(WHEELS) build/dists/ocsf_toolkit_v$$(echo $$v | tr . _) \
@@ -96,5 +108,6 @@ compat:
 test-generated:
 	$(UV) run pytest tests/generated
 
+# remove build/ and the tool caches
 clean:
 	rm -rf build dist .pytest_cache .ruff_cache .mypy_cache .import_linter_cache
