@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema, SiblingSpec
-from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, attribute_finding, dotted, is_int
+from ocsf_toolkit.walk import Finding, Kind, Path, RepairAction, Visit, attribute_finding, dotted, is_int, shown
 
 OTHER = 99  # the "Other" id: a caller-supplied label is source-specific and always kept
 _UNKNOWN = 0
@@ -78,7 +78,7 @@ class _Site:
         if self.overwrite and not keep:
             self.node[attr] = derived
             repair = RepairAction(action="overwrite", before=current, after=derived)
-        message = f"{dotted(path)} is {current!r}; the schema derives {derived!r}"
+        message = f"{dotted(path)} is {shown(current)}; the schema derives {shown(derived)}"
         self.findings.append(
             attribute_finding(ra, conflict, path, message, expected=derived, actual=current, repair=repair)
         )

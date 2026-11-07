@@ -8,7 +8,7 @@ from typing import Any, cast, final
 
 from ocsf_toolkit.ir import EnumMember, EnumValue
 from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int
+from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64, shown
 
 OBSERVABLES = "observables"  # the class attribute holding an event's observable entries
 _OBSERVABLE = "observable"  # the object type of each entry
@@ -95,8 +95,10 @@ def stringify(value: object) -> str | None:
     match value:
         case bool():
             return "true" if value else "false"
-        case int() | str():
-            return str(value)
+        case int():
+            return str(value) if is_int64(value) else None  # past 64 bits it is a type_mismatch
+        case str():
+            return value
         case float():
             return repr(value)  # nan, inf and the shortest round-tripping digits
         case _:
@@ -162,7 +164,7 @@ def _problem(candidates: list[Observable], type_id: int, value: object) -> str |
         return f"type_id {type_id}; the schema marks this attribute {expected}"
     if value is None or any(o.value == value for o in typed):
         return None
-    return f"value {value!r} does not occur at that name"
+    return f"value {shown(value)} does not occur at that name"
 
 
 def _key(entry: Mapping[str, Any]) -> tuple[str, object, object]:

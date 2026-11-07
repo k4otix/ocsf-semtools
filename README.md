@@ -95,7 +95,7 @@ severity. You decide which findings are fatal.
 False
 >>> for finding in report.errors():
 ...     print(finding.kind.value, finding.path, finding.message)
-enum_out_of_range ('severity_id',) severity_id is 9, not one of ['0', '1', '2', '3', '4', '5', '6', '99']
+enum_out_of_range ('severity_id',) severity_id is 9, not one of [0, 1, 2, 3, 4, 5, 6, 99]
 type_mismatch ('status_id',) status_id is str 'x'; expected integer_t
 
 ```

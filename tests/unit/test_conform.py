@@ -1,12 +1,15 @@
 """Conformance: spec §1.5's error classes (acc. #14), many problems in one pass (acc. #13), R12."""
 
+import json
+import math
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
 
-from ocsf_toolkit.engine import LENIENT, Report, run
+from ocsf_toolkit.engine import LENIENT, ConformanceError, Report, extract, run
 from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.models import parse
+from ocsf_toolkit.models import build, parse, repair
 from ocsf_toolkit.schema import ResolvedSchema, load
 from ocsf_toolkit.walk import Kind
 from tests.fixtures.events import (
@@ -205,3 +208,75 @@ def test_lenient_never_changes_the_event(schema: ResolvedSchema) -> None:
     out, _ = run(event, schema, CLASS, LENIENT)
     assert out is event
     assert repr(event) == before
+
+
+# --- numbers: finite floats, 64-bit integers, values too large to print ------------------------
+
+
+def _location(**fields: Any) -> dict[str, Any]:
+    return {"device": {"type_id": 1, "hostname": "h", "location": fields}}
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_a_non_finite_float_is_a_type_mismatch(schema: ResolvedSchema, value: float) -> None:
+    report = _check(base_detection_finding(schema) | _location(lat=value))
+    [finding] = report.by_kind(Kind.TYPE_MISMATCH)
+    assert finding.path == ("device", "location", "lat")
+    assert "expected a finite float_t" in finding.message
+    json.dumps(report.to_dict(), allow_nan=False)  # reported values are valid JSON too
+
+
+@pytest.mark.parametrize(
+    ("attr", "value", "ok"),
+    [
+        ("duration", 2**63 - 1, True),
+        ("duration", 2**63, False),
+        ("duration", -(2**63), True),
+        ("duration", -(2**63) - 1, False),
+        ("raw_data_size", 2**70, False),
+    ],
+)
+def test_integers_must_fit_in_64_bits(schema: ResolvedSchema, attr: str, value: int, ok: bool) -> None:
+    found = _check(base_detection_finding(schema) | {attr: value}).by_kind(Kind.TYPE_MISMATCH)
+    assert (found == ()) is ok
+    if not ok:
+        assert "within the signed 64-bit range" in found[0].message
+
+
+def test_coercion_stays_within_64_bits(schema: ResolvedSchema) -> None:
+    _, report = repair(base_detection_finding(schema) | {"duration": "9999999999999999999"})
+    assert [f.path for f in report.by_kind(Kind.TYPE_MISMATCH)] == [("duration",)]
+
+
+def test_an_integer_too_long_to_print_is_still_reported(schema: ResolvedSchema) -> None:
+    report = _check(base_detection_finding(schema) | {"duration": 10**5000, "bogus": [10**5000]})
+    assert {f.kind for f in report.errors()} == {Kind.TYPE_MISMATCH, Kind.UNKNOWN_ATTRIBUTE}
+    assert "<int too large to show>" in report.by_kind(Kind.TYPE_MISMATCH)[0].message
+    json.dumps(report.to_dict(), allow_nan=False)
+
+
+def test_an_observable_past_64_bits_has_no_value(schema: ResolvedSchema) -> None:
+    network = load("1.9.0").classes["network_activity"]
+    found, _ = extract({"src_endpoint": {"port": 10**5000}}, schema, network.key)
+    assert [(o.name, o.value) for o in found] == [("src_endpoint", None)]  # the port has no usable value
+
+
+def test_report_json_survives_cycles_and_datetimes(schema: ResolvedSchema) -> None:
+    loop: dict[str, Any] = {}
+    loop["self"] = loop
+    naive = datetime(2025, 1, 1)
+    report = _check(base_detection_finding(schema) | {"bogus": loop, "time": naive})
+    data = report.to_dict()
+    json.dumps(data, allow_nan=False)
+    assert {f["path"][0]: f["actual"] for f in data["findings"] if f["kind"] != "missing_recommended"} == {
+        "bogus": "{'self': {...}}",
+        "time": "2025-01-01T00:00:00",
+    }
+
+
+def test_a_datetime_with_no_utc_instant_is_a_type_mismatch(schema: ResolvedSchema) -> None:
+    early = datetime(1, 1, 1, tzinfo=timezone(timedelta(hours=1)))
+    fields = {k: v for k, v in base_detection_finding(schema).items() if k not in ("class_uid", "category_uid")}
+    with pytest.raises(ConformanceError) as caught:
+        build((schema, CLASS), **(fields | {"time": early}))
+    assert [f.path for f in caught.value.report.errors()] == [("time",)]

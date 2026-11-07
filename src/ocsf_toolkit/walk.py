@@ -238,9 +238,28 @@ def canonical(name: str | Path) -> str:
     return _INDEX.sub("", name.lstrip("$").lstrip("."))
 
 
+def shown(value: object) -> str:
+    """Return ``repr(value)`` for a message, or a stand-in when it is too long or too deep to print."""
+    try:
+        return repr(value)
+    except ValueError:  # an integer past sys.get_int_max_str_digits(), or a container holding one
+        return f"<{type(value).__name__} too large to show>"
+    except RecursionError:
+        return f"<{type(value).__name__} too deeply nested to show>"
+
+
 def is_int(value: object) -> TypeGuard[int]:
     """Tell whether a value is an integer: JSON's true and false are not."""
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+# long_t is "8-byte long, signed"; integer_t names no width, so it gets the same bound.
+INT_MIN, INT_MAX = -(2**63), 2**63 - 1
+
+
+def is_int64(value: object) -> TypeGuard[int]:
+    """Tell whether a value is an integer that fits OCSF's integer_t and long_t: signed 64-bit."""
+    return is_int(value) and INT_MIN <= value <= INT_MAX
 
 
 def _children(

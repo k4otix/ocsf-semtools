@@ -10,10 +10,22 @@ from typing import Any, cast, final
 
 from ocsf_toolkit.ir import Deprecation, ItemDef, Requirement, Root
 from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import OPEN_OBJECT, Finding, Kind, Path, RepairAction, Visit, attribute_finding, dotted, is_int
+from ocsf_toolkit.walk import (
+    OPEN_OBJECT,
+    Finding,
+    Kind,
+    Path,
+    RepairAction,
+    Visit,
+    attribute_finding,
+    dotted,
+    is_int,
+    is_int64,
+    shown,
+)
 
 UNMAPPED = "unmapped"  # the class attribute that holds what the schema has no place for
-# long_t is 64-bit: 19 digits covers it, and caps int() well below its 4300-digit limit.
+# 19 digits covers the 64-bit bound, and caps int() well below its 4300-digit limit.
 _INT = re.compile(r"[+-]?[0-9]{1,19}")
 _BOOLS = {"true": True, "false": False}
 _MISSING = {
@@ -195,14 +207,14 @@ def _element(
     if not _conforms(value, ra.root):
         new = _coerced(value, ra, checks)
         if new is None:
-            yield _mismatch(visit, ra, path, value, ra.type)
+            yield _mismatch(visit, ra, path, value, _expected(value, ra))
             return
         _replace(visit, index, new)
         yield attribute_finding(
             ra,
             Kind.COERCED,
             path,
-            f"{dotted(path)} coerced from {value!r} to {new!r}",
+            f"{dotted(path)} coerced from {shown(value)} to {shown(new)}",
             expected=ra.type,
             actual=value,
             repair=RepairAction(action="coerce", before=value, after=new),
@@ -216,8 +228,8 @@ def _element(
             ra,
             Kind.ENUM_OUT_OF_RANGE,
             path,
-            f"{dotted(path)} is {value!r}, not one of {sorted(map(str, ra.enum))}",
-            expected=sorted(ra.enum, key=str),
+            f"{dotted(path)} is {shown(value)}, not one of {sorted(ra.enum, key=_enum_order)}",
+            expected=sorted(ra.enum, key=_enum_order),
             actual=value,
         )
     elif member.deprecated is not None:
@@ -225,7 +237,7 @@ def _element(
             ra,
             Kind.DEPRECATED,
             path,
-            f"{dotted(path)} value {value!r} ({member.caption}) is deprecated"
+            f"{dotted(path)} value {shown(value)} ({member.caption}) is deprecated"
             f" since {member.deprecated.since}: {member.deprecated.message}",
             expected=member.deprecated.superseded_by,
             actual=value,
@@ -237,20 +249,36 @@ def _conforms(value: object, root: Root) -> bool:
         case Root.STRING:
             return isinstance(value, str)
         case Root.INTEGER | Root.LONG:
-            return is_int(value)
+            return is_int64(value)
         case Root.FLOAT:
-            return is_int(value) or isinstance(value, float)  # a JSON 1 is a valid float
+            return is_int(value) or (isinstance(value, float) and math.isfinite(value))  # a JSON 1 is a float
         case Root.BOOLEAN:
             return isinstance(value, bool)
         case Root.JSON:
             return True
 
 
+def _expected(value: object, ra: ResolvedAttribute) -> str:
+    """Say what a value that failed its root's check should have been."""
+    if ra.root in (Root.INTEGER, Root.LONG) and is_int(value):
+        return f"{ra.type} within the signed 64-bit range"
+    if ra.root is Root.FLOAT and isinstance(value, float):
+        return f"a finite {ra.type}"
+    return ra.type
+
+
+def _enum_order(value: int | str) -> tuple[bool, int | str]:
+    return isinstance(value, str), value  # numbers in numeric order; an enum's keys share one type
+
+
 def _coerced(value: object, ra: ResolvedAttribute, checks: Checks) -> object | None:
     """Return the coercion this policy allows for value, or None."""
     if isinstance(value, datetime):
         if checks.datetimes and ra.type == "timestamp_t" and value.utcoffset() is not None:
-            return _epoch_ms(value)
+            try:
+                return _epoch_ms(value)
+            except OverflowError:  # datetime(1, 1, 1, tzinfo=+01:00) has no UTC instant
+                return None
         return None
     if not checks.coerce:
         return None
@@ -262,12 +290,13 @@ def _coerced(value: object, ra: ResolvedAttribute, checks: Checks) -> object | N
 
 
 def as_integer(value: object) -> int | None:
-    """Return the integer a value unambiguously spells: an integer string or an integral float."""
-    if isinstance(value, str) and _INT.fullmatch(value):
-        return int(value)
-    if isinstance(value, float) and math.isfinite(value) and value.is_integer():
-        return int(value)
-    return None
+    """Return the signed 64-bit integer a value unambiguously spells: an integer string or an integral float."""
+    number: int | None = None
+    if (isinstance(value, str) and _INT.fullmatch(value)) or (
+        isinstance(value, float) and math.isfinite(value) and value.is_integer()
+    ):
+        number = int(value)
+    return number if is_int64(number) else None
 
 
 def _epoch_ms(value: datetime) -> int:
@@ -290,7 +319,7 @@ def _mismatch(visit: Visit, ra: ResolvedAttribute, path: Path, value: object, wh
         ra,
         Kind.TYPE_MISMATCH,
         path,
-        f"{dotted(path)} is {type(value).__name__} {value!r}; expected {what}",
+        f"{dotted(path)} is {type(value).__name__} {shown(value)}; expected {what}",
         expected=ra.type,
         actual=value,
     )

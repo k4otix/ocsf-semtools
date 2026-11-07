@@ -14,7 +14,7 @@ from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
 from ocsf_toolkit.walk import Kind as Kind
 from ocsf_toolkit.walk import RepairAction as RepairAction
-from ocsf_toolkit.walk import copy_event, is_int, walk
+from ocsf_toolkit.walk import copy_event, is_int, shown, walk
 
 FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema knows
 MAX_NODES = 100_000  # attribute visits before a run stops with max_nodes_exceeded; ~250 times a 20 KB event
@@ -255,7 +255,15 @@ def _finding_dict(f: Finding) -> dict[str, Any]:
 
 
 def _jsonable(value: object) -> object:
-    return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False))
+    """Return a value as plain JSON data; NaN and the infinities become the strings JSON lacks words for."""
+    try:
+        return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False, allow_nan=False))
+    except (ValueError, RecursionError):
+        pass
+    try:  # non-finite floats are written as NaN/Infinity, then read back as strings
+        return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False), parse_constant=str)
+    except (ValueError, RecursionError):  # a cycle, an integer too long to print, or too deep
+        return shown(value)
 
 
 def _json_default(value: object) -> object:

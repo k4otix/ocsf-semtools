@@ -9,6 +9,9 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 - Fixed: `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a wrong-typed attribute of an inactive profile. Such values are now checked, and objects under them walked; `ResolvedItem.inactive` holds their declarations.
 - Fixed: events nested deeper than Python's recursion limit raised `RecursionError` from `build` and `repair`, and an event holding a cycle made `parse` and `repair` hang. An object reached twice is now a `repeated_node` error and walked once, and every run stops after `max_nodes` attribute visits (100,000 by default; `parse`, `repair` and `extract` take `max_nodes=`).
 - An event that is not a dict raises `TypeError`.
+- Conformance now enforces numbers as OCSF defines them: NaN and the infinities are a `type_mismatch` for `float_t`, and `integer_t` and `long_t` values must fit in a signed 64-bit integer. An event that passed before may now report these errors. `Report.to_dict()` always returns valid JSON, writing non-finite values as strings.
+- Enum values in `enum_out_of_range` messages and `expected` are listed in numeric order.
+- Fixed: a timezone-aware `datetime` with no UTC instant (such as year 1 at +01:00) raised `OverflowError`; an integer too long to print raised `ValueError` from a message.
 
 ## 0.1.0a2
 
