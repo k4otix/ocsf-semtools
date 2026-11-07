@@ -41,6 +41,7 @@ def test_classes_load_on_demand(dist: Dist) -> None:
     print(f"{dist.version} cold import of DetectionFinding: {found['ms']:.1f} ms")  # reported, not gated
 
 
+@pytest.mark.network
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_installs_into_a_clean_environment(dist: Dist, tmp_path: Path) -> None:
     """Install the dist and the core into a fresh venv; msgspec comes as a declared dependency (acc. #1)."""

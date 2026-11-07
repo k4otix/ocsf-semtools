@@ -1,5 +1,6 @@
 """Fixtures over the real lockfile versions; compiled-schema tests skip without build/compiled."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -37,3 +38,12 @@ def provenance(version: str) -> Provenance:
 @pytest.fixture(scope="session")
 def ir_1_9_0() -> SchemaIR:
     return load_compiled(compiled_path("1.9.0").read_bytes(), provenance("1.9.0"))
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Skip the tests marked network when uv is told to stay offline."""
+    if os.environ.get("UV_OFFLINE"):
+        offline = pytest.mark.skip(reason="UV_OFFLINE is set; this test reaches PyPI")
+        for item in items:
+            if item.get_closest_marker("network"):
+                item.add_marker(offline)

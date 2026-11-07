@@ -103,6 +103,7 @@ def test_needs_release() -> None:
     assert dist.needs_release(current, "pkg", tree, "0.2.0")  # core outside its range
 
 
+@pytest.mark.network  # the build backend comes from PyPI unless uv has it cached
 @pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv")
 def test_sdist_holds_only_the_allowlist(tmp_path: Path) -> None:
     """Files kept out of git only through .git/info/exclude must never reach an sdist."""

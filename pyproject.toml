@@ -131,3 +131,4 @@ addopts = [
     "--ignore=docs/design",
     "--ignore=docs/prior-art",
 ]
+markers = ["network: reaches PyPI through uv; skipped when UV_OFFLINE is set"]
