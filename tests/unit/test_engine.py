@@ -487,3 +487,23 @@ def test_by_kind_takes_the_kind_or_its_name(schema: ResolvedSchema) -> None:
     _, report = parse(multi_error_fixture(schema), version="1.9.0")
     assert report.by_kind(Kind.SIBLING_CONFLICT) == report.by_kind("sibling_conflict")  # type: ignore[arg-type]
     assert report.by_kind(Kind.SIBLING_CONFLICT)
+
+
+def test_observables_see_values_as_repair_left_them() -> None:
+    entry = {"name": "src_endpoint.port", "type_id": 11, "value": "443"}
+    event = {"class_uid": 4001, "src_endpoint": {"port": 443.0}, "observables": [entry]}
+    out, report = repair(event, version="1.9.0")
+    assert out["src_endpoint"]["port"] == 443
+    assert report.by_kind(Kind.OBSERVABLE_MISMATCH) == ()
+
+
+def test_a_deprecated_value_moves_only_into_an_absent_successor() -> None:
+    def email(**fields: Any) -> dict[str, Any]:
+        return {"class_uid": 4009, "email": fields}
+
+    out, report = repair(email(smtp_from=123), version="1.9.0")
+    assert out["email"] == {"from": 123}
+    assert ("email", "from") in {f.path for f in report.by_kind(Kind.TYPE_MISMATCH)}  # checked where it landed
+    out, report = repair(email(**{"from": None, "smtp_from": 123}), version="1.9.0")
+    assert out["email"] == {"from": None, "smtp_from": 123}
+    assert ("email", "smtp_from") in {f.path for f in report.by_kind(Kind.TYPE_MISMATCH)}

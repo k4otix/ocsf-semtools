@@ -14,6 +14,7 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 - `parse` and `repair` read extensions from `metadata.extensions`, so an event of an extension class such as `win/prefetch_query` is checked against it; before, it was checked as `base_event`. Both also take `schema=`, a schema from `load()` or `resolve()`, for custom extensions.
 - New in the public API: `RepairAction` (the type of `Finding.repair`), `export_ir`, and `ConformanceError.fatal`, the findings that stopped a build. `ResolvedSchema`, `Report` and `ConformanceError` can be pickled.
 - Fixed: `Report.by_kind("filled")` returned nothing; it now matches a `Kind` or its name.
+- Fixed: observables were read before coercion, so `repair` reported a caller entry for a coerced value as unfounded; a deprecated value moved into a successor present as null was never checked.
 - Fixed: `type_uid` was derived from an `activity_id` the class doesn't define, so `activity_id=-1` produced a plausible `type_uid` such as 400099.
 - Fixed: a timezone-aware `datetime` with no UTC instant (such as year 1 at +01:00) raised `OverflowError`; an integer too long to print raised `ValueError` from a message.
 

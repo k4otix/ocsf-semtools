@@ -1,5 +1,6 @@
 """The validation engine: one walk of an event with the visitors a policy selects, into a Report."""
 
+import dataclasses
 import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -126,7 +127,10 @@ def run(
             findings += check(visit, checks)
         else:
             findings += check(visit, checks)
-            found += observe(visit, marks)  # after check: values as coerced or relocated
+            # observed as check left it: a coerced value as coerced, and a moved one not at all here
+            if visit.attr in visit.node:
+                current = visit.node[visit.attr]
+                found += observe(visit if current is visit.value else dataclasses.replace(visit, value=current), marks)
     if not truncated:  # a partial walk would misreport the caller entries it never reached
         findings += unfounded(out, found)
     return out, Report(schema=schema, class_key=item.key, findings=tuple(findings))

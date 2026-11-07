@@ -162,7 +162,7 @@ def _deprecated(visit: Visit, ra: ResolvedAttribute, checks: Checks) -> Iterator
         and successor is not None
         and (successor.type, successor.object_type, successor.is_array)
         == (ra.type, ra.object_type, ra.is_array)  # e.g. comment (string) -> notes (note[]) isn't
-        and visit.node.get(successor.name) is None
+        and successor.name not in visit.node  # one already there, even as null, was visited already
     )
     repair = None
     if movable and target is not None:
