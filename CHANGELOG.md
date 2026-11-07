@@ -6,6 +6,10 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.1.0a3 (2026-11-07)
+
+The model packages are unchanged: their releases on PyPI run on this core.
+
 ### Changed
 
 - The command line exits 2 when a command can't do its job: a usage error, a missing file, an unknown version, profile or class, or a failed pipeline gate. Exit 1 now means only that `check` found an error or `diff` a difference.
