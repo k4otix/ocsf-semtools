@@ -7,6 +7,8 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 
 - Removed from the public API: `Policy`, `STRICT`, `LENIENT` and `REPAIR`. No function accepted them; [Building and checking events](docs/events.md) says what each entry point changes.
 - Fixed: `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a wrong-typed attribute of an inactive profile. Such values are now checked, and objects under them walked; `ResolvedItem.inactive` holds their declarations.
+- Fixed: events nested deeper than Python's recursion limit raised `RecursionError` from `build` and `repair`, and an event holding a cycle made `parse` and `repair` hang. An object reached twice is now a `repeated_node` error and walked once, and every run stops after `max_nodes` attribute visits (100,000 by default; `parse`, `repair` and `extract` take `max_nodes=`).
+- An event that is not a dict raises `TypeError`.
 
 ## 0.1.0a2
 

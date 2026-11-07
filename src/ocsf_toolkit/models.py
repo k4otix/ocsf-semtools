@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, cast, overload
 
 from ocsf_toolkit.engine import (
     LENIENT,
+    MAX_NODES,
     REPAIR,
     STRICT,
     ConformanceError,
@@ -21,6 +22,7 @@ from ocsf_toolkit.engine import (
     Kind,
     Report,
     declared_profiles,
+    require_event,
     run,
     select,
 )
@@ -44,7 +46,9 @@ def build(ref: Any, /, *args: Any, **fields: Any) -> Any:
 
     ``ref`` is a generated class (returns an instance of it) or a ``(schema, class key)`` pair
     (returns a dict). Raises ConformanceError carrying the full report when any error remains,
-    and emits a DeprecationWarning for each deprecated attribute or value used (D#18).
+    and emits a DeprecationWarning for each deprecated attribute or value used. The walk stops
+    after ``engine.MAX_NODES`` attribute visits; the fields are the event's own, so there is no
+    keyword to change that.
     """
     import msgspec
 
@@ -71,10 +75,15 @@ def parse(
     version: str | None = None,
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[dict[str, Any], Report]: ...
 @overload
 def parse[S: msgspec.Struct](
-    event: dict[str, Any], *, as_: type[S], profiles: Iterable[str] | None = None
+    event: dict[str, Any],
+    *,
+    as_: type[S],
+    profiles: Iterable[str] | None = None,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[S | None, Report]: ...
 def parse(
     event: dict[str, Any],
@@ -83,20 +92,24 @@ def parse(
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
     as_: type[msgspec.Struct] | None = None,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[Any, Report]:
     """Check an event; version and profiles default to its metadata.
 
     With ``as_``, a generated class fixes the version and class: unknown attributes are relocated
-    into ``unmapped`` and recorded, and the instance is None when the report has errors.
+    into ``unmapped`` and recorded, and the instance is None when the report has errors. The walk
+    stops with a max_nodes_exceeded finding after ``max_nodes`` attribute visits; None walks all.
     """
     import msgspec
 
     if as_ is None:
-        return run(event, select(event, version=version, profiles=profiles), class_key, LENIENT)
+        schema = select(event, version=version, profiles=profiles)
+        return run(event, schema, class_key, LENIENT, max_nodes=max_nodes)
     if version is not None or class_key is not None:
         raise TypeError("parse(as_=...) takes its version and class from the generated class")
+    require_event(event)
     schema, key, exact = _target(_generated(as_), profiles, event)
-    out, report = run(event, schema, key, _AS_STRUCT)
+    out, report = run(event, schema, key, _AS_STRUCT, max_nodes=max_nodes)
     return (None if _fatal(report, exact) else msgspec.convert(out, as_)), report
 
 
@@ -106,10 +119,14 @@ def repair(
     version: str | None = None,
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[dict[str, Any], Report]:
-    """Return a normalized copy of the event; every change is a finding with its repair action."""
+    """Return a normalized copy of the event; every change is a finding with its repair action.
+
+    The walk stops with a max_nodes_exceeded finding after ``max_nodes`` attribute visits.
+    """
     schema = select(event, version=version, profiles=profiles)
-    return run(event, schema, class_key, REPAIR)
+    return run(event, schema, class_key, REPAIR, max_nodes=max_nodes)
 
 
 def _generated(cls: object) -> type[msgspec.Struct]:

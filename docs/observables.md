@@ -22,7 +22,7 @@ event, so you don't maintain it by hand.
 
 ### `extract`
 
-`extract(event, schema, class_key=None, *, max_nodes=None)` returns `(observables, report)` in the
+`extract(event, schema, class_key=None, *, max_nodes=100_000)` returns `(observables, report)` in the
 order the event is walked, and leaves the event unchanged. An attribute is an observable when the
 schema marks its type, its dictionary entry, its object, or the attribute within its class or object,
 or when the class's own observable path map names it.
@@ -43,7 +43,8 @@ dst_endpoint.port 11 Port 443
 
 The report holds an `observable_mismatch` warning for each entry the event already lists that no
 attribute in the event backs. `max_nodes` caps the number of attribute visits; past it the walk stops
-and reports a `max_nodes_exceeded` finding.
+and reports a `max_nodes_exceeded` finding, and the result is partial. `max_nodes=None` walks the
+whole event.
 
 ### `Observable`
 

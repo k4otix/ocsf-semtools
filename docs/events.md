@@ -141,14 +141,19 @@ What a finding is about, which also fixes its severity:
 
 | Severity | Kinds |
 |---|---|
-| error | `missing_required`, `unknown_attribute`, `type_mismatch`, `enum_out_of_range`, `sibling_conflict`, `identity_conflict`, `constraint_violated` |
+| error | `missing_required`, `unknown_attribute`, `type_mismatch`, `enum_out_of_range`, `sibling_conflict`, `identity_conflict`, `constraint_violated`, `repeated_node` |
 | warning | `missing_recommended`, `profile_mismatch`, `deprecated`, `observable_mismatch` |
 | info | `semantically_empty_enum`, `max_nodes_exceeded`, and the repairs `filled`, `coerced`, `relocated` |
 
 Any finding that `repair` resolved is `info`, whatever its kind.
 
+`repeated_node` marks an object the event holds twice, through a cycle or under two paths; it is
+walked once. `parse`, `repair` and `extract` stop after `max_nodes` attribute visits (100,000 by
+default, `None` for no limit) with a `max_nodes_exceeded` finding, and `build` stops at the same
+default, so no event can make a run hang.
+
 ```pycon
 >>> len(Kind), Kind("missing_required") is Kind.MISSING_REQUIRED
-(16, True)
+(17, True)
 
 ```

@@ -38,6 +38,7 @@ class Kind(StrEnum):
     DEPRECATED = "deprecated"
     OBSERVABLE_MISMATCH = "observable_mismatch"
     MAX_NODES_EXCEEDED = "max_nodes_exceeded"
+    REPEATED_NODE = "repeated_node"
     FILLED = "filled"
     COERCED = "coerced"
     RELOCATED = "relocated"
@@ -51,6 +52,7 @@ _SEVERITY: Mapping[Kind, Severity] = {
     Kind.IDENTITY_CONFLICT: "error",
     Kind.CONSTRAINT_VIOLATED: "error",
     Kind.UNKNOWN_ATTRIBUTE: "error",
+    Kind.REPEATED_NODE: "error",
     Kind.MISSING_RECOMMENDED: "warning",
     Kind.PROFILE_MISMATCH: "warning",
     Kind.DEPRECATED: "warning",
@@ -141,8 +143,11 @@ def walk(
     """Yield a Visit for every attribute and node close of the event, depth-first.
 
     Past ``max_nodes`` attribute visits the walk yields one ``max_nodes_exceeded`` Finding and stops.
+    An object reached a second time (a cycle, or one dict under two paths) is a ``repeated_node``
+    Finding and is not walked again.
     """
     stack: list[tuple[ResolvedItem, dict[str, Any], Path]] = [(item, event, ())]
+    entered: dict[int, Path] = {id(event): ()}  # every node the walk holds stays alive, so ids are unique
     count = 0
     while stack:
         owner, node, path = stack.pop()
@@ -163,11 +168,55 @@ def walk(
                     )
                     return
                 yield Visit(owner, attr, node[attr], (*path, attr), node)
-                children.extend(_children(owner, attr, node, path, schema))
+                for child in _children(owner, attr, node, path, schema):
+                    first = entered.setdefault(id(child[1]), child[2])
+                    if first is child[2]:
+                        children.append(child)
+                    else:
+                        yield _repeated(owner, child[2], first)
             seen.update(keys)
             keys = [attr for attr in node if attr not in seen]
         yield Visit(owner, None, node, path, node)
         stack.extend(reversed(children))
+
+
+def copy_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Copy the event's dicts and lists without recursion, so no depth of nesting exhausts the stack.
+
+    Every other value is immutable JSON data or a datetime, and is shared. A container met twice is
+    copied once, so the walk still sees the shape the caller passed.
+    """
+    root: dict[str, Any] = {}
+    copies: dict[int, dict[Any, object] | list[object]] = {id(event): root}
+    pending: list[tuple[dict[Any, object] | list[object], dict[Any, object] | list[object]]] = [(event, root)]
+    while pending:
+        source, target = pending.pop()
+        values = list(source.values()) if isinstance(source, dict) else source
+        copied: list[object] = []
+        for value in values:
+            if isinstance(value, dict | list):
+                container = cast(dict[Any, object] | list[object], value)
+                twin = copies.get(id(container))
+                if twin is None:
+                    twin = copies[id(container)] = {} if isinstance(container, dict) else []
+                    pending.append((container, twin))
+                value = twin
+            copied.append(value)
+        if isinstance(target, dict):
+            target.update(zip(cast(dict[Any, object], source), copied, strict=True))
+        else:
+            target.extend(copied)
+    return root
+
+
+def _repeated(owner: ResolvedItem, path: Path, first: Path) -> Finding:
+    return Finding(
+        kind=Kind.REPEATED_NODE,
+        path=path,
+        owner=owner.key,
+        message=f"{dotted(path)} is the same object as {dotted(first) or 'the event'}; not walked again",
+        expected=first,
+    )
 
 
 def dotted(path: Path) -> str:

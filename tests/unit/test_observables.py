@@ -210,10 +210,21 @@ def _deep(n: int) -> dict[str, Any]:
     return {"evidences": [{"process": {"name": str(i)}} for i in range(n)]}
 
 
-def test_max_nodes_is_off_by_default(schema: ResolvedSchema) -> None:
+def test_the_default_budget_walks_a_large_event(schema: ResolvedSchema) -> None:
     found, report = extract(_deep(500), schema, CLASS)
     assert len(found) == 1000
     assert report.findings == ()
+
+
+def test_max_nodes_none_walks_everything(schema: ResolvedSchema) -> None:
+    found, report = extract(_deep(60_000), schema, CLASS, max_nodes=None)
+    assert (len(found), report.findings) == (120_000, ())
+
+
+def test_a_truncated_walk_reports_no_unfounded_caller_entries(schema: ResolvedSchema) -> None:
+    late = {"name": "evidences[9].process.name", "type_id": 9, "value": "9"}
+    _, report = extract(_deep(10) | {"observables": [late]}, schema, CLASS, max_nodes=5)
+    assert [f.kind for f in report.findings] == [Kind.MAX_NODES_EXCEEDED]
 
 
 @pytest.mark.parametrize(

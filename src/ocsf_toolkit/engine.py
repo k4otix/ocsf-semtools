@@ -1,6 +1,5 @@
 """The validation engine: one walk of an event with the visitors a policy selects, into a Report."""
 
-import copy
 import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -15,9 +14,10 @@ from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
 from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
 from ocsf_toolkit.walk import Kind as Kind
 from ocsf_toolkit.walk import RepairAction as RepairAction
-from ocsf_toolkit.walk import is_int, walk
+from ocsf_toolkit.walk import copy_event, is_int, walk
 
 FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema knows
+MAX_NODES = 100_000  # attribute visits before a run stops with max_nodes_exceeded; ~250 times a 20 KB event
 
 
 @final
@@ -88,11 +88,17 @@ class ConformanceError(Exception):
 
 
 def run(
-    event: dict[str, Any], schema: ResolvedSchema, class_key: str | None, policy: Policy
+    event: dict[str, Any],
+    schema: ResolvedSchema,
+    class_key: str | None,
+    policy: Policy,
+    *,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[dict[str, Any], Report]:
     """Walk the event once, deriving and checking; a policy that changes the event works on a copy."""
+    require_event(event)
     mutates = policy.fill or policy.overwrite or policy.coerce or policy.relocate
-    out = copy.deepcopy(event) if mutates else event
+    out = copy_event(event) if mutates else event
     item, identity, findings = _root_class(out, schema, class_key, coerce=policy.coerce)
     checks = Checks(
         schema=schema,
@@ -105,16 +111,19 @@ def run(
     )
     marks = markers(schema, item)
     found: list[Observable] = []
-    for visit in walk(out, item, schema):
+    truncated = False
+    for visit in walk(out, item, schema, max_nodes=max_nodes):
         if isinstance(visit, Finding):
             findings.append(visit)
+            truncated = truncated or visit.kind is Kind.MAX_NODES_EXCEEDED
         elif visit.attr is None:  # a node's close: derivation runs on whole nodes
             findings += derive(visit, schema, fill=policy.fill, overwrite=policy.overwrite, identity=identity)
             findings += check(visit, checks)
         else:
             findings += check(visit, checks)
             found += observe(visit, marks)  # after check: values as coerced or relocated
-    findings += unfounded(out, found)
+    if not truncated:  # a partial walk would misreport the caller entries it never reached
+        findings += unfounded(out, found)
     return out, Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
 
@@ -123,22 +132,26 @@ def extract(
     schema: ResolvedSchema,
     class_key: str | None = None,
     *,
-    max_nodes: int | None = None,
+    max_nodes: int | None = MAX_NODES,
 ) -> tuple[tuple[Observable, ...], Report]:
     """Return the observables the schema derives from the event, in walk order; the event is unchanged.
 
     The report holds observable_mismatch for caller entries nothing backs, and max_nodes_exceeded
-    (with a partial result) when the walk passes max_nodes attribute visits.
+    (with a partial result) when the walk passes max_nodes attribute visits; None walks everything.
     """
+    require_event(event)
     item, _, findings = _root_class(event, schema, class_key)
     marks = markers(schema, item)
     found: list[Observable] = []
+    truncated = False
     for visit in walk(event, item, schema, max_nodes=max_nodes):
         if isinstance(visit, Finding):
             findings.append(visit)
+            truncated = truncated or visit.kind is Kind.MAX_NODES_EXCEEDED
         else:
             found += observe(visit, marks)
-    findings += unfounded(event, found)
+    if not truncated:
+        findings += unfounded(event, found)
     return tuple(found), Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
 
@@ -149,6 +162,7 @@ def select(event: Mapping[str, Any], *, version: str | None, profiles: Iterable[
     metadata.profiles that the version doesn't define are skipped here; derivation then reports
     metadata.profiles as a profile_mismatch.
     """
+    require_event(event)
     version = version if version is not None else _metadata(event).get("version")
     if not isinstance(version, str):
         raise ValueError("no OCSF version: pass version= or set metadata.version")
@@ -165,6 +179,12 @@ def declared_profiles(event: Mapping[str, Any], ir: SchemaIR, extensions: frozen
     return frozenset(
         p for p in names if isinstance(p, str) and p in defined and defined[p].extension in (None, *extensions)
     )
+
+
+def require_event(event: object) -> None:
+    """Refuse anything but a dict as an event: a JSON array, string or null is not one."""
+    if not isinstance(event, dict):
+        raise TypeError(f"an event is a dict (a JSON object); got {type(event).__name__}")
 
 
 def _metadata(event: Mapping[str, Any]) -> Mapping[str, Any]:

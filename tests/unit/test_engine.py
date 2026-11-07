@@ -2,6 +2,7 @@
 
 import copy
 import dataclasses
+import inspect
 import json
 import warnings
 from datetime import UTC, datetime
@@ -11,10 +12,12 @@ import pytest
 
 from ocsf_toolkit.engine import (
     LENIENT,
+    MAX_NODES,
     REPAIR,
     STRICT,
     ConformanceError,
     Policy,
+    extract,
     run,
     select,
 )
@@ -322,6 +325,7 @@ def test_the_severity_table() -> None:
         Kind.IDENTITY_CONFLICT,
         Kind.CONSTRAINT_VIOLATED,
         Kind.UNKNOWN_ATTRIBUTE,
+        Kind.REPEATED_NODE,
     }
     assert warnings_ == {Kind.MISSING_RECOMMENDED, Kind.PROFILE_MISMATCH, Kind.DEPRECATED, Kind.OBSERVABLE_MISMATCH}
 
@@ -330,3 +334,71 @@ def test_every_kind_has_a_severity() -> None:
     # The table names every warning and error; the rest are info by design.
     info = {Kind.FILLED, Kind.COERCED, Kind.RELOCATED, Kind.SEMANTICALLY_EMPTY_ENUM, Kind.MAX_NODES_EXCEEDED}
     assert set(Kind) - _SEVERITY.keys() == info
+
+
+# --- hostile structure: depth, cycles, shared nodes, size, non-dict input ---------------------
+
+
+def _chain(depth: int) -> dict[str, Any]:
+    process: dict[str, Any] = {"pid": 0}
+    for i in range(1, depth):
+        process = {"pid": i, "parent_process": process}
+    return process
+
+
+@pytest.mark.parametrize("entry", ["build", "parse", "repair"])
+def test_nesting_deeper_than_the_recursion_limit(schema: ResolvedSchema, entry: str) -> None:
+    event = base_detection_finding(schema) | {"actor": {"process": _chain(3000)}}
+    if entry == "build":
+        fields = {k: v for k, v in event.items() if k not in ("class_uid", "category_uid", "type_uid")}
+        built = build((schema, CLASS), **fields)
+        assert built["actor"]["process"]["pid"] == 2999
+    else:
+        _, report = (parse if entry == "parse" else repair)(event)
+        assert report.ok()
+
+
+@pytest.mark.parametrize("entry", [parse, repair])
+def test_a_cycle_is_one_finding_and_ends(schema: ResolvedSchema, entry: Any) -> None:
+    event = base_detection_finding(schema)
+    process: dict[str, Any] = {"pid": 1}
+    process["parent_process"] = process
+    event["actor"] = {"process": process}
+    _, report = entry(event)
+    [finding] = report.by_kind(Kind.REPEATED_NODE)
+    assert (finding.path, finding.expected, finding.severity) == (
+        ("actor", "process", "parent_process"),
+        ("actor", "process"),
+        "error",
+    )
+
+
+def test_one_dict_under_two_paths_is_walked_once(schema: ResolvedSchema) -> None:
+    shared = {"name": "e", "bogus": 1}
+    event = base_detection_finding(schema) | {"evidences": [shared, shared]}
+    out, report = repair(event)
+    assert {(f.kind, f.path) for f in report.findings if f.kind in (Kind.RELOCATED, Kind.REPEATED_NODE)} == {
+        (Kind.RELOCATED, ("evidences", 0, "bogus")),
+        (Kind.REPEATED_NODE, ("evidences", 1)),
+    }
+    assert out["evidences"][0] is out["evidences"][1]  # the copy keeps the shape the caller passed
+
+
+def test_every_entry_point_has_the_default_budget(schema: ResolvedSchema) -> None:
+    for entry in (parse, repair, extract):
+        assert inspect.signature(entry).parameters["max_nodes"].default == MAX_NODES
+    event = base_detection_finding(schema) | {"evidences": [{"name": str(i)} for i in range(50)]}
+    for entry in (parse, repair):
+        _, report = entry(event, max_nodes=40)
+        assert len(report.by_kind(Kind.MAX_NODES_EXCEEDED)) == 1
+
+
+@pytest.mark.parametrize("event", [["x"], "x", None, 1])
+def test_an_event_that_is_not_a_dict_is_a_type_error(schema: ResolvedSchema, event: Any) -> None:
+    for call in (
+        lambda: parse(event, version="1.9.0"),
+        lambda: repair(event, version="1.9.0"),
+        lambda: extract(event, schema),
+    ):
+        with pytest.raises(TypeError, match="an event is a dict"):
+            call()
