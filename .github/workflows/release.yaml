@@ -2,7 +2,8 @@
 # (byte-identical, SOURCE_DATE_EPOCH), check each wheel holds the tree ocsf.lock pins, publish core
 # plus the dists PyPI lacks (a new tree, or a core outside the published dist's range) through
 # trusted publishing, and attach ocsf.lock and SHA256SUMS to a GitHub release.
-# workflow_dispatch runs everything up to the publish step and publishes nothing.
+# workflow_dispatch runs everything up to the publish step and publishes nothing. A tag also needs a
+# successful ci.yaml run on its commit before the approval.
 #
 # PyPI setup (once per project): a trusted publisher bound to this repository and workflow
 # release.yaml, with one GitHub environment per project, because PyPI lets one pending publisher
@@ -120,12 +121,32 @@ jobs:
             ocsf.lock
           if-no-files-found: error
 
+  # A tag must name a commit the ci workflow passed on: the build job above tests on one Python, and
+  # ci.yaml covers 3.12-3.14 and the generated dists.
+  ci-passed:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: ci.yaml succeeded on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          passed=$(gh run list --workflow ci.yaml --commit "$SHA" --status success --json databaseId --jq length)
+          if [ "$passed" = 0 ]; then
+            echo "::error::ci.yaml has no successful run on $SHA; once it passes, re-run this job"
+            exit 1
+          fi
+
   # The one approval for a release. The per-project environments below exist to identify each
   # project to PyPI; GitHub creates a missing environment unprotected on first use, so protection
   # must not depend on them. Environment `release`: required reviewers, deployments from v* tags.
   approve:
     if: github.ref_type == 'tag'
-    needs: build
+    needs: [build, ci-passed]
     runs-on: ubuntu-latest
     environment: release
     steps:
@@ -158,9 +179,16 @@ jobs:
           cp all/"$PREFIX"* dist/
           ls dist
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          # a re-run after a partial publish skips what PyPI already has; the build is reproducible,
+          # so a file of the same name is the same file
+          skip-existing: true
 
+  # Runs even if one dist's upload failed: the tag still gets its release, and the next release
+  # publishes that dist, as PyPI still lacks it.
   github-release:
-    needs: publish
+    if: ${{ !cancelled() && needs.approve.result == 'success' }}
+    needs: [approve, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -174,7 +202,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+          PUBLISHED: ${{ needs.publish.result }}
         run: |
-          gh release create "$TAG" --verify-tag --title "$TAG" \
-            --notes "See CHANGELOG.md. Files published to PyPI and their sha256 are in SHA256SUMS." \
-            assets/*
+          notes="See CHANGELOG.md. SHA256SUMS lists the files this release built for PyPI, with their sha256."
+          if [ "$PUBLISHED" != success ]; then
+            notes="$notes Some uploads failed; see the workflow run. The next release publishes them."
+          fi
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes "$notes" assets/*

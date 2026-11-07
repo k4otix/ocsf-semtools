@@ -1,4 +1,4 @@
-.PHONY: setup format lint type test bench schema ir lock generate dists wheels compat test-generated clean
+.PHONY: setup format lint type test bench schema ir lock version generate dists wheels compat test-generated clean
 
 UV ?= uv
 
@@ -52,14 +52,22 @@ DIST = build/dists/$(PACKAGE)
 WINDOW = $(shell $(UV) run python -c 'import tomllib; print(*(e["version"] for e in \
 	tomllib.load(open("ocsf.lock", "rb"))["schemas"] if e["ship_models"]))')
 WHEELS = build/wheels
-# sdists and wheels carry this timestamp, so rebuilding one commit gives identical bytes
+# Sdists and wheels carry this timestamp and the version of the backend that built them, so a commit
+# rebuilt with the pinned backend gives identical bytes.
 export SOURCE_DATE_EPOCH ?= $(shell git log -1 --format=%ct)
+BUILD_CONSTRAINTS = packaging/build-requirements.txt
+export UV_BUILD_CONSTRAINT := $(CURDIR)/$(BUILD_CONSTRAINTS)
+VERSION_CMD = $(UV) tool run --quiet --constraints $(BUILD_CONSTRAINTS) --with hatch-vcs hatchling version
+
+# the version hatch-vcs derives from git, with the pinned backend
+version:
+	@$(VERSION_CMD)
 
 generate:
 	@echo "$(OCSF)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "OCSF must be x.y.z"; exit 2; }
 	mkdir -p $(DIST)
 	$(UV) run ocsf-toolkit generate $(OCSF) --package $(PACKAGE) --out $(DIST)
-	version=$$($(UV)x --quiet --with hatch-vcs hatchling version) && \
+	version=$$($(VERSION_CMD)) && \
 	$(UV) run python packaging/version_dist/dist.py render --ocsf $(OCSF) --version "$$version" \
 		--out $(DIST)
 
@@ -79,7 +87,7 @@ wheels: dists
 
 # the released model dists (LOCAL=1: the wheels in build/wheels) run on the core in this checkout
 compat:
-	version=$$($(UV)x --quiet --with hatch-vcs hatchling version) && \
+	version=$$($(VERSION_CMD)) && \
 	$(UV) run python packaging/version_dist/dist.py compat --version "$$version" \
 		$(if $(LOCAL),--wheels $(WHEELS))
 

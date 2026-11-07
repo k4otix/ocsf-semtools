@@ -1,5 +1,6 @@
 version: 2
-# Keeps the commit-SHA pins in .github/workflows current. A release must be two weeks old before
+# Proposes updates to the commit-SHA pins in .github/workflows, the dev tools in uv.lock, and the
+# pinned build backend in packaging/build-requirements.txt. A release must be two weeks old before
 # Dependabot proposes it, so a compromised release has time to be caught and pulled first.
 updates:
   - package-ecosystem: github-actions
@@ -8,3 +9,24 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      dev-tools:
+        patterns: ["*"]
+
+  # a bump here changes the bytes of every artifact built after it, so it gets its own PR
+  - package-ecosystem: pip
+    directory: /packaging
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      build-backend:
+        patterns: ["*"]

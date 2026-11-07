@@ -1,0 +1,14 @@
+# The build backend and everything it imports, pinned: every wheel and sdist records the backend
+# that built it, so these pins are part of what makes a release rebuildable to its published hashes.
+# The Makefile passes this file as uv's build constraints (UV_BUILD_CONSTRAINT) and to `make version`.
+# Dependabot proposes updates; a bump changes the bytes of every artifact built after it.
+hatch-vcs==0.5.0
+hatchling==1.33.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.7.0
+setuptools==84.2.1
+setuptools-scm==10.3.4
+tomlkit==0.15.2
+trove-classifiers==2026.9.21.13
+vcs-versioning==2.6.0
