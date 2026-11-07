@@ -90,8 +90,10 @@ The first line shows the string `"1"` coerced to the integer `1`; both print as 
 
 ### `ConformanceError`
 
-Raised by `build` only, and the only exception the library raises for an event. `error.report` is the
-full `Report`; `str(error)` names the errors.
+`build` raises it when the event has errors. `error.report` is the full `Report`, and `error.fatal`
+holds the findings that stopped the build: the errors, and for an exact model class also any attribute
+outside its profile set. `str(error)` names the first five of them. The exception, like a `Report`
+and a `ResolvedSchema`, can be pickled, so it crosses process boundaries.
 
 ```pycon
 >>> from ocsf_toolkit import ConformanceError
@@ -139,6 +141,11 @@ One deviation, located by an indexed path such as `("resources", 0, "uid")`: `ki
 ['class', 'extensions', 'findings', 'ok', 'profiles', 'version']
 
 ```
+
+### `RepairAction`
+
+What `repair` changed at a finding's path: `action` (`fill`, `coerce`, `overwrite`, `relocate` or
+`migrate`), `before` and `after`. A finding with a `repair` has severity `info`.
 
 ### `Kind`
 

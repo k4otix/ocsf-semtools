@@ -121,6 +121,11 @@ records exactly where it came from:
 `load_ir(source)` reads IR JSON from a path or bytes, such as one written by
 `ocsf-toolkit ir export` or bundled in a generated model package.
 
+### `export_ir`
+
+`export_ir(ir)` returns the canonical IR JSON bytes: sorted keys, compact separators, UTF-8, so equal
+IRs give identical bytes on every platform. `load_ir(export_ir(ir)) == ir`.
+
 ### `resolve`
 
 `resolve(ir, *, profiles=(), extensions=())` resolves any IR, including one compiled with your own

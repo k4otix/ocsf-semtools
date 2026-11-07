@@ -54,7 +54,7 @@ class Report:
 
     def by_kind(self, kind: Kind) -> tuple[Finding, ...]:
         """Return the findings of one kind."""
-        return tuple(f for f in self.findings if f.kind is kind)
+        return tuple(f for f in self.findings if f.kind == kind)
 
     def ok(self) -> bool:
         """Tell whether the event has no errors."""
@@ -73,18 +73,23 @@ class Report:
 
 
 class ConformanceError(Exception):
-    """Raised by build() only, carrying the whole report rather than the first problem.
+    """Raised by build() when the event can't be built; ``report`` holds every finding.
 
-    ``fatal`` names the findings that made the event unbuildable; it defaults to the errors.
+    ``fatal`` holds the findings that stopped it: the errors, and for an exact model class also
+    any attribute or declared profile outside its profile set.
     """
 
     def __init__(self, report: Report, fatal: tuple[Finding, ...] | None = None) -> None:
-        """Hold the report; the message names the first five fatal findings."""
-        errors = report.errors() if fatal is None else fatal
-        shown = "; ".join(f.message for f in errors[:5])
-        more = f"; and {len(errors) - 5} more" if len(errors) > 5 else ""
-        super().__init__(f"{len(errors)} conformance error(s) in {report.class_key}: {shown}{more}")
+        """Hold the report and the fatal findings; the message names the first five of those."""
         self.report = report
+        self.fatal = report.errors() if fatal is None else fatal
+        listed = "; ".join(f.message for f in self.fatal[:5])
+        more = f"; and {len(self.fatal) - 5} more" if len(self.fatal) > 5 else ""
+        super().__init__(f"{len(self.fatal)} conformance error(s) in {report.class_key}: {listed}{more}")
+
+    def __reduce__(self) -> tuple[type["ConformanceError"], tuple[Report, tuple[Finding, ...]]]:
+        """Pickle by the report and fatal findings, as the exception is built from them."""
+        return ConformanceError, (self.report, self.fatal)
 
 
 def run(

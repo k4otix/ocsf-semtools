@@ -4,6 +4,7 @@ import copy
 import dataclasses
 import inspect
 import json
+import pickle
 import warnings
 from datetime import UTC, datetime
 from typing import Any
@@ -22,7 +23,7 @@ from ocsf_toolkit.engine import (
     select,
 )
 from ocsf_toolkit.models import build, parse, repair
-from ocsf_toolkit.schema import ResolvedSchema, load
+from ocsf_toolkit.schema import ResolvedSchema, load, resolve
 from ocsf_toolkit.walk import (
     _SEVERITY,  # pyright: ignore[reportPrivateUsage]
     Finding,
@@ -456,3 +457,33 @@ def test_schema_excludes_version_profiles_and_as(extra: dict[str, Any]) -> None:
 def test_schema_must_be_a_resolved_schema() -> None:
     with pytest.raises(TypeError, match="takes a ResolvedSchema"):
         repair(_prefetch(), schema="1.9.0")  # type: ignore[arg-type]
+
+
+# --- pickling: schemas, reports and the exception cross process boundaries ----------------------
+
+
+def test_a_shipped_schema_pickles_by_reference(schema: ResolvedSchema) -> None:
+    cloud = load("1.9.0", profiles=["cloud"], extensions=["win"])
+    assert pickle.loads(pickle.dumps(cloud)) is cloud  # load()'s cache hands back the same schema
+    assert len(pickle.dumps(schema)) < 1000
+
+
+def test_a_custom_schema_pickles_by_its_ir(schema: ResolvedSchema) -> None:
+    custom = resolve(dataclasses.replace(schema.ir, version="1.9.0-acme"))
+    again = pickle.loads(pickle.dumps(custom))
+    assert (again, again.ir) == (custom, custom.ir)
+
+
+def test_reports_and_conformance_errors_pickle(schema: ResolvedSchema) -> None:
+    _, report = parse(multi_error_fixture(schema), version="1.9.0")
+    assert pickle.loads(pickle.dumps(report)) == report
+    with pytest.raises(ConformanceError) as caught:
+        build((schema, CLASS))
+    again = pickle.loads(pickle.dumps(caught.value))
+    assert (str(again), again.report, again.fatal) == (str(caught.value), caught.value.report, caught.value.fatal)
+
+
+def test_by_kind_takes_the_kind_or_its_name(schema: ResolvedSchema) -> None:
+    _, report = parse(multi_error_fixture(schema), version="1.9.0")
+    assert report.by_kind(Kind.SIBLING_CONFLICT) == report.by_kind("sibling_conflict")  # type: ignore[arg-type]
+    assert report.by_kind(Kind.SIBLING_CONFLICT)

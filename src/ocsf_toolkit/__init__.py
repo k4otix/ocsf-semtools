@@ -7,9 +7,11 @@ from ocsf_toolkit.engine import (
     ConformanceError,
     Finding,
     Kind,
+    RepairAction,
     Report,
     extract,
 )
+from ocsf_toolkit.export import export_ir
 from ocsf_toolkit.ir import SchemaIR
 from ocsf_toolkit.models import build, parse, repair
 from ocsf_toolkit.observables import Observable, merge
@@ -27,6 +29,7 @@ __all__ = [
     "Finding",
     "Kind",
     "Observable",
+    "RepairAction",
     "Report",
     "ResolvedAttribute",
     "ResolvedItem",
@@ -36,6 +39,7 @@ __all__ = [
     "__version__",
     "build",
     "diff",
+    "export_ir",
     "extract",
     "generate",
     "load",

@@ -9,7 +9,7 @@ from importlib import resources
 from types import MappingProxyType
 from typing import final
 
-from ocsf_toolkit.export import digest
+from ocsf_toolkit.export import digest, export_ir
 from ocsf_toolkit.export import load_ir as load_ir  # re-exported: schema.load_ir is public
 from ocsf_toolkit.ir import (
     Attribute,
@@ -135,6 +135,12 @@ class ResolvedSchema:
     def _label(self) -> str:
         return f"OCSF {self.version} with extensions {sorted(self.extensions)}"
 
+    def __reduce__(self) -> tuple[object, tuple[object, ...]]:
+        """Pickle a shipped schema by its version and set, any other by its IR bytes and set."""
+        if self.version in shipped_versions() and _shipped(self.version)[1] == self.digest:
+            return _load, (self.version, self.profiles, self.extensions)
+        return _from_ir, (export_ir(self.ir), self.profiles, self.extensions)
+
 
 def shipped_versions() -> tuple[str, ...]:
     """Return the OCSF versions whose IR ships in this package, oldest first."""
@@ -155,6 +161,10 @@ def load(version: str, *, profiles: Iterable[str] = (), extensions: Iterable[str
 def resolve(ir: SchemaIR, *, profiles: Iterable[str] = (), extensions: Iterable[str] = ()) -> ResolvedSchema:
     """Resolve any IR, such as one built with a custom extension; errors are as for ``load``."""
     return _resolve(ir, digest(ir), _names(profiles, "profiles"), _names(extensions, "extensions"))
+
+
+def _from_ir(data: bytes, profiles: frozenset[str], extensions: frozenset[str]) -> ResolvedSchema:
+    return resolve(load_ir(data), profiles=profiles, extensions=extensions)
 
 
 def _names(names: Iterable[str], what: str) -> frozenset[str]:
