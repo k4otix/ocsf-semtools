@@ -32,12 +32,13 @@ make ir VERSION=...  # rewrite data/ir-<version>.json; RECORD=1 accepts a new IR
 make lock VERSION=...  # pin a new OCSF version (see below)
 make generate OCSF=x.y.z  # one model package, in build/dists/
 make dists           # every model-window package, then the regeneration check
-make wheels          # core and model sdists and wheels in build/wheels/, each wheel checked
+make wheels          # core and model sdists and wheels in build/wheels/ (a new directory), each wheel checked
 make test-generated  # pyright, the snapshot, laziness and a clean install over the built packages
 make compat          # the model packages on PyPI run on this core (LOCAL=1: the ones just built)
 make bench           # engine throughput, on this machine; not part of CI
 make version         # the version hatch-vcs derives, with the pinned build backend
 make clean           # remove build/ and the tool caches
+make help            # every target, with what it does
 ```
 
 ## Rules that bind code
@@ -70,18 +71,53 @@ Conventions:
 - Plain commit messages; no conventional-commits prefixes.
 - A change users would notice gets a line in `CHANGELOG.md` under Unreleased, in the same PR.
 - Changing `ocsf.lock`, the loader or the shipped IRs runs the schema workflow too.
-- A compiler bump (`[toolchain]` in `ocsf.lock`) is expected to change every `compiled_sha256`; run
-  `make schema` and update them in the same PR.
+- A compiler bump records its new hashes in the same PR, as [Bumping the compiler](#bumping-the-compiler)
+  describes.
 
 ## Adding an OCSF version
 
+A new OCSF release ships as a minor release of the library, with a model package for it.
+
+1. Pin it, ship its IR and move the model window:
+
+   ```shell
+   make lock VERSION=x.y.z      # REF=<branch or tag> if the tag isn't x.y.z or vx.y.z
+   ```
+
+   This resolves the upstream tag (`x.y.z`, then `vx.y.z`), pins its commit, compiles it, records
+   `compiled_sha256`, exports the IR with its `ir_sha256`, and records `models_tree_sha256` for the
+   newest three versions. The compile fails if the compiled schema's `version` isn't `x.y.z`: tag
+   `1.5.0` upstream is one such case, so pin the branch with `REF=v1.5.0`. If a step fails, fix the
+   cause and run `make lock` again; a version already pinned at the same commit is kept.
+2. Add the new package, `ocsf_toolkit_vX_Y_Z`, to `forbidden_modules` in `.importlinter`; a test
+   fails until you do.
+3. Update the install line in `README.md` and the package table in `docs/models.md`.
+4. Set up publishing for the new package, once:
+   - on PyPI, a pending trusted publisher for project `ocsf-toolkit-vX-Y-Z`, repository
+     `k4otix/ocsf-toolkit`, workflow `release.yaml`, environment `pypi-vX-Y-Z`;
+   - on GitHub, the environment `pypi-vX-Y-Z`, limited to `v*` tags like the others.
+
+   PyPI allows three pending publishers per account. While none is free, add `X.Y.Z` to the
+   repository variable `RELEASE_HOLD_DISTS`: the release builds and checks that package without
+   publishing it, and the next release after you clear the variable publishes it.
+5. The package that leaves the window gets no further releases and stays on the core minor it last
+   required; [Typed models](docs/models.md) tells its users their options. Note it in the
+   changelog.
+
+## Bumping the compiler
+
+The compiler version in `[toolchain]` in `ocsf.lock` is part of every IR's provenance, so a bump
+changes every hash:
+
 ```shell
-make lock VERSION=x.y.z      # ocsf-toolkit lock --add x.y.z
+uv run ocsf-toolkit compile --record    # every compiled_sha256
+make ir RECORD=1                         # every ir_sha256 and data/ir-*.json
+uv run ocsf-toolkit models record        # every models_tree_sha256
 ```
 
-This resolves the upstream tag (`x.y.z`, then `vx.y.z`), pins its commit, compiles it, and records
-`compiled_sha256`. The compile fails if the compiled schema's `version` does not equal `x.y.z`. Tag
-`1.5.0` upstream is one such case; pass `--ref` to pin a branch instead.
+Review the IR diffs (`ocsf-toolkit diff OLD.json NEW.json`), since a compiler change can change the
+schema itself. The next release republishes every model package in the window, as their trees
+changed.
 
 ## Releasing
 
