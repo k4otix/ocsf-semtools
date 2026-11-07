@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from ocsf_toolkit.cli import _upstream
-from ocsf_toolkit.cli._common import AddParser, Options
+from ocsf_toolkit.cli._common import AddParser, Options, atomic_write
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
 WINDOW = 3  # model dists ship for the newest WINDOW versions
@@ -115,8 +115,8 @@ def read(path: Path) -> Lockfile:
 
 
 def write(path: Path, lock: Lockfile) -> None:
-    """Write a lockfile in its canonical layout."""
-    path.write_text(dumps(lock), encoding="utf-8")
+    """Write a lockfile in its canonical layout, all at once: an interrupted write leaves the old one."""
+    atomic_write(path, dumps(lock).encode("utf-8"))
 
 
 def find(lock: Lockfile, version: str) -> SchemaEntry:
@@ -185,12 +185,14 @@ def add(
     build_dir: Path,
     compiler_cmd: str | None,
 ) -> Lockfile:
-    """Resolve, pin and compile a new OCSF version; return the lockfile with its entry added."""
+    """Resolve, pin and compile a new OCSF version; return the lockfile with its entry added.
+
+    A version already pinned to the commit its ref resolves to is left as it is, so a ``make lock``
+    that stopped partway can be run again; pinned to another commit, it is an error.
+    """
     if not _VERSION.fullmatch(version):
         raise ValueError(f"OCSF version must look like x.y.z, got {version!r}")
     _check_repo(repo, "--repo")
-    if any(entry.version == version for entry in lock.schemas):
-        raise ValueError(f"OCSF {version} is already in the lockfile")
     listing = subprocess.run(
         ["git", "ls-remote", "--tags", "--heads", repo],
         check=True,
@@ -198,6 +200,11 @@ def add(
         text=True,
     ).stdout
     ref_name, commit = resolve_ref(version, parse_ls_remote(listing), ref)
+    pinned = next((e for e in lock.schemas if e.version == version), None)
+    if pinned is not None:
+        if (pinned.repo, pinned.commit) == (repo, commit):
+            return lock
+        raise ValueError(f"OCSF {version} is already pinned to {pinned.commit}; {ref_name} is {commit}")
     _, digest = _upstream.compile_commit(
         repo=repo,
         commit=commit,
@@ -255,16 +262,20 @@ def register(add_parser: AddParser, shared: Options) -> None:
 def run(args: argparse.Namespace) -> int:
     """Pin a new OCSF version in the lockfile and move the model window."""
     path = Path(args.lock)
+    lockfile = read(path)
     updated = add(
-        read(path),
+        lockfile,
         args.add,
         repo=args.repo,
         ref=args.ref,
         build_dir=Path(args.build_dir),
         compiler_cmd=args.compiler_cmd,
     )
-    write(path, updated)
     entry = find(updated, args.add)
+    if updated == lockfile:
+        print(f"{entry.version}: already pinned to {entry.commit}; nothing to change")
+        return 0
+    write(path, updated)
     print(f"{entry.version}: pinned ref {entry.ref} commit {entry.commit}")
     print(f"{entry.version}: compiled_sha256 {entry.compiled_sha256} -> {path}")
     print(f"model window: {', '.join(window(updated))}")

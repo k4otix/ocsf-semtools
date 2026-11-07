@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import _upstream, build_parser, compile, main
+from ocsf_toolkit.cli import _upstream, build_parser, compile, lock, main
 from ocsf_toolkit.cli._upstream import Compiler
 from tests.unit.cli.support import Upstream, entry, git, write_lockfile
 
@@ -204,3 +204,15 @@ def test_parser_options() -> None:
     )
     assert args.versions == ["1.9.0", "1.8.0"]
     assert (args.lock, args.build_dir, args.compiler_cmd) == ("x.lock", "out", "py -m c")
+
+
+def test_compile_record_writes_the_new_hash(
+    tmp_path: Path, upstream: Upstream, compiler_cmd: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """After a compiler bump every hash changes; --record writes them, and a plain compile then passes."""
+    path = _lockfile(tmp_path, upstream, "0" * 64)
+    argv = ["compile", "--lock", str(path), "--build-dir", str(tmp_path / "build"), "--compiler-cmd", compiler_cmd]
+    assert main([*argv, "--record"]) == 0
+    assert lock.find(lock.read(path), "1.9.0").compiled_sha256 == FAKE_SHA
+    assert f"1.9.0: recorded compiled_sha256 {FAKE_SHA}" in capsys.readouterr().out
+    assert main(argv) == 0

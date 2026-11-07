@@ -233,7 +233,6 @@ def test_add_with_explicit_branch(tmp_path: Path, upstream: Upstream, compiler_c
 @pytest.mark.parametrize(
     ("version", "repo", "message"),
     [
-        ("1.9.0", lock.UPSTREAM_REPO, "already in"),
         ("1.9", lock.UPSTREAM_REPO, "x.y.z"),
         ("1.8.0", "--upload-pack=evil", "https:// or file://"),
     ],
@@ -261,3 +260,18 @@ def test_lock_add_through_the_command(
     out = capsys.readouterr().out
     assert f"1.2.0: pinned ref v1.2.0 commit {upstream.commits['v1.2.0']}" in out
     assert "model window: 1.2.0, 1.9.0" in out
+
+
+def test_adding_a_version_pinned_at_the_same_commit_changes_nothing(
+    tmp_path: Path, upstream: Upstream, compiler_cmd: str
+) -> None:
+    once = _add(tmp_path, upstream, compiler_cmd, "1.2.0")
+    again = lock.add(
+        once, "1.2.0", repo=upstream.url, ref=None, build_dir=tmp_path / "build", compiler_cmd=compiler_cmd
+    )
+    assert again is once  # a make lock that stopped partway runs again from the top
+
+
+def test_adding_a_version_pinned_elsewhere_is_an_error(tmp_path: Path, upstream: Upstream, compiler_cmd: str) -> None:
+    with pytest.raises(ValueError, match=r"1\.9\.0 is already pinned to"):
+        _add(tmp_path, upstream, compiler_cmd, "1.9.0")  # LOCK pins the real upstream's commit

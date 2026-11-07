@@ -6,8 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli._common import AddParser, Options
-from ocsf_toolkit.cli._upstream import atomic_write
+from ocsf_toolkit.cli._common import AddParser, Options, atomic_write
 from ocsf_toolkit.export import IR_VERSION, export_ir
 from ocsf_toolkit.ir import Provenance
 from ocsf_toolkit.loader import load_compiled

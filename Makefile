@@ -35,10 +35,11 @@ schema:
 ir:
 	$(UV) run ocsf-toolkit ir export $(VERSION) $(if $(RECORD),--record)
 
-# pin a new OCSF version, ship its IR, move the model window and record the window's trees
+# pin a new OCSF version (REF= for a branch or tag of another name), ship its IR, move the model
+# window and record its trees; safe to run again after a step fails
 lock:
 	@test -n "$(VERSION)" || { echo "usage: make lock VERSION=x.y.z"; exit 2; }
-	$(UV) run ocsf-toolkit lock --add $(VERSION)
+	$(UV) run ocsf-toolkit lock --add $(VERSION) $(if $(REF),--ref $(REF))
 	$(UV) run ocsf-toolkit ir export $(VERSION) --record
 	$(UV) run ocsf-toolkit models record
 

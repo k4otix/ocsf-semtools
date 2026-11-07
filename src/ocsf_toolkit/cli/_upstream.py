@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast, final
 
+from ocsf_toolkit.cli._common import atomic_write
+
 COMPILE_PYTHON = "3.14"  # what ocsf-schema-compiler runs under, when no lockfile pins it
 
 
@@ -134,14 +136,6 @@ def compiled_output(
     print(f"{version}: {shlex.join(argv)}", file=sys.stderr)
     output = subprocess.run(argv, check=True, stdout=subprocess.PIPE).stdout
     return verify(output, version=version, sha256=sha256)
-
-
-def atomic_write(path: Path, data: bytes) -> None:
-    """Write data to path through a sibling ``.partial`` file, so a reader never sees half of it."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    partial = path.with_name(path.name + ".partial")
-    partial.write_bytes(data)
-    partial.replace(path)
 
 
 def _git(*args: str, cwd: Path) -> str:

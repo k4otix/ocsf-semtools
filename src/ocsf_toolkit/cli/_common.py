@@ -51,3 +51,11 @@ def source_ir(source: str) -> SchemaIR:
     if source.endswith(".json") or path.is_file():
         return load_ir(path)
     return load(source).ir
+
+
+def atomic_write(path: Path, data: bytes) -> None:
+    """Write data to path through a sibling ``.partial`` file, so a reader never sees half of it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    partial = path.with_name(path.name + ".partial")
+    partial.write_bytes(data)
+    partial.replace(path)

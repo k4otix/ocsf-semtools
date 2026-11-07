@@ -22,12 +22,18 @@ def register(add_parser: AddParser, shared: Options) -> None:
         metavar="VERSION",
         help="OCSF versions to compile (default: every lockfile entry)",
     )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="write each compiled sha256 to the lockfile instead of checking it, after a compiler bump",
+    )
     parser.set_defaults(run=run)
 
 
 def run(args: argparse.Namespace) -> int:
-    """Compile each requested lockfile schema and check its hash and version."""
-    lockfile = lock.read(Path(args.lock))
+    """Compile each requested lockfile schema and check its hash and version, or record the hash."""
+    path = Path(args.lock)
+    lockfile = lock.read(path)
     versions: list[str] = args.versions or [entry.version for entry in lockfile.schemas]
     for version in versions:
         entry = lock.find(lockfile, version)
@@ -35,10 +41,14 @@ def run(args: argparse.Namespace) -> int:
             repo=entry.repo,
             commit=entry.commit,
             version=entry.version,
-            sha256=entry.compiled_sha256,
+            sha256=None if args.record else entry.compiled_sha256,  # the version is checked either way
             compiler=lock.compiler(lockfile, args.compiler_cmd),
             build_dir=Path(args.build_dir),
         )
+        if args.record and digest != entry.compiled_sha256:
+            lockfile = lock.with_entry(lockfile, entry, compiled_sha256=digest)
+            lock.write(path, lockfile)
+            print(f"{entry.version}: recorded compiled_sha256 {digest} -> {path}")
         print(
             f"{entry.version}: ok  ref {entry.ref}  commit {entry.commit}\n"
             f"{entry.version}: compiled version matches the declared one\n"
