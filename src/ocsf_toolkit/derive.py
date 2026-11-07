@@ -64,24 +64,30 @@ class _Site:
         ra = self.owner.attributes[attr]
         current = self.node.get(attr)
         path = (*self.path, attr)
+        # a finding keeps its own copy of a list it reports, so changing the event never changes the report
+        held = _detached(derived)
         if current is None:
             if self.fill:
                 self.node[attr] = derived
-                filled = RepairAction(action="fill", before=None, after=derived)
+                filled = RepairAction(action="fill", before=None, after=held)
                 self.findings.append(
-                    attribute_finding(ra, Kind.FILLED, path, f"{dotted(path)} derived", expected=derived, repair=filled)
+                    attribute_finding(ra, Kind.FILLED, path, f"{dotted(path)} derived", expected=held, repair=filled)
                 )
             return
         if (equal or _same)(current, derived):
             return
+        was = _detached(current)
         repair: RepairAction | None = None
         if self.overwrite and not keep:
             self.node[attr] = derived
-            repair = RepairAction(action="overwrite", before=current, after=derived)
+            repair = RepairAction(action="overwrite", before=was, after=held)
         message = f"{dotted(path)} is {shown(current)}; the schema derives {shown(derived)}"
-        self.findings.append(
-            attribute_finding(ra, conflict, path, message, expected=derived, actual=current, repair=repair)
-        )
+        self.findings.append(attribute_finding(ra, conflict, path, message, expected=held, actual=was, repair=repair))
+
+
+def _detached(value: object) -> object:
+    """Return a list's own copy (derived lists hold only scalars); any other value as it is."""
+    return list(cast(list[object], value)) if isinstance(value, list) else value
 
 
 def _identity(site: _Site, schema: ResolvedSchema) -> None:
@@ -107,8 +113,10 @@ def _identity(site: _Site, schema: ResolvedSchema) -> None:
         if "profiles" in meta_item.attributes:
             _profiles(meta, schema.profiles)
         site.findings.extend(meta.findings)
+    # only an activity the class defines names a type: -1 would make 400099, a real "Other" uid
     activity_id = site.node.get("activity_id")
-    if is_int(activity_id) and "type_uid" in attrs:
+    activities = attrs["activity_id"].enum if "activity_id" in attrs else None
+    if is_int(activity_id) and activities is not None and activity_id in activities and "type_uid" in attrs:
         site.put("type_uid", ident.class_uid * 100 + activity_id, Kind.IDENTITY_CONFLICT)
 
 

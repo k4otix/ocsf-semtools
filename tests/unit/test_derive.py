@@ -2,7 +2,7 @@
 
 import copy
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -271,3 +271,19 @@ def test_naive_datetime_and_lenient_datetime_are_mismatches(policy: Policy) -> N
     if policy is LENIENT:
         aware = datetime(2025, 11, 1, tzinfo=UTC)
         assert _at(_run(_minimal(time=aware), policy)[1], ("time",)) == [Kind.TYPE_MISMATCH]
+
+
+@pytest.mark.parametrize("activity_id", [-1, 7, 10**30])
+def test_no_type_uid_from_an_activity_the_class_lacks(activity_id: int) -> None:
+    out, report = _run(_minimal(activity_id=activity_id), REPAIR)
+    assert "type_uid" not in out
+    assert ("activity_id",) in {f.path for f in report.errors()}
+
+
+def test_a_finding_keeps_its_own_copy_of_a_derived_list() -> None:
+    out, report = _run(_malware(classification_ids=[1, 2]), REPAIR)
+    [filled] = [f for f in report.by_kind(Kind.FILLED) if f.path[-1] == "classifications"]
+    out["malware"][0]["classifications"].append("changed")
+    assert filled.repair is not None
+    assert "changed" not in cast(list[str], filled.repair.after)
+    assert "changed" not in cast(list[str], filled.expected)
