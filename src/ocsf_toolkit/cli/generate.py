@@ -9,6 +9,7 @@ from ocsf_toolkit.cli.trees import files_sha256, read_tree
 from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.ir import Provenance, SchemaIR
 from ocsf_toolkit.loader import load_compiled
+from ocsf_toolkit.schema import load
 
 
 def register(add_parser: AddParser, shared: Options) -> None:
@@ -40,8 +41,9 @@ def register(add_parser: AddParser, shared: Options) -> None:
         action="append",
         default=[],
         metavar="PATH",
-        help="a directory of custom extensions to compile SOURCE with (repeatable; compiled through uvx "
-        "under the lockfile's python-compile)",
+        help="a directory of custom extensions to compile SOURCE with (repeatable). SOURCE's upstream commit "
+        "comes from --lock, or, with no lockfile there, from the shipped IR's provenance; compiling needs git "
+        "and uv, or --compiler-cmd",
     )
     parser.set_defaults(run=run)
 
@@ -70,28 +72,47 @@ def _names(value: str | None) -> list[str] | None:
 
 
 def _extended(args: argparse.Namespace) -> SchemaIR:
-    """Compile a lockfile version with custom extension directories into an IR."""
-    lockfile = lock.read(Path(args.lock))
-    entry = lock.find(lockfile, args.source)
+    """Compile an OCSF version with custom extension directories into an IR."""
+    repo, ref, commit, compiler = _pin(args)
     paths = [Path(p) for p in args.ext]
     for path in paths:
         if not path.is_dir():
             raise ValueError(f"--ext {path}: not a directory")
     data, digest = _upstream.compiled_output(
-        repo=entry.repo,
-        commit=entry.commit,
-        version=entry.version,
+        repo=repo,
+        commit=commit,
+        version=args.source,
         sha256=None,  # extensions change the output; the declared version is still checked
-        compiler=lock.compiler(lockfile, args.compiler_cmd),
+        compiler=compiler,
         build_dir=Path(args.build_dir),
         extensions=paths,
     )
     provenance = Provenance(
-        schema_repo=entry.repo,
-        ref=entry.ref,
-        commit=entry.commit,
-        compiler_version=lockfile.toolchain.ocsf_schema_compiler,
+        schema_repo=repo,
+        ref=ref,
+        commit=commit,
+        compiler_version=compiler.version,
         compiler_output_sha256=digest,
-        extensions=tuple((p.resolve().name, "local", files_sha256(read_tree(p))) for p in paths),
+        extensions=tuple((p.resolve().name, "local", files_sha256(_extension_files(p))) for p in paths),
     )
     return load_compiled(data, provenance)
+
+
+def _pin(args: argparse.Namespace) -> tuple[str, str, str, _upstream.Compiler]:
+    """Return SOURCE's repo, ref, commit and compiler: from the lockfile, or the shipped IR's provenance.
+
+    A user installs the library without ``ocsf.lock``; the IR it ships records the same pin.
+    """
+    path = Path(args.lock)
+    if path.is_file():
+        lockfile = lock.read(path)
+        entry = lock.find(lockfile, args.source)
+        return entry.repo, entry.ref, entry.commit, lock.compiler(lockfile, args.compiler_cmd)
+    shipped = load(args.source).ir.provenance  # an unshipped version is a ValueError here
+    compiler = _upstream.Compiler(shipped.compiler_version, _upstream.COMPILE_PYTHON, args.compiler_cmd)
+    return shipped.schema_repo, shipped.ref, shipped.commit, compiler
+
+
+def _extension_files(root: Path) -> dict[str, bytes]:
+    """Return an extension directory's files, leaving out hidden ones such as .git and .DS_Store."""
+    return {name: data for name, data in read_tree(root).items() if not any(p.startswith(".") for p in name.split("/"))}

@@ -47,6 +47,7 @@ line here, written for users, in the commit that makes it.
 
 ### Fixed
 
+- `ocsf-toolkit generate --ext` needed `ocsf.lock` in the current directory, which only a checkout of this repository has; it takes the pin from the shipped IR when there is none. An extension's hash leaves out hidden files such as `.git`, so a git operation no longer changes it.
 - Generated code was not ruff-format stable for a required field whose line passed the width, which only long custom names reach; `generate()` now also refuses class, enum and field names over 100 characters, so every line can wrap.
 - `generate()` lost the package it was replacing when both the swap and the restore failed; it now keeps it and names where it is.
 - `build()` and `parse(as_=...)` on a superset model class raised `msgspec.ValidationError` for a

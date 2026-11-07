@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast, final
 
+COMPILE_PYTHON = "3.14"  # what ocsf-schema-compiler runs under, when no lockfile pins it
+
 
 @final
 @dataclass(frozen=True, slots=True)

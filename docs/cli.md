@@ -65,9 +65,12 @@ ocsf-toolkit generate 1.9.0 --package acme_models --out src/ --ext ../my-extensi
 
 `--profiles` emits exact classes for that profile set; without it the classes are supersets.
 `--extensions` limits which extensions are included (all by default; `""` for none). `--ext` compiles
-the pinned OCSF commit together with a directory of your own extensions, and can be repeated. It
-needs Python 3.14 through `uv`, because the official compiler does, and the generated package bundles
-the resulting IR.
+the pinned OCSF commit together with a directory of your own extensions, and can be repeated. The
+commit and compiler version come from the shipped IR's provenance, so it works wherever the library
+is installed; in a checkout of this repository, `ocsf.lock` (or `--lock`) supplies them. It needs git,
+network access to the upstream repository, and `uv` to run the official compiler on Python 3.14;
+`--compiler-cmd` replaces `uv` with your own command. The generated package bundles the resulting IR,
+whose provenance records each extension directory's hash (hidden files such as `.git` left out).
 
 ## The schema pipeline
 

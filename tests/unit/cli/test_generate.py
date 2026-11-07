@@ -4,12 +4,14 @@ import json
 import shlex
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from ocsf_toolkit.cli import build_parser, generate, main
+from ocsf_toolkit.cli import _upstream, build_parser, generate, main
 from ocsf_toolkit.cli.trees import files_sha256, read_tree
 from ocsf_toolkit.export import load_ir
+from ocsf_toolkit.schema import load
 from tests.conftest import DATA_DIR
 from tests.fixtures.compiled import compiled
 from tests.unit.cli.support import Upstream, entry, write_lockfile
@@ -101,4 +103,27 @@ def test_generate_with_custom_extensions(tmp_path: Path, upstream: Upstream) -> 
     assert ir.version == "1.9.0"
     assert ir.provenance.commit == upstream.commits["1.9.0"]
     assert ir.provenance.extensions == (("myext", "local", files_sha256(read_tree(ext))),)
+    (ext / ".DS_Store").write_bytes(b"x")  # hidden files are no part of the extension
+    (ext / ".git").mkdir()
+    (ext / ".git" / "HEAD").write_text("ref: refs/heads/main")
+    assert main(argv) == 0
+    again = load_ir((tmp_path / "gen" / "acme_models" / "ir.json").read_bytes())
+    assert again.provenance.extensions == ir.provenance.extensions
     assert not (tmp_path / "build" / "compiled").exists()  # the lockfile's output is untouched
+
+
+def test_with_no_lockfile_the_shipped_ir_names_the_commit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A user who installed the library has no ocsf.lock; the shipped IR's provenance pins the same commit."""
+    seen: dict[str, Any] = {}
+
+    def compiled_output(**kwargs: Any) -> tuple[bytes, str]:
+        seen.update(kwargs)
+        raise ValueError("stop: no network in this test")
+
+    monkeypatch.setattr(_upstream, "compiled_output", compiled_output)
+    monkeypatch.chdir(tmp_path)  # no ocsf.lock here
+    (tmp_path / "ext").mkdir()
+    assert main(["generate", "1.9.0", "--ext", "ext", "--package", "m", "--out", "gen"]) == 2
+    shipped = load("1.9.0").ir.provenance
+    assert (seen["repo"], seen["commit"], seen["version"]) == (shipped.schema_repo, shipped.commit, "1.9.0")
+    assert seen["compiler"] == _upstream.Compiler(shipped.compiler_version, "3.14", None)
