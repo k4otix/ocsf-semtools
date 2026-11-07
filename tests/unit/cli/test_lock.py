@@ -9,9 +9,9 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit.cli import build_parser, lock, trees
+from ocsf_toolkit.cli import build_parser, lock, main, trees
 from tests.conftest import ROOT
-from tests.unit.cli.support import TOOLCHAIN, Upstream, entry
+from tests.unit.cli.support import TOOLCHAIN, Upstream, entry, write_lockfile
 
 COMMIT = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 SHA = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
@@ -248,3 +248,16 @@ def test_parser() -> None:
     assert args.run is lock.run
     assert (args.add, args.ref, args.repo) == ("1.5.0", "v1.5.0", lock.UPSTREAM_REPO)
     assert (args.lock, args.build_dir, args.compiler_cmd) == ("ocsf.lock", "build", None)
+
+
+def test_lock_add_through_the_command(
+    tmp_path: Path, upstream: Upstream, compiler_cmd: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = write_lockfile(tmp_path / "ocsf.lock", ENTRY)
+    argv = ["lock", "--add", "1.2.0", "--repo", upstream.url, "--lock", str(path)]
+    assert main([*argv, "--build-dir", str(tmp_path / "build"), "--compiler-cmd", compiler_cmd]) == 0
+    written = lock.read(path)
+    assert [e.version for e in written.schemas] == ["1.2.0", "1.9.0"]
+    out = capsys.readouterr().out
+    assert f"1.2.0: pinned ref v1.2.0 commit {upstream.commits['v1.2.0']}" in out
+    assert "model window: 1.2.0, 1.9.0" in out

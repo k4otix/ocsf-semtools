@@ -240,3 +240,9 @@ def test_max_nodes_boundary(schema: ResolvedSchema, limit: int, count: int, trip
     if tripped:
         assert trips[0].expected == limit
         assert trips[0].severity == "info"
+
+
+@pytest.mark.parametrize("entry", ["x", 1, None, ["nested"]])
+def test_a_caller_entry_that_is_not_an_object_is_a_finding(schema: ResolvedSchema, entry: object) -> None:
+    _, report = parse(base_detection_finding(schema) | {"observables": [entry]})
+    assert ("observables", 0) in {f.path for f in report.errors()}

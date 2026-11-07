@@ -280,3 +280,12 @@ def test_a_datetime_with_no_utc_instant_is_a_type_mismatch(schema: ResolvedSchem
     with pytest.raises(ConformanceError) as caught:
         build((schema, CLASS), **(fields | {"time": early}))
     assert [f.path for f in caught.value.report.errors()] == [("time",)]
+
+
+def test_a_dotted_constraint_member_through_a_non_object() -> None:
+    """patch_state needs one of device.os.sp_name, .sp_ver or .version: a string os holds none of them."""
+    event: dict[str, Any] = {"class_uid": 5004, "device": {"type_id": 1, "hostname": "h", "os": "linux"}}
+    found = {(f.kind, f.path) for f in _check(event).errors() if f.path in ((), ("device", "os"))}
+    assert found == {(Kind.CONSTRAINT_VIOLATED, ()), (Kind.TYPE_MISMATCH, ("device", "os"))}
+    event["device"]["os"] = {"name": "l", "type_id": 200, "version": "5"}
+    assert _check(event).by_kind(Kind.CONSTRAINT_VIOLATED) == ()

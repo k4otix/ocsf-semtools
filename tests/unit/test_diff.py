@@ -173,3 +173,12 @@ def test_whole_values_compare_as_values() -> None:
 def test_plain_refuses_non_ir_values() -> None:
     with pytest.raises(TypeError, match="not an IR value: object"):
         plain(object())
+
+
+def test_a_uid_two_classes_share_is_never_a_rename() -> None:
+    a, b = compiled(), compiled()
+    b["classes"]["verdict"] = b["classes"].pop("finding") | {"name": "verdict"}
+    b["classes"]["other"] = b["classes"]["verdict"] | {"name": "other"}  # the same uid, twice
+    d = diff(_ir(a), _ir(b))
+    assert {c.kind for c in d.changes if len(c.path) == 2} == {"added", "removed"}
+    assert [c for c in d.changes if c.kind == "renamed"] == []

@@ -287,3 +287,32 @@ def test_a_finding_keeps_its_own_copy_of_a_derived_list() -> None:
     assert filled.repair is not None
     assert "changed" not in cast(list[str], filled.repair.after)
     assert "changed" not in cast(list[str], filled.expected)
+
+
+# --- malformed input derive must leave alone, for conform to report ------------------------------
+
+
+@pytest.mark.parametrize("profiles", ["cloud", [1], {"cloud": True}])
+def test_malformed_metadata_profiles_are_left_for_conform(profiles: object) -> None:
+    event = _minimal(metadata={"product": {"name": "p"}, "profiles": profiles})
+    out, report = _run(event, REPAIR)
+    assert out["metadata"]["profiles"] == profiles
+    assert ("metadata", "profiles") in {f.path[:2] for f in report.errors()}
+
+
+def test_a_list_sibling_with_an_unknown_id_derives_no_labels() -> None:
+    out, report = _run(_malware(classification_ids=[1, 9999]), REPAIR)
+    assert "classifications" not in out["malware"][0]
+    assert ("malware", 0, "classification_ids", 1) in {f.path for f in report.errors()}
+
+
+def test_a_list_sibling_whose_label_is_not_a_list_is_a_type_mismatch() -> None:
+    out, report = _run(_malware(classification_ids=[1], classifications="Adware"), REPAIR)
+    assert out["malware"][0]["classifications"] == "Adware"
+    assert [f.kind for f in report.errors()] == [Kind.TYPE_MISMATCH]
+
+
+def test_activity_other_without_a_name_derives_no_type_name() -> None:
+    out, _ = _run(_minimal(activity_id=99), REPAIR)
+    assert out["type_uid"] == 200499
+    assert "type_name" not in out
