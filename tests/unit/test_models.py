@@ -1,6 +1,7 @@
 """Typed build() and parse() over generated packages: superset, exact and custom-IR models."""
 
 import importlib
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
@@ -10,6 +11,7 @@ import msgspec
 import pytest
 
 from ocsf_toolkit import ConformanceError, Kind, build, parse
+from ocsf_toolkit.codegen import generate
 from ocsf_toolkit.ir import SchemaIR
 from tests.fixtures.packages import import_generated
 
@@ -237,3 +239,25 @@ def test_a_package_without_its_ir_is_refused(tmp_path: Path, synthetic_ir: Schem
     (tmp_path / "gen_no_ir" / "ir.json").unlink()  # as if generated before IRs were bundled
     with pytest.raises(ValueError, match=r"has no ir\.json"):
         build(module.Finding, severity_id=0)
+
+
+def test_a_package_generated_inside_another_package_is_found(tmp_path: Path, synthetic_ir: SchemaIR) -> None:
+    """--out src/myapp/ and an import of myapp.acme_models: the root is the module with __ocsf_version__."""
+    app = tmp_path / "vendoring_app"
+    generate(synthetic_ir, package="acme_models", out=app)
+    (app / "__init__.py").write_text("")
+    sys.path.insert(0, str(tmp_path))
+    try:
+        models = importlib.import_module("vendoring_app.acme_models")
+    finally:
+        sys.path.remove(str(tmp_path))
+    finding: Any = build(models.Finding, severity_id=0)
+    assert finding.severity_id == 0
+
+
+def test_the_bundled_schema_is_cached_by_digest(synthetic: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A package regenerated and reloaded in one process has a new digest, so its schema is read again."""
+    build(synthetic.Finding, severity_id=0)  # cached under the real digest
+    monkeypatch.setattr(synthetic, "__schema_digest__", "0" * 64)
+    with pytest.raises(ValueError, match=r"was generated from IR 0{64}"):
+        build(synthetic.Finding, severity_id=0)

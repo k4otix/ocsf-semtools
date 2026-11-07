@@ -169,27 +169,42 @@ def _target(
 ) -> tuple[ResolvedSchema, str, bool]:
     """Return (schema, class key, exact) for a generated class; an exact class fixes its profiles."""
     _, key = cast(tuple[str, str], vars(cls)["__ocsf__"])
-    package = sys.modules[cls.__module__.partition(".")[0]]
+    package = _package(cls)
+    digest = cast(str, package.__schema_digest__)
     fixed = cast(tuple[str, ...] | None, package.__ocsf_profiles__)
     if fixed is not None:
         if profiles is not None and frozenset(profiles) != frozenset(fixed):
             raise ValueError(f"{cls.__name__} was generated for exactly the profiles {fixed}")
-        return _schema(package.__name__, frozenset(fixed)), key, True
+        return _schema(package.__name__, digest, frozenset(fixed)), key, True
     if profiles is None:
-        base = _schema(package.__name__, frozenset[str]())
+        base = _schema(package.__name__, digest, frozenset[str]())
         profiles = declared_profiles(event, base.ir, base.extensions)
-    return _schema(package.__name__, frozenset(profiles)), key, False
+    return _schema(package.__name__, digest, frozenset(profiles)), key, False
+
+
+def _package(cls: type[msgspec.Struct]) -> ModuleType:
+    """Return the root of the generated package a class is in, wherever that package is nested.
+
+    The root is the module that sets ``__ocsf_version__``: ``myapp.acme_models`` for a package
+    generated into ``src/myapp/`` and imported from there.
+    """
+    parts = cls.__module__.split(".")
+    for n in range(len(parts), 0, -1):
+        module = sys.modules.get(".".join(parts[:n]))
+        if module is not None and hasattr(module, "__ocsf_version__"):
+            return module
+    raise TypeError(f"{cls.__name__} has __ocsf__ but no generated package around it")
 
 
 @functools.lru_cache(maxsize=32)
-def _schema(package: str, profiles: frozenset[str]) -> ResolvedSchema:
+def _schema(package: str, digest: str, profiles: frozenset[str]) -> ResolvedSchema:
     """Return the schema a generated package was made from: its bundled IR, checked against its digest.
 
     The schema comes from the package's bundled IR, so a core that re-pins an OCSF version never
-    changes what an installed model package means.
+    changes what an installed model package means. The cache is keyed by the digest too, so a
+    package regenerated and reloaded in one process is read again.
     """
     module: ModuleType = sys.modules[package]
-    digest = cast(str, module.__schema_digest__)
     extensions = cast(tuple[str, ...], module.__ocsf_extensions__)
     bundled = resources.files(package).joinpath(_BUNDLED_IR)
     if not bundled.is_file():
