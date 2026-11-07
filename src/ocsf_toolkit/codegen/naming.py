@@ -10,20 +10,21 @@ from ocsf_toolkit.ir import EnumMember, EnumValue
 
 _NON_ALNUM = re.compile(r"[^0-9A-Za-z]+")
 
-# Names a generated module binds or evaluates in a class body: an attribute of the same name
-# would shadow one of them, so the generator refuses it with an error.
-RESERVED = frozenset(
-    {"Any", "IntEnum", "Literal", "StrEnum", "Struct", "bool", "dict", "field", "float", "int", "list", "str"}
-)
-
+# The names a generated module imports: a class or enum of the same name would shadow one.
+IMPORTED = frozenset({"Any", "IntEnum", "Literal", "StrEnum", "Struct"})
+# Names a class body evaluates in its annotations and defaults: a field of the same name would
+# shadow one of them, so the generator refuses it with an error.
+RESERVED = frozenset({"bool", "dict", "field", "float", "int", "list", "str"})
 
 # Every generated line wraps to the 120-character width as ruff format would, so long as no name in
 # it is longer than this; OCSF's longest is under 60.
 MAX_NAME = 100
 
 
-def fits(name: str, what: str) -> str:
-    """Return a generated name, or refuse one too long for its lines to wrap to the width."""
+def checked(name: str, what: str) -> str:
+    """Return a generated name, or refuse one that would shadow an import or is too long to wrap."""
+    if name in IMPORTED:
+        raise ValueError(f"{what} {name} would shadow the generated module's import of {name}")
     if len(name) > MAX_NAME:
         raise ValueError(f"{what} {name[:40]}... is {len(name)} characters; generated names are at most {MAX_NAME}")
     return name
@@ -31,14 +32,14 @@ def fits(name: str, what: str) -> str:
 
 def class_name(name: str) -> str:
     """Return the class name of an item key: ``detection_finding`` -> ``DetectionFinding``."""
-    return fits("".join(part.capitalize() for part in name.split("_")), "class name")
+    return checked("".join(part.capitalize() for part in name.split("_")), "class name")
 
 
 def field_name(attr: str) -> str:
     """Return the Python name of an attribute: keywords take a trailing underscore (``from_``)."""
     if not attr.isidentifier() or not attr.islower() or attr.startswith("_") or attr in RESERVED:
         raise ValueError(f"attribute name {attr!r} cannot be a generated field")
-    return fits(f"{attr}_" if keyword.iskeyword(attr) else attr, "field name")
+    return checked(f"{attr}_" if keyword.iskeyword(attr) else attr, "field name")
 
 
 def module_name(name: str) -> str:

@@ -92,3 +92,9 @@ def test_class_name() -> None:
 
 def test_module_name() -> None:
     assert module_name("process") == "process"
+
+
+@pytest.mark.parametrize("key", ["literal", "struct", "int_enum", "any"])
+def test_a_class_name_that_shadows_an_import_is_refused(key: str) -> None:
+    with pytest.raises(ValueError, match="would shadow the generated module's import"):
+        class_name(key)
