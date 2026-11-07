@@ -11,6 +11,7 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 - An event that is not a dict raises `TypeError`.
 - Conformance now enforces numbers as OCSF defines them: NaN and the infinities are a `type_mismatch` for `float_t`, and `integer_t` and `long_t` values must fit in a signed 64-bit integer. An event that passed before may now report these errors. `Report.to_dict()` always returns valid JSON, writing non-finite values as strings.
 - Enum values in `enum_out_of_range` messages and `expected` are listed in numeric order.
+- `parse` and `repair` read extensions from `metadata.extensions`, so an event of an extension class such as `win/prefetch_query` is checked against it; before, it was checked as `base_event`. Both also take `schema=`, a schema from `load()` or `resolve()`, for custom extensions.
 - Fixed: `type_uid` was derived from an `activity_id` the class doesn't define, so `activity_id=-1` produced a plausible `type_uid` such as 400099.
 - Fixed: a timezone-aware `datetime` with no UTC instant (such as year 1 at +01:00) raised `OverflowError`; an integer too long to print raised `ValueError` from a message.
 

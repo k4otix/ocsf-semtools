@@ -200,7 +200,7 @@ def _element(
 ) -> Iterator[Finding]:
     if ra.object_type is not None:
         if not isinstance(value, dict):
-            what = "a JSON object" if ra.object_type == OPEN_OBJECT else f"a {ra.object_type}"
+            what = "a JSON object" if ra.object_type == OPEN_OBJECT else _article(ra.object_type)
             yield _mismatch(visit, ra, path, value, what)
         return
     assert ra.root is not None
@@ -265,6 +265,10 @@ def _expected(value: object, ra: ResolvedAttribute) -> str:
     if ra.root is Root.FLOAT and isinstance(value, float):
         return f"a finite {ra.type}"
     return ra.type
+
+
+def _article(noun: str) -> str:
+    return f"{'an' if noun[:1] in 'aeiou' else 'a'} {noun}"
 
 
 def _enum_order(value: int | str) -> tuple[bool, int | str]:

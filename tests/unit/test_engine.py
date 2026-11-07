@@ -402,3 +402,57 @@ def test_an_event_that_is_not_a_dict_is_a_type_error(schema: ResolvedSchema, eve
     ):
         with pytest.raises(TypeError, match="an event is a dict"):
             call()
+
+
+# --- extensions: from metadata.extensions, or a schema passed in ---------------------------------
+
+
+def _prefetch(**metadata: Any) -> dict[str, Any]:
+    return {
+        "class_uid": 205019,
+        "activity_id": 1,
+        "severity_id": 1,
+        "time": T0,
+        "query_result_id": 1,
+        "name": "x.pf",
+        "metadata": {"version": "1.9.0", "product": {"name": "p", "vendor_name": "v"}, **metadata},
+    }
+
+
+def test_an_extension_class_is_found_through_metadata_extensions() -> None:
+    out, report = repair(_prefetch(extensions=[{"name": "win", "uid": "2", "version": "1.9.0"}]))
+    assert (report.class_key, report.schema.extensions) == ("win/prefetch_query", frozenset({"win"}))
+    assert report.ok(), [f.message for f in report.errors()]
+    assert out["type_uid"] == 20501901
+
+
+def test_unshipped_and_malformed_extension_entries_are_skipped_and_reported() -> None:
+    declared = [{"name": "win", "uid": "2", "version": "1.9.0"}, {"name": "nope", "uid": "9", "version": "1"}, "x"]
+    _, report = parse(_prefetch(extensions=declared))
+    assert report.schema.extensions == frozenset({"win"})
+    assert report.class_key == "win/prefetch_query"
+    assert "metadata.extensions[2] is str 'x'; expected an extension" in [f.message for f in report.errors()]
+
+
+def test_without_metadata_extensions_the_class_is_unknown() -> None:
+    _, report = parse(_prefetch())
+    assert report.class_key == "base_event"
+    assert ("class_uid",) in {f.path for f in report.errors()}
+
+
+def test_parse_and_repair_take_a_schema() -> None:
+    schema = load("1.9.0", extensions=["win"])
+    for entry in (parse, repair):
+        _, report = entry(_prefetch(), schema=schema)
+        assert (report.class_key, report.schema) == ("win/prefetch_query", schema)
+
+
+@pytest.mark.parametrize("extra", [{"version": "1.9.0"}, {"profiles": []}, {"as_": dict}])
+def test_schema_excludes_version_profiles_and_as(extra: dict[str, Any]) -> None:
+    with pytest.raises(TypeError):
+        parse(_prefetch(), schema=load("1.9.0"), **extra)
+
+
+def test_schema_must_be_a_resolved_schema() -> None:
+    with pytest.raises(TypeError, match="takes a ResolvedSchema"):
+        repair(_prefetch(), schema="1.9.0")  # type: ignore[arg-type]

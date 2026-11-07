@@ -75,6 +75,7 @@ def parse(
     version: str | None = None,
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
+    schema: ResolvedSchema | None = None,
     max_nodes: int | None = MAX_NODES,
 ) -> tuple[dict[str, Any], Report]: ...
 @overload
@@ -91,25 +92,28 @@ def parse(
     version: str | None = None,
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
+    schema: ResolvedSchema | None = None,
     as_: type[msgspec.Struct] | None = None,
     max_nodes: int | None = MAX_NODES,
 ) -> tuple[Any, Report]:
-    """Check an event; version and profiles default to its metadata.
+    """Check an event; version, profiles and extensions default to its metadata.
 
-    With ``as_``, a generated class fixes the version and class: unknown attributes are relocated
-    into ``unmapped`` and recorded, and the instance is None when the report has errors. The walk
-    stops with a max_nodes_exceeded finding after ``max_nodes`` attribute visits; None walks all.
+    ``schema`` reads it against a schema you resolved yourself, such as one with your own
+    extension, in place of ``version`` and ``profiles``. With ``as_``, a generated class fixes the
+    schema and class: unknown attributes are relocated into ``unmapped`` and recorded, and the
+    instance is None when the report has errors. The walk stops with a max_nodes_exceeded finding
+    after ``max_nodes`` attribute visits; None walks all.
     """
     import msgspec
 
     if as_ is None:
-        schema = select(event, version=version, profiles=profiles)
-        return run(event, schema, class_key, LENIENT, max_nodes=max_nodes)
-    if version is not None or class_key is not None:
-        raise TypeError("parse(as_=...) takes its version and class from the generated class")
+        chosen = _chosen(event, schema, version, profiles)
+        return run(event, chosen, class_key, LENIENT, max_nodes=max_nodes)
+    if version is not None or class_key is not None or schema is not None:
+        raise TypeError("parse(as_=...) takes its schema and class from the generated class")
     require_event(event)
-    schema, key, exact = _target(_generated(as_), profiles, event)
-    out, report = run(event, schema, key, _AS_STRUCT, max_nodes=max_nodes)
+    target, key, exact = _target(_generated(as_), profiles, event)
+    out, report = run(event, target, key, _AS_STRUCT, max_nodes=max_nodes)
     return (None if _fatal(report, exact) else msgspec.convert(out, as_)), report
 
 
@@ -119,14 +123,28 @@ def repair(
     version: str | None = None,
     profiles: Iterable[str] | None = None,
     class_key: str | None = None,
+    schema: ResolvedSchema | None = None,
     max_nodes: int | None = MAX_NODES,
 ) -> tuple[dict[str, Any], Report]:
     """Return a normalized copy of the event; every change is a finding with its repair action.
 
-    The walk stops with a max_nodes_exceeded finding after ``max_nodes`` attribute visits.
+    The schema is chosen as for ``parse``. The walk stops with a max_nodes_exceeded finding after
+    ``max_nodes`` attribute visits.
     """
-    schema = select(event, version=version, profiles=profiles)
-    return run(event, schema, class_key, REPAIR, max_nodes=max_nodes)
+    return run(event, _chosen(event, schema, version, profiles), class_key, REPAIR, max_nodes=max_nodes)
+
+
+def _chosen(
+    event: dict[str, Any], schema: ResolvedSchema | None, version: str | None, profiles: Iterable[str] | None
+) -> ResolvedSchema:
+    """Return the schema given, or the one the arguments and the event's metadata select."""
+    if schema is None:
+        return select(event, version=version, profiles=profiles)
+    if version is not None or profiles is not None:
+        raise TypeError("schema= fixes the version and profiles; pass it without version= or profiles=")
+    if not isinstance(cast(object, schema), ResolvedSchema):  # a runtime check: callers may be untyped
+        raise TypeError(f"schema= takes a ResolvedSchema, from load() or resolve(); got {type(schema).__name__}")
+    return schema
 
 
 def _generated(cls: object) -> type[msgspec.Struct]:

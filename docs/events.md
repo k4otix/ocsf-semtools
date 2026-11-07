@@ -38,11 +38,15 @@ every event it returns conforms. Given a [generated model class](models.md) in p
 
 ### `parse`
 
-`parse(event, *, version=None, profiles=None, class_key=None, as_=None)` checks an event and returns
-`(event, report)`. It leaves the event as it is and puts every problem in the report. The OCSF version, profiles
-and class default to what the event says about itself: `metadata.version`, `metadata.profiles` and
-`class_uid`. With `as_=` a generated class, it returns an instance of that class, or `None` if the
-event has errors.
+`parse(event, *, version=None, profiles=None, class_key=None, schema=None, as_=None, max_nodes=100_000)`
+checks an event and returns `(event, report)`. It leaves the event as it is, and returns that same
+dict, and puts every problem in the report. The OCSF version, profiles, extensions and class default
+to what the event says about itself: `metadata.version`, `metadata.profiles`, the names in
+`metadata.extensions`, and `class_uid` (then `type_uid`). An event that names no class this schema
+knows is checked as `base_event`. `schema=` reads the event against a schema you resolved yourself,
+such as one with your own extension, in place of `version` and `profiles`. With `as_=` a generated
+class, it returns an instance of that class, or `None` if the event has errors; the class then fixes
+the schema, so `version`, `class_key` and `schema` are a `TypeError`.
 
 ```pycon
 >>> _, report = parse(dict(event, severity="Low"))
@@ -56,7 +60,8 @@ event has errors.
 
 ### `repair`
 
-`repair(event, ...)` returns a normalized copy and a report in which every change is a finding
+`repair(event, *, version=None, profiles=None, class_key=None, schema=None, max_nodes=100_000)` reads
+the schema the way `parse` does, and returns a normalized copy and a report in which every change is a finding
 with its `repair` action (before and after). It fills derived values, coerces values whose meaning
 is unambiguous, and moves attributes the schema doesn't know into `unmapped`.
 

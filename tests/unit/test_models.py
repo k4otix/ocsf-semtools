@@ -176,7 +176,7 @@ def test_superset_parse_takes_profiles_from_metadata(v1_9_0: ModuleType) -> None
 
 
 def test_parse_as_fixes_version_and_class(v1_9_0: ModuleType) -> None:
-    with pytest.raises(TypeError, match="takes its version and class"):
+    with pytest.raises(TypeError, match="takes its schema and class"):
         parse({}, as_=v1_9_0.DetectionFinding, version="1.9.0")  # type: ignore[call-overload]
 
 

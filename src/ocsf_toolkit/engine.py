@@ -158,17 +158,28 @@ def extract(
 def select(event: Mapping[str, Any], *, version: str | None, profiles: Iterable[str] | None) -> ResolvedSchema:
     """Select the schema an event is read against: arguments first, then its metadata.
 
-    No version anywhere is a ValueError: no OCSF version is ever implied (D#6). Profile names in
-    metadata.profiles that the version doesn't define are skipped here; derivation then reports
-    metadata.profiles as a profile_mismatch.
+    No version anywhere is a ValueError: no OCSF version is ever implied. The extensions are those
+    metadata.extensions names that the version ships. Profile names in metadata.profiles that the
+    version doesn't define are skipped here; derivation then reports metadata.profiles as a
+    profile_mismatch.
     """
     require_event(event)
     version = version if version is not None else _metadata(event).get("version")
     if not isinstance(version, str):
         raise ValueError("no OCSF version: pass version= or set metadata.version")
+    ir = load(version).ir
+    extensions = declared_extensions(event, ir)
     if profiles is None:
-        profiles = declared_profiles(event, load(version).ir, frozenset())
-    return load(version, profiles=profiles)
+        profiles = declared_profiles(event, ir, extensions)
+    return load(version, profiles=profiles, extensions=extensions)
+
+
+def declared_extensions(event: Mapping[str, Any], ir: SchemaIR) -> frozenset[str]:
+    """Return the extension names in metadata.extensions (a list of objects with a name) that the IR has."""
+    declared = _metadata(event).get("extensions")
+    entries = cast(list[object], declared) if isinstance(declared, list) else []
+    names = (cast(dict[str, object], e).get("name") for e in entries if isinstance(e, dict))
+    return frozenset(n for n in names if isinstance(n, str) and n in ir.extensions)
 
 
 def declared_profiles(event: Mapping[str, Any], ir: SchemaIR, extensions: frozenset[str]) -> frozenset[str]:
