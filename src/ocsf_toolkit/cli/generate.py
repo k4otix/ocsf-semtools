@@ -1,4 +1,4 @@
-"""The ``generate`` subcommand: a typed model package from an OCSF version or IR (D#5)."""
+"""The ``generate`` subcommand: a typed model package from an OCSF version or IR."""
 
 import argparse
 from pathlib import Path

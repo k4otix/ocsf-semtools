@@ -1,4 +1,4 @@
-"""The model generator: one OCSF IR projected into a typed package of msgspec Structs (D#5).
+"""The model generator: one OCSF IR projected into a typed package of msgspec Structs.
 
 ``generate`` writes a package; ``render`` returns its files without writing them. The modules beside
 this one hold the pieces: ``layout`` (which module each item goes in), ``naming`` (Python names),

@@ -11,7 +11,7 @@ _ROOTS = {
     Root.LONG: "int",
     Root.FLOAT: "float",
     Root.BOOLEAN: "bool",
-    Root.JSON: "Any",  # json_t is any JSON value, as the engine accepts it, not only an object
+    Root.JSON: "Any",  # json_t holds any JSON value, an array or scalar as well as an object
 }
 
 

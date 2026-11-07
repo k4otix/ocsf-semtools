@@ -1,4 +1,4 @@
-"""The ``models`` subcommand: regeneration gate 3 over the lockfile's model window (D-7)."""
+"""The ``models`` subcommand: regeneration gate 3, each model-window tree against its lockfile hash."""
 
 import argparse
 from collections.abc import Callable

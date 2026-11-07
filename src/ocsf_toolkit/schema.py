@@ -27,7 +27,7 @@ from ocsf_toolkit.ir import (
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClassIdentity:
-    """The constants a class fixes on every event of that class (R4a tier 1)."""
+    """The constants a class fixes on every event of that class."""
 
     class_uid: int
     class_name: str
@@ -254,7 +254,7 @@ def _item(ir: SchemaIR, item: ItemDef, profiles: frozenset[str], extensions: fro
         else:
             inactive[name] = _attribute(ir, item.key, a, profiles)
     # A constraint member names an attribute or a dotted path into one; members whose attribute
-    # is gated out are dropped, so no rule is ever emitted for an absent attribute (acc. #12a).
+    # is gated out are dropped, so no rule is ever emitted for an absent attribute.
     # Members naming no attribute at all are upstream data and kept as declared.
     absent = item.attributes.keys() - attributes.keys()
     constraints: list[Constraint] = []

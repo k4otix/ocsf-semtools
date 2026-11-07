@@ -59,7 +59,7 @@ class Checks:
     root: dict[str, Any]  # the event, whose unmapped attribute receives relocations
     root_item: ResolvedItem  # the class the event is checked against
     coerce: bool  # "4"->4, "true"->True, integral float->int
-    datetimes: bool  # tz-aware datetime -> epoch ms on timestamp_t (D#17)
+    datetimes: bool  # tz-aware datetime -> epoch ms on timestamp_t
     relocate: bool  # unknown attributes move into the root's unmapped
     migrate: bool  # a deprecated attribute's value moves to its one superseding attribute
     plans: dict[tuple[bool, str], _Plan] = field(init=False, repr=False, compare=False)

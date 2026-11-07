@@ -118,7 +118,7 @@ python_version = "3.12"
 files = ["src", "tests", "packaging"]
 exclude = ["src/ocsf_toolkit/_version\\.py$", "^tests/golden/", "^tests/generated/samples/"]
 
-# README.md and docs/*.md run as doctests (acc. #8): every >>> example in the user docs executes.
+# README.md and docs/*.md run as doctests: every >>> example in the user docs executes.
 # docs/design and docs/prior-art are maintainer-local and never collected.
 [tool.pytest.ini_options]
 testpaths = ["tests", "README.md", "docs"]

@@ -50,7 +50,7 @@ def run(args: argparse.Namespace) -> int:
 def semver(result: SchemaDiff) -> tuple[str, int]:
     """Return the library release a changed IR of an already-shipped OCSF version calls for.
 
-    Repo plan §4.1 gray case: nothing -> patch, only additions -> minor, anything else -> major.
+    Nothing changed is patch, only additions minor, anything else major.
 
     Provenance is left out: a compiler bump rewrites it without changing what the IR says.
     """

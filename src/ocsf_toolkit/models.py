@@ -185,8 +185,8 @@ def _target(
 def _schema(package: str, profiles: frozenset[str]) -> ResolvedSchema:
     """Return the schema a generated package was made from: its bundled IR, checked against its digest.
 
-    The package's own IR, not core's copy of that version, so a core that re-pins an OCSF
-    version never changes what an installed model package means.
+    The schema comes from the package's bundled IR, so a core that re-pins an OCSF version never
+    changes what an installed model package means.
     """
     module: ModuleType = sys.modules[package]
     digest = cast(str, module.__schema_digest__)

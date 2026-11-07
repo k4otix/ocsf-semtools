@@ -22,7 +22,7 @@ type:
 test:
 	$(UV) run pytest
 
-# S1 throughput at 2-20 KB per event, on this machine; slow, so not part of `test` or CI
+# engine throughput at 2-20 KB per event, on this machine; slow, so not part of `test` or CI
 bench:
 	$(UV) run python -m tests.bench.engine
 

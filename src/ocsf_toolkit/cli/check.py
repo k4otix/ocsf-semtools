@@ -41,7 +41,7 @@ def register(add_parser: AddParser, shared: Options) -> None:
 def run(args: argparse.Namespace) -> int:
     """Check each event and print its findings; return 1 if any event has an error."""
     profiles = None if args.profiles is None else [p for p in args.profiles.split(",") if p]
-    try:  # fail once on a bad selection rather than once per event
+    try:  # a bad selection fails once, before any event is read
         schema = load(args.version, profiles=profiles or ())
     except KeyError as exc:
         raise ValueError(exc.args[0]) from None

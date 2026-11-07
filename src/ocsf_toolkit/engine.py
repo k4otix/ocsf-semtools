@@ -43,7 +43,7 @@ REPAIR = Policy(fill=True, overwrite=True, coerce=True, relocate=True)  # repair
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Report:
-    """Every finding from one run; the caller decides what is fatal (R12)."""
+    """Every finding from one run; the caller decides which of them are fatal."""
 
     schema: ResolvedSchema
     class_key: str

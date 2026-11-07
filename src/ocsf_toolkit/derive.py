@@ -164,7 +164,7 @@ def _sibling(site: _Site, schema: ResolvedSchema, id_attr: str, spec: SiblingSpe
 
 
 def _other_type_name(site: _Site, label: str) -> None:
-    # activity_id 99: type_name follows the caller's activity label, not the enum's "…: Other".
+    # activity_id 99: type_name follows the caller's activity label, such as "Detection Finding: Triage".
     activity, ident = site.node.get("activity_name"), site.owner.identity
     if isinstance(activity, str) and activity and ident is not None:
         site.put(label, f"{ident.class_name}: {activity}", Kind.SIBLING_CONFLICT)

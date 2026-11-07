@@ -13,7 +13,7 @@ from ocsf_toolkit.cli import _upstream
 from ocsf_toolkit.cli._common import AddParser, Options
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
-WINDOW = 3  # model dists ship for the newest WINDOW versions (D#25)
+WINDOW = 3  # model dists ship for the newest WINDOW versions
 
 _VERSION = re.compile(r"\d+\.\d+\.\d+")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
