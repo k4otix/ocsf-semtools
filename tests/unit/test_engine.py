@@ -507,3 +507,20 @@ def test_a_deprecated_value_moves_only_into_an_absent_successor() -> None:
     out, report = repair(email(**{"from": None, "smtp_from": 123}), version="1.9.0")
     assert out["email"] == {"from": None, "smtp_from": 123}
     assert ("email", "smtp_from") in {f.path for f in report.by_kind(Kind.TYPE_MISMATCH)}
+
+
+def test_unmapped_null_receives_relocations(schema: ResolvedSchema) -> None:
+    out, report = repair(base_detection_finding(schema) | {"unmapped": None, "vendor": 1})
+    assert out["unmapped"] == {"vendor": 1}
+    assert [f.path for f in report.by_kind(Kind.RELOCATED)] == [("vendor",)]
+
+
+@pytest.mark.parametrize("ref", [(), ("1.9.0", CLASS), (None, CLASS, 1)])
+def test_a_malformed_class_reference_is_a_type_error(ref: tuple[object, ...]) -> None:
+    with pytest.raises(TypeError, match=r"a class reference is \(ResolvedSchema, class key\)"):
+        build(ref)  # type: ignore[call-overload]
+
+
+def test_an_unknown_class_key_names_the_schema(schema: ResolvedSchema) -> None:
+    with pytest.raises(KeyError, match=r"no class 'nope' in OCSF 1\.9\.0"):
+        parse(base_detection_finding(schema), class_key="nope")

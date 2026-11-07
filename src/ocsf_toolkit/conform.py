@@ -118,7 +118,9 @@ def _unknown(visit: Visit, attr: str, checks: Checks) -> list[Finding]:
         # its value is checked all the same: a superset model class has a typed field for it
         return [mismatch] if visit.value is None else [mismatch, *_value(visit, declared, checks)]
     key = dotted(visit.path)
-    unmapped = checks.root.get(UNMAPPED, {})
+    unmapped = checks.root.get(UNMAPPED)
+    if unmapped is None:
+        unmapped = {}  # JSON null reads as absent here too
     can_move = (
         checks.relocate
         and UNMAPPED in checks.root_item.attributes

@@ -221,7 +221,11 @@ def _root_class(
     """
     fallback = schema.classes[FALLBACK_CLASS]
     if class_key is not None:
-        return schema.classes[class_key], True, []
+        try:
+            return schema.classes[class_key], True, []
+        except KeyError:
+            extensions = f" with extensions {sorted(schema.extensions)}" if schema.extensions else ""
+            raise KeyError(f"no class {class_key!r} in OCSF {schema.version}{extensions}") from None
 
     def by_type_uid(type_uid: int) -> ResolvedItem:
         return schema.class_by_type_uid(type_uid)[0]

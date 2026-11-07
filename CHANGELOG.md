@@ -16,6 +16,7 @@ version ships as a minor release. One line per merged PR, taken from the PR titl
 - Fixed: `Report.by_kind("filled")` returned nothing; it now matches a `Kind` or its name.
 - Fixed: observables were read before coercion, so `repair` reported a caller entry for a coerced value as unfounded; a deprecated value moved into a successor present as null was never checked.
 - `load_ir` reads a `str` path as a path, and refuses NaN, infinity, an enum on a non-scalar type and a table of the wrong kind; `resolve` refuses an IR with no `base_event`, an item in the wrong table, an attribute naming a missing object, or non-integer `type_uid` keys. Each is a `ValueError` with the key path, where some crashed later before.
+- Fixed: `repair` reported unknown attributes instead of relocating them when the event had `unmapped: null`. A malformed `(schema, class key)` reference is a `TypeError`, and an unknown `class_key` names the schema. A diff no longer lists a renamed class's `key` as a separate change, and sorts integer keys numerically.
 - Fixed: `type_uid` was derived from an `activity_id` the class doesn't define, so `activity_id=-1` produced a plausible `type_uid` such as 400099.
 - Fixed: a timezone-aware `datetime` with no UTC instant (such as year 1 at +01:00) raised `OverflowError`; an integer too long to print raised `ValueError` from a message.
 

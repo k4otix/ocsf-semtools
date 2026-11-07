@@ -52,7 +52,7 @@ def test_info_to_query_renames_are_uid_matched_acc_7(d_1_1_to_1_3: SchemaDiff) -
 
 def test_a_renamed_class_is_diffed_under_its_new_key(d_1_1_to_1_3: SchemaDiff) -> None:
     key = "win/registry_key_query"
-    assert _at(d_1_1_to_1_3, "classes", key, "key")[0].before == "win/registry_key_info"
+    assert _at(d_1_1_to_1_3, "classes", key, "key") == []  # the rename itself says the key changed
     caption = _at(d_1_1_to_1_3, "classes", key, "attributes", "activity_id", "enum", 1, "caption")
     assert [(c.before, c.after) for c in caption] == [("Exists", "Query")]
 
@@ -113,8 +113,8 @@ def test_an_ir_equals_itself() -> None:
 def test_diff_is_deterministic_and_json(d_1_7_to_1_9: SchemaDiff) -> None:
     again = diff(load("1.7.0").ir, load("1.9.0").ir)
     assert again == d_1_7_to_1_9
-    keys = [tuple(str(p) for p in c.path) for c in d_1_7_to_1_9.changes]
-    assert keys == sorted(keys)
+    keys = [tuple((isinstance(p, str), p) for p in c.path) for c in d_1_7_to_1_9.changes]
+    assert keys == sorted(keys)  # integer keys (enum values) in numeric order
     data = d_1_7_to_1_9.to_dict()
     assert json.loads(json.dumps(data)) == data
     assert (data["old"], data["new"], len(data["changes"])) == ("1.7.0", "1.9.0", 1115)
@@ -142,7 +142,6 @@ def test_rename_with_content_change() -> None:
     assert [(c.kind, c.path) for c in d.changes] == [
         ("renamed", ("classes", "finding")),
         ("changed", ("classes", "verdict", "caption")),
-        ("changed", ("classes", "verdict", "key")),
         ("changed", ("classes", "verdict", "name")),
     ]
 

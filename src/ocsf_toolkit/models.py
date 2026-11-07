@@ -56,7 +56,7 @@ def build(ref: Any, /, *args: Any, **fields: Any) -> Any:
         raise TypeError("build() takes the event's fields as keyword arguments only")
     cls = None if isinstance(ref, tuple) else _generated(ref)
     if cls is None:
-        (schema, key), exact, event = cast(ClassRef, ref), False, fields
+        (schema, key), exact, event = _class_ref(cast(tuple[object, ...], ref)), False, fields
     else:
         event = _wire(cls, fields)  # first: a Metadata instance declares profiles only once it is a dict
         schema, key, exact = _target(cls, None, event)
@@ -145,6 +145,14 @@ def _chosen(
     if not isinstance(cast(object, schema), ResolvedSchema):  # a runtime check: callers may be untyped
         raise TypeError(f"schema= takes a ResolvedSchema, from load() or resolve(); got {type(schema).__name__}")
     return schema
+
+
+def _class_ref(ref: tuple[object, ...]) -> ClassRef:
+    match ref:
+        case (ResolvedSchema() as schema, str() as key):
+            return schema, key
+        case _:
+            raise TypeError(f"a class reference is (ResolvedSchema, class key); got {ref!r}")
 
 
 def _generated(cls: object) -> type[msgspec.Struct]:
