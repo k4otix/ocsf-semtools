@@ -59,8 +59,9 @@ lock:
 OCSF ?= 1.9.0
 PACKAGE = ocsf_toolkit_v$(subst .,_,$(OCSF))
 DIST = build/dists/$(PACKAGE)
-WINDOW = $(shell $(UV) run python -c 'import tomllib; print(*(e["version"] for e in \
-	tomllib.load(open("ocsf.lock", "rb"))["schemas"] if e["ship_models"]))')
+# the model-window versions, from the one rule that defines them (cli/lock.py)
+WINDOW = $(shell $(UV) run python -c 'from pathlib import Path; from ocsf_toolkit.cli import lock; \
+	print(*lock.window(lock.read(Path("ocsf.lock"))))')
 WHEELS = build/wheels
 # Sdists and wheels carry this timestamp and the version of the backend that built them, so a commit
 # rebuilt with the pinned backend gives identical bytes.

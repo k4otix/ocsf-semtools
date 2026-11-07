@@ -31,8 +31,10 @@ defaults:
   run:
     shell: bash
 
+# Tag releases queue behind one another, never in parallel. Dry runs (workflow_dispatch, ref_type
+# branch) queue in a group of their own, so a dry run can't displace a tag release waiting its turn.
 concurrency:
-  group: release
+  group: release-${{ github.ref_type }}
   cancel-in-progress: false
 
 jobs:
