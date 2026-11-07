@@ -64,7 +64,10 @@ the schema, so `version`, `class_key` and `schema` are a `TypeError`.
 `repair(event, *, version=None, profiles=None, class_key=None, schema=None, max_nodes=100_000)` picks
 the schema the way `parse` does, and returns a normalized copy and a report in which every change is
 a finding with its `repair` action (before and after). It fills derived values, coerces values whose
-meaning is unambiguous, and moves attributes the schema doesn't know into `unmapped`.
+meaning is unambiguous, and moves attributes the schema doesn't know into `unmapped`, each under its
+dotted path: an unknown `zzz` inside `process` becomes `unmapped["process.zzz"]`. An event that also
+has a top-level attribute literally named `"process.zzz"` gives two attributes one key; the first
+one reached moves, and the other stays in place, reported as `unknown_attribute`.
 
 ```pycon
 >>> received = {
