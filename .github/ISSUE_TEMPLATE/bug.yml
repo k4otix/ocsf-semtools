@@ -1,0 +1,39 @@
+name: Bug report
+description: A wrong or missing finding, a crash, or anything else that behaves unlike the docs
+labels: [bug]
+body:
+  - type: input
+    id: toolkit
+    attributes:
+      label: ocsf-toolkit version
+      description: The output of `ocsf-toolkit --version`, and the model package and its version if you use one.
+      placeholder: ocsf-toolkit 0.1.0a3; ocsf-toolkit-v1-9-0 0.1.0a2
+    validations:
+      required: true
+  - type: input
+    id: ocsf
+    attributes:
+      label: OCSF version, profiles and extensions
+      placeholder: 1.9.0, profiles cloud and host, no extensions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What reproduces it
+      description: The call or command and the event, trimmed to what matters. Remove anything sensitive.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened
+      description: For a finding, the kind and path you expected or didn't expect, and why the schema says so.
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version and platform
+      placeholder: CPython 3.13, Linux x86_64
