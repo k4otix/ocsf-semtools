@@ -110,23 +110,38 @@ def docstring(text: str, indent: str) -> list[str]:
 
 # Code points a docstring must not hold as they are, as a fixed table: str.isprintable() follows
 # each Python's Unicode version, and a tree that differed by Python would fail its pinned hash.
-# Controls (C0 but the newline that separates paragraphs, DEL, C1), line and paragraph separators,
-# and the invisible spaces and format characters (no-break and em spaces, zero-width joiners, BOM).
+# Every control, format character, line or paragraph separator and space but the ASCII space
+# (Unicode categories Cc, Cf, Zl, Zp, Zs) as of Unicode 16.0, except the newline that separates
+# paragraphs: invisible spaces, zero-width joiners, the BOM, and every bidirectional control, which
+# could make generated code read differently than it runs.
 _HIDDEN = frozenset(
     [
         *range(0x0A),
         *range(0x0B, 0x20),
         *range(0x7F, 0xA1),
         0xAD,
+        *range(0x0600, 0x0606),  # Arabic number signs
+        0x061C,  # Arabic letter mark
+        0x06DD,
+        0x070F,
+        0x0890,
+        0x0891,
+        0x08E2,
         0x1680,
-        *range(0x2000, 0x2010),
-        0x2028,
-        0x2029,
-        0x202F,
+        0x180E,
+        *range(0x2000, 0x2010),  # spaces, zero-width characters, LRM and RLM
+        *range(0x2028, 0x2030),  # line and paragraph separators, LRE RLE PDF LRO RLO, narrow no-break space
         0x205F,
-        *range(0x2060, 0x2065),
+        *range(0x2060, 0x2070),  # word joiner, invisible operators, LRI RLI FSI PDI, deprecated formats
         0x3000,
         0xFEFF,
+        *range(0xFFF9, 0xFFFC),  # interlinear annotation controls
+        0x110BD,
+        0x110CD,
+        *range(0x13430, 0x13440),  # Egyptian hieroglyph format controls
+        *range(0x1BCA0, 0x1BCA4),  # shorthand format controls
+        *range(0x1D173, 0x1D17B),  # musical symbol formatting
+        *range(0xE0000, 0xE0080),  # tag characters
     ]
 )
 

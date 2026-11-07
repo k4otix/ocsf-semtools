@@ -1,10 +1,19 @@
 """Text emission: literals, docstrings and fields come out the way ruff format leaves them."""
 
 import ast
+import unicodedata
 
 import pytest
 
-from ocsf_toolkit.codegen.emit import WIDTH, Field, Imports, docstring, string, struct_class
+from ocsf_toolkit.codegen.emit import (
+    _HIDDEN,  # pyright: ignore[reportPrivateUsage]
+    WIDTH,
+    Field,
+    Imports,
+    docstring,
+    string,
+    struct_class,
+)
 
 
 @pytest.mark.parametrize(
@@ -89,5 +98,16 @@ def test_docstring_hides_controls_and_invisible_spaces_by_a_fixed_table() -> Non
     text = "a\rb\u00a0c\u200bd\u2028e\x85f\ufeffg"
     assert docstring(text, "") == ['"""a b c d e f g"""']
     assert docstring("x\n\ny", "") == ['"""x', "", "y", '"""']  # paragraphs keep their newlines
+    bidi = "".join(chr(c) for c in (0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069, 0x061C))
+    assert docstring(f"x{bidi}y", "") == [f'"""x{" " * len(bidi)}y"""']  # no Trojan Source in generated code
+    assert all(c.isprintable() is False for c in bidi)  # what the old rule caught, the table catches too
     unassigned = "\U000e0080"  # unassigned in every Unicode version so far, so not printable today
     assert docstring(unassigned, "") == [f'"""{unassigned}"""']  # kept: no table decides it
+
+
+def test_the_table_covers_every_control_format_and_separator_this_python_knows() -> None:
+    """A newer Unicode may add format characters; this fails then, so the table is extended by hand."""
+    hidden_categories = {"Cc", "Cf", "Zl", "Zp", "Zs"}
+    known = (c for c in range(0x110000) if not 0xD800 <= c <= 0xDFFF and c not in (0x0A, 0x20))
+    missing = [hex(c) for c in known if unicodedata.category(chr(c)) in hidden_categories and c not in _HIDDEN]
+    assert missing == []
