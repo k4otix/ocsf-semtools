@@ -185,4 +185,5 @@ ocsf-semtools fills the gaps between them:
 
 Apache-2.0. The bundled schema data is compiled from the [OCSF schema](https://github.com/ocsf/ocsf-schema),
 © OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](https://github.com/k4otix/ocsf-semtools/blob/main/NOTICE) carries its notice.
-ocsf-semtools is an independent project with no affiliation to OCSF.
+ocsf-semtools is an independent project with no affiliation to OCSF, and is separate from the Go
+library [ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit).
