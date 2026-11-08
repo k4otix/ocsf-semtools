@@ -4,9 +4,9 @@ from types import ModuleType
 
 import pytest
 
-from ocsf_toolkit.ir import SchemaIR
-from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.schema import ResolvedSchema, load
+from ocsf_semtools.ir import SchemaIR
+from ocsf_semtools.loader import load_compiled
+from ocsf_semtools.schema import ResolvedSchema, load
 from tests.fixtures.compiled import PROVENANCE, compiled_bytes
 from tests.fixtures.packages import import_generated
 

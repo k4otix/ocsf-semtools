@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import _upstream, build_parser, compile, lock, main
-from ocsf_toolkit.cli._upstream import Compiler
+from ocsf_semtools.cli import _upstream, build_parser, compile, lock, main
+from ocsf_semtools.cli._upstream import Compiler
 from tests.unit.cli.support import Upstream, entry, git, write_lockfile
 
 # --- verify: version assertion + canonical sha256 -------------------------------------------
@@ -124,7 +124,7 @@ def test_checkout_failure_leaves_no_cache_entry(tmp_path: Path, upstream: Upstre
     assert list((tmp_path / "cache").iterdir()) == []
 
 
-# --- `ocsf-toolkit compile`, end to end -----------------------------------------------------
+# --- `ocsf-semtools compile`, end to end -----------------------------------------------------
 
 
 def _lockfile(tmp_path: Path, upstream: Upstream, sha256: str) -> Path:

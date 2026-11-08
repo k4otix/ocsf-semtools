@@ -10,9 +10,9 @@ from typing import Any, cast
 import msgspec
 import pytest
 
-from ocsf_toolkit import ConformanceError, Kind, build, parse
-from ocsf_toolkit.codegen import generate
-from ocsf_toolkit.ir import SchemaIR
+from ocsf_semtools import ConformanceError, Kind, build, parse
+from ocsf_semtools.codegen import generate
+from ocsf_semtools.ir import SchemaIR
 from tests.fixtures.packages import import_generated
 
 TIME = 1_700_000_000_000

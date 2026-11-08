@@ -7,7 +7,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Any, Literal, cast, final
 
-from ocsf_toolkit.ir import ItemDef, SchemaIR
+from ocsf_semtools.ir import ItemDef, SchemaIR
 
 type IRPath = tuple[str | int, ...]
 type ChangeKind = Literal["added", "removed", "changed", "renamed"]

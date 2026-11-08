@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.cli import build_parser, diff, main
+from ocsf_semtools.cli import build_parser, diff, main
 from tests.conftest import DATA_DIR
 
 
@@ -38,12 +38,12 @@ def test_equal_irs_exit_zero(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_an_unshipped_version_exits_two(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["diff", "1.9.0", "0.0.1"]) == 2
-    assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
+    assert capsys.readouterr().err.startswith("ocsf-semtools: error: ")
 
 
 def test_a_missing_ir_file_exits_two(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["diff", "1.9.0", str(tmp_path / "missing.json")]) == 2
-    assert capsys.readouterr().err.startswith("ocsf-toolkit: error: ")
+    assert capsys.readouterr().err.startswith("ocsf-semtools: error: ")
 
 
 def _unchanged(ir: dict[str, Any]) -> None:

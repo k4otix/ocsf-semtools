@@ -7,7 +7,7 @@ raises a `Report` holding every finding.
 
 ```pycon
 >>> import json
->>> from ocsf_toolkit import build, parse, repair, load
+>>> from ocsf_semtools import build, parse, repair, load
 >>> schema = load("1.9.0")
 >>> fields = {
 ...     "activity_id": 1,
@@ -98,7 +98,7 @@ outside its profile set. `str(error)` names the first five of them. The exceptio
 and a `ResolvedSchema`, can be pickled, so it crosses process boundaries.
 
 ```pycon
->>> from ocsf_toolkit import ConformanceError
+>>> from ocsf_semtools import ConformanceError
 >>> try:
 ...     build((schema, "detection_finding"), severity_id=4, time=1)
 ... except ConformanceError as error:
@@ -125,7 +125,7 @@ and a `ResolvedSchema`, can be pickled, so it crosses process boundaries.
 Every finding from one run: `findings` in walk order, the `schema` the event was read against, and
 the `class_key` it was checked as. `ok()` is true when nothing is an error; `errors()` returns the
 findings of severity `error`; `by_kind(kind)` filters by a `Kind` or its name; `to_dict()` gives a
-form that is always valid JSON, which is also what `ocsf-toolkit check --json` prints.
+form that is always valid JSON, which is also what `ocsf-semtools check --json` prints.
 
 ### `Finding`
 
@@ -135,7 +135,7 @@ One deviation, located by an indexed path such as `("resources", 0, "uid")`: `ki
 (`error`, `warning` or `info`, determined by the kind).
 
 ```pycon
->>> from ocsf_toolkit import Kind
+>>> from ocsf_semtools import Kind
 >>> _, report = parse(dict(event, vendor_field=1))
 >>> (unknown,) = report.by_kind(Kind.UNKNOWN_ATTRIBUTE)
 >>> unknown.severity, unknown.path, unknown.message

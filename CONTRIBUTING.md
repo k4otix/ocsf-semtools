@@ -2,9 +2,9 @@
 
 ## Reporting a problem
 
-Open an [issue](https://github.com/k4otix/ocsf-toolkit/issues/new/choose). For a wrong finding or a
+Open an [issue](https://github.com/k4otix/ocsf-semtools/issues/new/choose). For a wrong finding or a
 missed one, the bug template asks for what reproduces it: the OCSF version, the event (trimmed to
-what matters) and `ocsf-toolkit --version`. Report a security problem privately, as
+what matters) and `ocsf-semtools --version`. Report a security problem privately, as
 [SECURITY.md](SECURITY.md) describes.
 
 ## Setup
@@ -89,12 +89,12 @@ A new OCSF release ships as a minor release of the library, with a model package
    newest three versions. The compile fails if the compiled schema's `version` isn't `x.y.z`: tag
    `1.5.0` upstream is one such case, so pin the branch with `REF=v1.5.0`. If a step fails, fix the
    cause and run `make lock` again; a version already pinned at the same commit is kept.
-2. Add the new package, `ocsf_toolkit_vX_Y_Z`, to `forbidden_modules` in `.importlinter`; a test
+2. Add the new package, `ocsf_semtools_vX_Y_Z`, to `forbidden_modules` in `.importlinter`; a test
    fails until you do.
 3. Update the package table in `docs/models.md`.
 4. Set up publishing for the new package, once:
-   - on PyPI, a pending trusted publisher for project `ocsf-toolkit-vX-Y-Z`, repository
-     `k4otix/ocsf-toolkit`, workflow `release.yaml`, environment `pypi-vX-Y-Z`;
+   - on PyPI, a pending trusted publisher for project `ocsf-semtools-vX-Y-Z`, repository
+     `k4otix/ocsf-semtools`, workflow `release.yaml`, environment `pypi-vX-Y-Z`;
    - on GitHub, the environment `pypi-vX-Y-Z`, limited to `v*` tags like the others.
 
    PyPI allows three pending publishers per account. While none is free, add `X.Y.Z` to the
@@ -110,12 +110,12 @@ The compiler version in `[toolchain]` in `ocsf.lock` is part of every IR's prove
 changes every hash:
 
 ```shell
-uv run ocsf-toolkit compile --record    # every compiled_sha256
+uv run ocsf-semtools compile --record    # every compiled_sha256
 make ir RECORD=1                         # every ir_sha256 and data/ir-*.json
-uv run ocsf-toolkit models record        # every models_tree_sha256
+uv run ocsf-semtools models record        # every models_tree_sha256
 ```
 
-Review the IR diffs (`ocsf-toolkit diff OLD.json NEW.json`), since a compiler change can change the
+Review the IR diffs (`ocsf-semtools diff OLD.json NEW.json`), since a compiler change can change the
 schema itself. The next release republishes every model package in the window, as their trees
 changed.
 
@@ -123,7 +123,7 @@ changed.
 
 1. Run the release workflow by hand (Actions, release, Run workflow) on `main` as a dry run: it runs
    every gate and builds every package twice, and publishes nothing.
-2. Tag the commit and push the tag: `git tag -s vX.Y.Z -m "ocsf-toolkit X.Y.Z" && git push origin vX.Y.Z`.
+2. Tag the commit and push the tag: `git tag -s vX.Y.Z -m "ocsf-semtools X.Y.Z" && git push origin vX.Y.Z`.
    The release needs a passing CI run on that commit.
 3. Approve the `release` environment when the workflow asks. It publishes the core and each model
    package PyPI lacks, and attaches `ocsf.lock` and `SHA256SUMS` to a GitHub release.

@@ -4,15 +4,15 @@ import re
 
 import pytest
 
-from ocsf_toolkit.codegen.naming import (
+from ocsf_semtools.codegen.naming import (
     class_name,
     field_name,
     member_name,
     member_names,
     module_name,
 )
-from ocsf_toolkit.ir import EnumMember, EnumValue
-from ocsf_toolkit.schema import load
+from ocsf_semtools.ir import EnumMember, EnumValue
+from ocsf_semtools.schema import load
 
 
 def _enum(captions: dict[EnumValue, str]) -> dict[EnumValue, EnumMember]:

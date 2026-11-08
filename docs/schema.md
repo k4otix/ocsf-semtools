@@ -12,7 +12,7 @@ profile gating and class identity.
 ships with the library. Every OCSF release since 1.0.0 ships.
 
 ```pycon
->>> from ocsf_toolkit import load
+>>> from ocsf_semtools import load
 >>> schema = load("1.9.0")
 >>> schema.version
 '1.9.0'
@@ -127,7 +127,7 @@ inside the package, and its provenance records exactly where it came from:
 ### `load_ir`
 
 `load_ir(source)` reads IR JSON from a path (a `str` or `Path`) or from bytes, such as a file written
-by `ocsf-toolkit ir export` or bundled in a generated model package. Malformed JSON, NaN or infinity,
+by `ocsf-semtools ir export` or bundled in a generated model package. Malformed JSON, NaN or infinity,
 and fields of the wrong type are a `ValueError` naming the key path; `resolve` also refuses an IR
 whose tables disagree, such as one with no `base_event` or an attribute naming a missing object.
 
@@ -142,7 +142,7 @@ IRs give identical bytes on every platform. `load_ir(export_ir(ir)) == ir`.
 extensions, the way `load` resolves a shipped one:
 
 ```pycon
->>> from ocsf_toolkit import resolve
+>>> from ocsf_semtools import resolve
 >>> resolve(schema.ir, profiles=["cloud"]) == cloud
 True
 

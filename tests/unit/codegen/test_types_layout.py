@@ -4,9 +4,9 @@ import dataclasses
 
 import pytest
 
-from ocsf_toolkit.codegen.layout import Place, exports, place, plan
-from ocsf_toolkit.codegen.types import annotation
-from ocsf_toolkit.schema import load
+from ocsf_semtools.codegen.layout import Place, exports, place, plan
+from ocsf_semtools.codegen.types import annotation
+from ocsf_semtools.schema import load
 
 S = load("1.9.0", profiles=["host"])
 

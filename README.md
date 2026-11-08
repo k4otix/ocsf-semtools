@@ -1,6 +1,6 @@
-# ocsf-toolkit
+# ocsf-semtools
 
-ocsf-toolkit brings the complete rules of [OCSF](https://schema.ocsf.io/) to Python, for every OCSF
+ocsf-semtools brings the complete rules of [OCSF](https://schema.ocsf.io/) to Python, for every OCSF
 release since 1.0.0. The library builds an event from the fields a producer knows and fills in what
 the schema defines: class and category IDs, `type_uid`, and the label beside every enum. It checks
 events from any source against the same rules and returns every problem in one report, each with a
@@ -8,19 +8,19 @@ path and a severity. It also extracts observables, shows what changed between tw
 generates typed [msgspec](https://github.com/msgspec/msgspec) models from the same schema.
 
 **Status: alpha.** Minor releases before 1.0 may change the API, and the
-[changelog](https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md) lists every change.
+[changelog](https://github.com/k4otix/ocsf-semtools/blob/main/CHANGELOG.md) lists every change.
 
 ## Install
 
 ```shell
-pip install --pre ocsf-toolkit          # core: every OCSF release since 1.0.0, as data
-pip install --pre ocsf-toolkit-v1-9-0   # optional: typed models for one OCSF version
+pip install --pre ocsf-semtools          # core: every OCSF release since 1.0.0, as data
+pip install --pre ocsf-semtools-v1-9-0   # optional: typed models for one OCSF version
 ```
 
-[Typed models](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/models.md) lists the packages available.
+[Typed models](https://github.com/k4otix/ocsf-semtools/blob/main/docs/models.md) lists the packages available.
 
-`ocsf-toolkit generate` builds a model package for any other version or extension set (see
-[Command line](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/cli.md)).
+`ocsf-semtools generate` builds a model package for any other version or extension set (see
+[Command line](https://github.com/k4otix/ocsf-semtools/blob/main/docs/cli.md)).
 
 Python 3.12 or newer. The only runtime dependency is msgspec.
 
@@ -32,7 +32,7 @@ derives: class and category identity, `type_uid`, the label beside every `_id` e
 
 ```pycon
 >>> import json
->>> from ocsf_toolkit import build, load
+>>> from ocsf_semtools import build, load
 >>> schema = load("1.9.0")
 >>> event = build(
 ...     (schema, "detection_finding"),
@@ -74,7 +74,7 @@ derives: class and category identity, `type_uid`, the label beside every `_id` e
 it found:
 
 ```pycon
->>> from ocsf_toolkit import ConformanceError
+>>> from ocsf_semtools import ConformanceError
 >>> try:
 ...     build((schema, "detection_finding"), severity_id=4, time=1)
 ... except ConformanceError as error:
@@ -92,7 +92,7 @@ metadata is required and absent
 severity. The caller decides which findings are fatal.
 
 ```pycon
->>> from ocsf_toolkit import parse
+>>> from ocsf_semtools import parse
 >>> received = dict(event, severity_id=9, status_id="x")
 >>> _, report = parse(received)
 >>> report.ok()
@@ -106,21 +106,21 @@ type_mismatch ('status_id',) status_id is str 'x'; expected integer_t
 
 The version and profiles come from the event's own `metadata`. `repair` returns a normalized copy
 and records every change it made. The same check runs from the shell over JSON Lines files:
-`ocsf-toolkit check --version 1.9.0 events.jsonl`.
+`ocsf-semtools check --version 1.9.0 events.jsonl`.
 
 ## Typed models
 
-With `ocsf-toolkit-v1-9-0` installed, every class and object is a msgspec Struct, every enum is
+With `ocsf-semtools-v1-9-0` installed, every class and object is a msgspec Struct, every enum is
 referenceable by its caption, and `build` and `parse` accept and return the typed classes:
 
 ```python
 import msgspec
 
-from ocsf_toolkit import build, parse
-from ocsf_toolkit_v1_9_0 import DetectionFinding
-from ocsf_toolkit_v1_9_0.classes.detection_finding import DetectionFindingActivityId
-from ocsf_toolkit_v1_9_0.enums import SeverityId
-from ocsf_toolkit_v1_9_0.objects import FindingInfo, Metadata, Product
+from ocsf_semtools import build, parse
+from ocsf_semtools_v1_9_0 import DetectionFinding
+from ocsf_semtools_v1_9_0.classes.detection_finding import DetectionFindingActivityId
+from ocsf_semtools_v1_9_0.enums import SeverityId
+from ocsf_semtools_v1_9_0.objects import FindingInfo, Metadata, Product
 
 finding = build(
     DetectionFinding,
@@ -141,20 +141,20 @@ The models type-check under strict pyright, and importing one class loads only t
 
 ## More
 
-- [Schema as data](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/schema.md): required attributes, enums and captions, siblings, profiles,
+- [Schema as data](https://github.com/k4otix/ocsf-semtools/blob/main/docs/schema.md): required attributes, enums and captions, siblings, profiles,
   class identity, all without building an event.
-- [Building and checking events](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/events.md): `build`, `parse`, `repair`, what each one changes,
+- [Building and checking events](https://github.com/k4otix/ocsf-semtools/blob/main/docs/events.md): `build`, `parse`, `repair`, what each one changes,
   and reports.
-- [Observables](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/observables.md): extracting and merging the observables an event carries.
-- [Schema diff](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/diff.md): what changed between two OCSF versions, renames included.
-- [Typed models](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/models.md): the model packages, and generating your own (custom extensions
+- [Observables](https://github.com/k4otix/ocsf-semtools/blob/main/docs/observables.md): extracting and merging the observables an event carries.
+- [Schema diff](https://github.com/k4otix/ocsf-semtools/blob/main/docs/diff.md): what changed between two OCSF versions, renames included.
+- [Typed models](https://github.com/k4otix/ocsf-semtools/blob/main/docs/models.md): the model packages, and generating your own (custom extensions
   and exact profile sets).
-- [Command line](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/cli.md): `check`, `diff`, `generate` and the schema pipeline.
+- [Command line](https://github.com/k4otix/ocsf-semtools/blob/main/docs/cli.md): `check`, `diff`, `generate` and the schema pipeline.
 
 ## How versions work
 
 Each OCSF release is compiled with the official `ocsf-schema-compiler` from an exact upstream commit,
-recorded in [`ocsf.lock`](https://github.com/k4otix/ocsf-toolkit/blob/main/ocsf.lock). CI recompiles every release and confirms
+recorded in [`ocsf.lock`](https://github.com/k4otix/ocsf-semtools/blob/main/ocsf.lock). CI recompiles every release and confirms
 that the shipped schema still matches the upstream compiler's output. The core package carries every
 release, so events of any version can be checked, repaired, diffed and mined for observables. Typed
 models come as one package per release for the newest three, so a project installs only the versions
@@ -172,7 +172,7 @@ shaped ideas here. [py-ocsf-models](https://pypi.org/project/py-ocsf-models/) pr
 finding classes. [ocsf-lib](https://pypi.org/project/ocsf-lib/) provides schema tooling for
 compiling, diffing and compatibility checks.
 
-ocsf-toolkit fills the gaps between them:
+ocsf-semtools fills the gaps between them:
 
 - The schema comes from the official compiler with profiles resolved, so every attribute and enum
   matches upstream.
@@ -184,5 +184,5 @@ ocsf-toolkit fills the gaps between them:
 ## License
 
 Apache-2.0. The bundled schema data is compiled from the [OCSF schema](https://github.com/ocsf/ocsf-schema),
-© OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](https://github.com/k4otix/ocsf-toolkit/blob/main/NOTICE) carries its notice.
-ocsf-toolkit is an independent project with no affiliation to OCSF.
+© OCSF a Series of LF Projects, LLC, also under Apache-2.0; [NOTICE](https://github.com/k4otix/ocsf-semtools/blob/main/NOTICE) carries its notice.
+ocsf-semtools is an independent project with no affiliation to OCSF.

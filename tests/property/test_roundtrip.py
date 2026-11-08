@@ -15,7 +15,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit import ResolvedSchema, build, load, parse
+from ocsf_semtools import ResolvedSchema, build, load, parse
 from tests.fixtures.packages import generated_class, import_generated
 from tests.property.strategies import SETTINGS, WINDOW, fields, profile_sets
 

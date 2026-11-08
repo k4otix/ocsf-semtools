@@ -5,9 +5,9 @@ body:
   - type: input
     id: toolkit
     attributes:
-      label: ocsf-toolkit version
-      description: The output of `ocsf-toolkit --version`, and the model package and its version if you use one.
-      placeholder: ocsf-toolkit 0.1.0a3; ocsf-toolkit-v1-9-0 0.1.0a2
+      label: ocsf-semtools version
+      description: The output of `ocsf-semtools --version`, and the model package and its version if you use one.
+      placeholder: ocsf-semtools 0.1.0a3; ocsf-semtools-v1-9-0 0.1.0a2
     validations:
       required: true
   - type: input

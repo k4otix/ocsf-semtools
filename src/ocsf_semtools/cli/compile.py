@@ -3,8 +3,8 @@
 import argparse
 from pathlib import Path
 
-from ocsf_toolkit.cli import _upstream, lock
-from ocsf_toolkit.cli._common import AddParser, Options
+from ocsf_semtools.cli import _upstream, lock
+from ocsf_semtools.cli._common import AddParser, Options
 
 
 def register(add_parser: AddParser, shared: Options) -> None:

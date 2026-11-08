@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ocsf-toolkit"
+name = "ocsf-semtools"
 dynamic = ["version"]
 description = "Version-pinned OCSF schema for Python: build, check and repair events, extract observables, diff versions, and generate typed msgspec models."
 readme = "README.md"
@@ -38,13 +38,13 @@ classifiers = [
 dependencies = ["msgspec>=0.22,<1"]
 
 [project.urls]
-Documentation = "https://github.com/k4otix/ocsf-toolkit/tree/main/docs"
-Repository = "https://github.com/k4otix/ocsf-toolkit"
-Issues = "https://github.com/k4otix/ocsf-toolkit/issues"
-Changelog = "https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/k4otix/ocsf-semtools/tree/main/docs"
+Repository = "https://github.com/k4otix/ocsf-semtools"
+Issues = "https://github.com/k4otix/ocsf-semtools/issues"
+Changelog = "https://github.com/k4otix/ocsf-semtools/blob/main/CHANGELOG.md"
 
 [project.scripts]
-ocsf-toolkit = "ocsf_toolkit.cli:main"
+ocsf-semtools = "ocsf_semtools.cli:main"
 
 [dependency-groups]
 dev = [
@@ -61,10 +61,10 @@ dev = [
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/ocsf_toolkit/_version.py"
+version-file = "src/ocsf_semtools/_version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ocsf_toolkit"]
+packages = ["src/ocsf_semtools"]
 
 # An allowlist: hatchling honours .gitignore but not .git/info/exclude, so anything kept out of
 # git only locally would otherwise ship in an sdist built from a working tree.
@@ -92,7 +92,7 @@ only-include = [
 line-length = 120
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["src/ocsf_toolkit/_version.py"]
+extend-exclude = ["src/ocsf_semtools/_version.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "C4", "PIE", "RET"]
@@ -109,7 +109,7 @@ convention = "pep257"
 # `make generate`; tests/generated/test_static.py type-checks them against it.
 [tool.pyright]
 include = ["src", "tests", "packaging"]
-exclude = ["src/ocsf_toolkit/_version.py", "tests/golden", "tests/generated/samples"]
+exclude = ["src/ocsf_semtools/_version.py", "tests/golden", "tests/generated/samples"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
@@ -117,7 +117,7 @@ typeCheckingMode = "strict"
 strict = true
 python_version = "3.12"
 files = ["src", "tests", "packaging"]
-exclude = ["src/ocsf_toolkit/_version\\.py$", "^tests/golden/", "^tests/generated/samples/"]
+exclude = ["src/ocsf_semtools/_version\\.py$", "^tests/golden/", "^tests/generated/samples/"]
 
 # README.md and docs/*.md run as doctests: every >>> example in the user docs executes.
 # docs/design and docs/prior-art are maintainer-local and never collected.

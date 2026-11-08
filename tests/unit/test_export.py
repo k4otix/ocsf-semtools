@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import ir as ir_cli
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.export import IR_VERSION, digest, export_ir, load_ir
-from ocsf_toolkit.ir import SchemaIR
-from ocsf_toolkit.loader import load_compiled
+from ocsf_semtools.cli import ir as ir_cli
+from ocsf_semtools.cli import lock
+from ocsf_semtools.export import IR_VERSION, digest, export_ir, load_ir
+from ocsf_semtools.ir import SchemaIR
+from ocsf_semtools.loader import load_compiled
 from tests.conftest import DATA_DIR, LOCKFILE, ROOT, VERSIONS, compiled_path, provenance
 from tests.fixtures.compiled import PROVENANCE, compiled_bytes
 

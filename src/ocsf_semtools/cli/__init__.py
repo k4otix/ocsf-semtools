@@ -1,4 +1,4 @@
-"""The ``ocsf-toolkit`` console script: an argparse root dispatching to one subcommand module."""
+"""The ``ocsf-semtools`` console script: an argparse root dispatching to one subcommand module."""
 
 import argparse
 import os
@@ -6,9 +6,9 @@ import subprocess
 import sys
 from collections.abc import Sequence
 
-from ocsf_toolkit import __version__
-from ocsf_toolkit.cli import check, compile, diff, generate, ir, lock, models
-from ocsf_toolkit.cli._common import options
+from ocsf_semtools import __version__
+from ocsf_semtools.cli import check, compile, diff, generate, ir, lock, models
+from ocsf_semtools.cli._common import options
 
 COMMANDS = (compile, lock, ir, check, diff, generate, models)  # in --help order
 
@@ -16,7 +16,7 @@ COMMANDS = (compile, lock, ir, check, diff, generate, models)  # in --help order
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser: the root options and one subparser per command."""
     shared = options()
-    parser = argparse.ArgumentParser(prog="ocsf-toolkit", description="Version-pinned OCSF schema tooling.")
+    parser = argparse.ArgumentParser(prog="ocsf-semtools", description="Version-pinned OCSF schema tooling.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
     for command in COMMANDS:
@@ -40,9 +40,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         return 1
     except KeyError as exc:  # its str() quotes the message
-        print(f"ocsf-toolkit: error: {exc.args[0] if exc.args else exc}", file=sys.stderr)
+        print(f"ocsf-semtools: error: {exc.args[0] if exc.args else exc}", file=sys.stderr)
         return 2
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
-        print(f"ocsf-toolkit: error: {exc}", file=sys.stderr)
+        print(f"ocsf-semtools: error: {exc}", file=sys.stderr)
         return 2
     return status

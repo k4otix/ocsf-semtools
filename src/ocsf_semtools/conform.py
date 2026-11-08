@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, cast, final
 
-from ocsf_toolkit.ir import Deprecation, ItemDef, Requirement, Root
-from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import (
+from ocsf_semtools.ir import Deprecation, ItemDef, Requirement, Root
+from ocsf_semtools.schema import SCHEMAS_KEPT, ResolvedAttribute, ResolvedItem, ResolvedSchema
+from ocsf_semtools.walk import (
     OPEN_OBJECT,
     Finding,
     Kind,

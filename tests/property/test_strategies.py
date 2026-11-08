@@ -2,9 +2,9 @@
 
 import pytest
 
-from ocsf_toolkit import load
-from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.walk import OPEN_OBJECT
+from ocsf_semtools import load
+from ocsf_semtools.ir import Requirement
+from ocsf_semtools.walk import OPEN_OBJECT
 from tests.property.strategies import WINDOW, profile_sets
 
 

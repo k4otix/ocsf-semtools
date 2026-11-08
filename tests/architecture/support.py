@@ -2,5 +2,5 @@
 
 from tests.conftest import ROOT
 
-PACKAGE = ROOT / "src" / "ocsf_toolkit"
+PACKAGE = ROOT / "src" / "ocsf_semtools"
 SOURCES = sorted(p for p in PACKAGE.rglob("*.py") if p.name != "_version.py")

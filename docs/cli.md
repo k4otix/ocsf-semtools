@@ -1,6 +1,6 @@
 # Command line
 
-`ocsf-toolkit` is installed with the package. Every command has `--help`.
+`ocsf-semtools` is installed with the package. Every command has `--help`.
 
 | Exit status | Meaning |
 |---|---|
@@ -8,7 +8,7 @@
 | 1 | `check` found an error in an event, or `diff` found a difference |
 | 2 | the command couldn't do its job: a usage error, a missing file, an unknown version, profile or class, or a schema pipeline gate that failed |
 
-A failure prints one line, `ocsf-toolkit: error: ...`, to stderr. So a script can tell bad data
+A failure prints one line, `ocsf-semtools: error: ...`, to stderr. So a script can tell bad data
 (1) from a broken run (2).
 
 ## Working with events and schemas
@@ -19,8 +19,8 @@ Checks every event in one or more JSON Lines files (`-` reads stdin) against an 
 finding per line, and exits 1 if any event has an error.
 
 ```shell
-ocsf-toolkit check --version 1.9.0 events.jsonl
-ocsf-toolkit check --version 1.9.0 --profiles cloud,host --json events.jsonl
+ocsf-semtools check --version 1.9.0 events.jsonl
+ocsf-semtools check --version 1.9.0 --profiles cloud,host --json events.jsonl
 ```
 
 ```text
@@ -38,8 +38,8 @@ What changed between two OCSF versions, or two IR files. It exits 0 when they ar
 differ and 2 when one can't be read, like diff(1).
 
 ```shell
-ocsf-toolkit diff 1.1.0 1.3.0
-ocsf-toolkit diff --json 1.7.0 1.9.0 > changes.json
+ocsf-semtools diff 1.1.0 1.3.0
+ocsf-semtools diff --json 1.7.0 1.9.0 > changes.json
 ```
 
 ```text
@@ -58,9 +58,9 @@ Writes a typed model package (see [Typed models](models.md)) from a shipped OCSF
 file.
 
 ```shell
-ocsf-toolkit generate 1.9.0 --package acme_models --out src/
-ocsf-toolkit generate 1.9.0 --package acme_models --out src/ --profiles cloud,host --extensions ""
-ocsf-toolkit generate 1.9.0 --package acme_models --out src/ --ext ../my-extension
+ocsf-semtools generate 1.9.0 --package acme_models --out src/
+ocsf-semtools generate 1.9.0 --package acme_models --out src/ --profiles cloud,host --extensions ""
+ocsf-semtools generate 1.9.0 --package acme_models --out src/ --ext ../my-extension
 ```
 
 `--profiles` emits exact classes for that profile set; without it the classes are supersets.

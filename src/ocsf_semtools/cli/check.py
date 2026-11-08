@@ -8,10 +8,10 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TextIO, cast
 
-from ocsf_toolkit.cli._common import AddParser, Options, printable
-from ocsf_toolkit.models import parse
-from ocsf_toolkit.schema import load
-from ocsf_toolkit.walk import dotted
+from ocsf_semtools.cli._common import AddParser, Options, printable
+from ocsf_semtools.models import parse
+from ocsf_semtools.schema import load
+from ocsf_semtools.walk import dotted
 
 
 def register(add_parser: AddParser, shared: Options) -> None:

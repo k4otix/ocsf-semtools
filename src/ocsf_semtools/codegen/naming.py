@@ -6,7 +6,7 @@ import re
 from collections import Counter
 from collections.abc import Mapping
 
-from ocsf_toolkit.ir import EnumMember, EnumValue
+from ocsf_semtools.ir import EnumMember, EnumValue
 
 _NON_ALNUM = re.compile(r"[^0-9A-Za-z]+")
 

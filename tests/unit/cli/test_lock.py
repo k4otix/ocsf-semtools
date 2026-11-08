@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ocsf_toolkit.cli import build_parser, lock, main, trees
+from ocsf_semtools.cli import build_parser, lock, main, trees
 from tests.conftest import ROOT
 from tests.unit.cli.support import TOOLCHAIN, Upstream, entry, write_lockfile
 
@@ -108,7 +108,7 @@ def test_version_key_orders_numerically() -> None:
 
 
 def test_every_shipped_version_is_in_the_generated_package_contract() -> None:
-    """Rule 2: nothing imports ocsf_toolkit_v*; import-linter needs each name listed explicitly."""
+    """Rule 2: nothing imports ocsf_semtools_v*; import-linter needs each name listed explicitly."""
     config = configparser.ConfigParser()
     config.read(ROOT / ".importlinter")
     forbidden = config["importlinter:contract:no-generated-packages"]["forbidden_modules"].split()

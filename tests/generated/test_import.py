@@ -64,5 +64,5 @@ print(DetectionFinding.__ocsf__, sorted(requires("{dist.package.replace("_", "-"
     assert result.returncode == 0, result.stderr
     assert result.stdout.startswith(f"('{dist.version}', 'detection_finding')")
     assert "msgspec<1,>=0.22" in result.stdout
-    assert "'ocsf-toolkit<" in result.stdout  # a range of core versions, not one pin
-    assert "ocsf-toolkit==" not in result.stdout
+    assert "'ocsf-semtools<" in result.stdout  # a range of core versions, not one pin
+    assert "ocsf-semtools==" not in result.stdout

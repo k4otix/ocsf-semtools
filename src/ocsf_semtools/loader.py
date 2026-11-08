@@ -5,7 +5,7 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import cast
 
-from ocsf_toolkit.ir import (
+from ocsf_semtools.ir import (
     Attribute,
     Category,
     Constraint,

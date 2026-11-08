@@ -19,8 +19,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli.trees import files_sha256, package_name
+from ocsf_semtools.cli import lock
+from ocsf_semtools.cli.trees import files_sha256, package_name
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
@@ -43,7 +43,7 @@ def core_range(version: str) -> str:
 
 
 def dist_name(version: str) -> str:
-    """Return the PyPI project name of the model dist for an OCSF version: ocsf-toolkit-v1-9-0."""
+    """Return the PyPI project name of the model dist for an OCSF version: ocsf-semtools-v1-9-0."""
     return package_name(version).replace("_", "-")
 
 
@@ -108,14 +108,14 @@ def _release(version: str) -> tuple[int, ...]:
 
 
 def admits(wheel: bytes, core: str) -> bool:
-    """Tell whether a published dist wheel's ``ocsf-toolkit`` requirement allows core ``core``.
+    """Tell whether a published dist wheel's ``ocsf-semtools`` requirement allows core ``core``.
 
     Only the upper bound can exclude a newer core; the lower bound was met when the wheel shipped.
     """
     text = _metadata(wheel)
-    found = re.search(r"^Requires-Dist: ocsf-toolkit\b(.*)$", text, re.MULTILINE)
+    found = re.search(r"^Requires-Dist: ocsf-semtools\b(.*)$", text, re.MULTILINE)
     if found is None:
-        raise ValueError("the wheel's METADATA does not require ocsf-toolkit")
+        raise ValueError("the wheel's METADATA does not require ocsf-semtools")
     upper = re.search(r"<\s*([0-9.]+)", found[1])
     if upper is None:
         return False  # an exact pin from before ranges: never admits another core
@@ -174,7 +174,7 @@ SMOKE = """
 import sys
 from datetime import datetime, timezone
 import msgspec
-from ocsf_toolkit import build, parse
+from ocsf_semtools import build, parse
 models = __import__(sys.argv[1])
 cls = models.DetectionFinding
 o = models.objects
@@ -189,7 +189,7 @@ event = build(
 assert event.type_uid == event.class_uid * 100 + 1, event.type_uid
 back, report = parse(msgspec.to_builtins(event), as_=cls)
 assert back == event, report
-print(f"{sys.argv[1]}: build and parse ok against ocsf-toolkit", file=sys.stderr)
+print(f"{sys.argv[1]}: build and parse ok against ocsf-semtools", file=sys.stderr)
 """
 
 

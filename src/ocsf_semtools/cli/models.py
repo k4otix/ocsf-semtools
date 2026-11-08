@@ -4,11 +4,11 @@ import argparse
 from collections.abc import Callable
 from pathlib import Path
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli._common import AddParser, Options
-from ocsf_toolkit.cli.trees import files_sha256, package_name, read_tree
-from ocsf_toolkit.codegen import render
-from ocsf_toolkit.schema import load
+from ocsf_semtools.cli import lock
+from ocsf_semtools.cli._common import AddParser, Options
+from ocsf_semtools.cli.trees import files_sha256, package_name, read_tree
+from ocsf_semtools.codegen import render
+from ocsf_semtools.schema import load
 
 DISTS_DIR = "build/dists"
 
@@ -64,7 +64,7 @@ def check(args: argparse.Namespace) -> int:
             raise ValueError(
                 f"models for {entry.version} have sha256 {digest}, lockfile has "
                 f"{entry.models_tree_sha256 or 'none'}; review the change, then "
-                f"`ocsf-toolkit models record {entry.version}`"
+                f"`ocsf-semtools models record {entry.version}`"
             )
         print(f"{entry.version}: ok  models_tree_sha256 {digest} == lockfile (rendered twice)")
         dist = Path(args.dists) / package_name(entry.version) / package_name(entry.version)

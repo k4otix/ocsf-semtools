@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.ir import Constraint, Deprecation, Requirement, Root, SchemaIR
-from ocsf_toolkit.loader import IGNORED_KEYS, KeyAccount, load_compiled
+from ocsf_semtools.ir import Constraint, Deprecation, Requirement, Root, SchemaIR
+from ocsf_semtools.loader import IGNORED_KEYS, KeyAccount, load_compiled
 from tests.conftest import VERSIONS, compiled_path, provenance
 from tests.fixtures.compiled import PROVENANCE, compiled, compiled_bytes
 

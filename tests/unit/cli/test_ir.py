@@ -1,4 +1,4 @@
-"""``ocsf-toolkit ir export`` / ``ir check``, offline against a synthetic compiled schema."""
+"""``ocsf-semtools ir export`` / ``ir check``, offline against a synthetic compiled schema."""
 
 import hashlib
 import json
@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import build_parser, ir, lock, main
-from ocsf_toolkit.export import load_ir
+from ocsf_semtools.cli import build_parser, ir, lock, main
+from ocsf_semtools.export import load_ir
 from tests.fixtures.compiled import compiled
 from tests.unit.cli.support import entry, write_lockfile
 
@@ -89,7 +89,7 @@ def test_check_without_recorded_ir(workspace: Path, capsys: pytest.CaptureFixtur
 def test_missing_compiled_schema(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:
     (workspace / "build" / "compiled" / f"schema-{VERSION}.json").unlink()
     assert _run(workspace, "export", VERSION, "--record") == 2
-    assert f"run `ocsf-toolkit compile {VERSION}` first" in capsys.readouterr().err
+    assert f"run `ocsf-semtools compile {VERSION}` first" in capsys.readouterr().err
 
 
 def test_stale_compiled_schema(workspace: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -9,9 +9,9 @@ from importlib import resources
 from types import MappingProxyType
 from typing import final
 
-from ocsf_toolkit.export import digest, export_ir
-from ocsf_toolkit.export import load_ir as load_ir  # re-exported: schema.load_ir is public
-from ocsf_toolkit.ir import (
+from ocsf_semtools.export import digest, export_ir
+from ocsf_semtools.export import load_ir as load_ir  # re-exported: schema.load_ir is public
+from ocsf_semtools.ir import (
     Attribute,
     Category,
     Constraint,
@@ -144,7 +144,7 @@ class ResolvedSchema:
 
 def shipped_versions() -> tuple[str, ...]:
     """Return the OCSF versions whose IR ships in this package, oldest first."""
-    names = (p.name for p in resources.files("ocsf_toolkit").joinpath("data").iterdir())
+    names = (p.name for p in resources.files("ocsf_semtools").joinpath("data").iterdir())
     found = [n[3:-5] for n in names if n.startswith("ir-") and n.endswith(".json")]
     return tuple(sorted(found, key=lambda v: tuple(int(p) for p in v.split("."))))
 
@@ -189,7 +189,7 @@ def _shipped(version: str) -> tuple[SchemaIR, str]:
     shipped = shipped_versions()
     if version not in shipped:  # also refuses a path such as "../1.9.0"
         raise ValueError(f"no shipped IR for OCSF version {version!r}; shipped: {list(shipped)}")
-    data = resources.files("ocsf_toolkit").joinpath("data", f"ir-{version}.json").read_bytes()
+    data = resources.files("ocsf_semtools").joinpath("data", f"ir-{version}.json").read_bytes()
     ir = load_ir(data)
     if ir.version != version:
         raise ValueError(f"data/ir-{version}.json holds OCSF {ir.version!r}")

@@ -3,8 +3,8 @@
 import argparse
 import json
 
-from ocsf_toolkit.cli._common import AddParser, Options, printable, source_ir
-from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
+from ocsf_semtools.cli._common import AddParser, Options, printable, source_ir
+from ocsf_semtools.diff import Change, SchemaDiff, diff, plain
 
 
 def register(add_parser: AddParser, shared: Options) -> None:

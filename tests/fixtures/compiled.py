@@ -4,7 +4,7 @@ import copy
 import json
 from typing import Any
 
-from ocsf_toolkit.ir import Provenance
+from ocsf_semtools.ir import Provenance
 
 PROVENANCE = Provenance(
     schema_repo="https://github.com/ocsf/ocsf-schema",

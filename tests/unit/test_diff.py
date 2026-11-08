@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.diff import Change, SchemaDiff, diff, plain
-from ocsf_toolkit.ir import Requirement, SchemaIR
-from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.schema import load
+from ocsf_semtools.diff import Change, SchemaDiff, diff, plain
+from ocsf_semtools.ir import Requirement, SchemaIR
+from ocsf_semtools.loader import load_compiled
+from ocsf_semtools.schema import load
 from tests.fixtures.compiled import PROVENANCE, compiled, compiled_bytes
 
 

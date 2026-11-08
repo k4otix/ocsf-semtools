@@ -8,11 +8,11 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.export import digest
-from ocsf_toolkit.ir import Attribute, Constraint, Requirement, Root, SchemaIR
-from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.schema import (
+from ocsf_semtools.cli import lock
+from ocsf_semtools.export import digest
+from ocsf_semtools.ir import Attribute, Constraint, Requirement, Root, SchemaIR
+from ocsf_semtools.loader import load_compiled
+from ocsf_semtools.schema import (
     ClassIdentity,
     ResolvedAttribute,
     ResolvedSchema,
@@ -338,7 +338,7 @@ def test_profiles_change_attributes_and_rules(base: ResolvedSchema) -> None:
 NO_OBJECT_CONSUMER = textwrap.dedent(
     """
     import sys
-    from ocsf_toolkit import load
+    from ocsf_semtools import load
 
     schema = load("1.9.0", profiles={"cloud", "security_control"})
     finding = schema.classes["detection_finding"]

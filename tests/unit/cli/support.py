@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ocsf_toolkit.cli import lock
+from ocsf_semtools.cli import lock
 
 # The committed ocsf.lock's toolchain (test_lock checks that they agree).
 TOOLCHAIN = lock.Toolchain(ocsf_schema_compiler="1.1.1", python_compile="3.14", ir_version="1.0")

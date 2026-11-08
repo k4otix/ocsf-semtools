@@ -1,11 +1,11 @@
-# ocsf.lock: schema pins. Written by `ocsf-toolkit lock`.
-# Edit [toolchain] by hand; add schemas with `ocsf-toolkit lock --add <version>`.
+# ocsf.lock: schema pins. Written by `ocsf-semtools lock`.
+# Edit [toolchain] by hand; add schemas with `ocsf-semtools lock --add <version>`.
 #   version  declared OCSF version; `compile` asserts the compiled schema's "version" equals it
 #   ref      upstream tag or branch as spelled upstream (informational); commit is the pin
 #   compiled_sha256  sha256 of build/compiled/schema-<version>.json, which is the compiler output
 #                    re-serialized as canonical JSON (raw output key order varies by filesystem)
-#   ir_sha256  sha256 of src/ocsf_toolkit/data/ir-<version>.json (`ocsf-toolkit ir export --record`)
-#   models_tree_sha256  sha256 of the generated model package (`ocsf-toolkit models record`)
+#   ir_sha256  sha256 of src/ocsf_semtools/data/ir-<version>.json (`ocsf-semtools ir export --record`)
+#   models_tree_sha256  sha256 of the generated model package (`ocsf-semtools models record`)
 #   ship_models  in the model window: the newest versions get a model dist (`lock --add` moves it)
 
 [toolchain]
@@ -90,7 +90,7 @@ ref = "1.7.0"
 commit = "dc6359b49cd3c8f9e84dd657ec4524ab244c12ca"
 compiled_sha256 = "30e83d74801d2e31b2914706043a5700c3c9512726ada6f4fc5cf32908edb6ec"
 ir_sha256 = "3234e2cfcd0ebec4bad20069aad588ce8dfde821943a6a439656b5274476bbaf"
-models_tree_sha256 = "bbace8194c3cf1bf2fc9500892c309b91ea6994158958bf80e916f25a481de13"
+models_tree_sha256 = "742c603a5cf5434ec31e08a664ae55845ea91ff213806cd8d589da1b46b0d8ab"
 ship_models = true
 
 [[schemas]]
@@ -100,7 +100,7 @@ ref = "1.8.0"
 commit = "6fa6499a0f8c9f449d342816e90e5f687c224b0a"
 compiled_sha256 = "9a5c408782efb36be67627d9f945055caa74d65aa5c36eb758321b45f32800fb"
 ir_sha256 = "a695c715be70f026f2464d016aa39515c26fce615f7a36f0cc10f0c9bb4a7aaa"
-models_tree_sha256 = "96ae95bac541b27d24d26c119b624d3f533ff02e1b994ba19591e199455b4384"
+models_tree_sha256 = "7d45474b652bab5077cad9bb515cd3fe4dc24c53cb37b15ae2b08204a693dd5e"
 ship_models = true
 
 [[schemas]]
@@ -110,5 +110,5 @@ ref = "1.9.0"
 commit = "856d462bd20dc46cc1ffed2dfffe3b91ef0fbeba"
 compiled_sha256 = "b246764d43d036fa875df643fd28496815e98050ccf93fa6edec0f8b47b1debf"
 ir_sha256 = "7e2ecdfbeb12b53e03b2aaef27662072154b7c0dd5627b642200b1d485d858f8"
-models_tree_sha256 = "b1522a9dbd58b124322cf7ab732b5e1e324efd5008fcff6840548ab584481ddf"
+models_tree_sha256 = "b252814a8a2b94c09016cc0c49384e24a20cde8a1c451ef7e57d86b3b9f09e73"
 ship_models = true

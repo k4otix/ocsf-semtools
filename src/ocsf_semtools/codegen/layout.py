@@ -4,8 +4,8 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from ocsf_toolkit.codegen.naming import class_name, module_name
-from ocsf_toolkit.ir import ItemDef
+from ocsf_semtools.codegen.naming import class_name, module_name
+from ocsf_semtools.ir import ItemDef
 
 ENUMS = "enums"
 

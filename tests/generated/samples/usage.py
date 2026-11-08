@@ -6,12 +6,12 @@ reportUnnecessaryTypeIgnoreComment, so a mistake that stops being caught fails t
 
 from typing import Any, assert_type
 
-from ocsf_toolkit_v1_9_0 import DetectionFinding
-from ocsf_toolkit_v1_9_0.classes.detection_finding import DetectionFindingActivityId
-from ocsf_toolkit_v1_9_0.enums import SeverityId
-from ocsf_toolkit_v1_9_0.objects import FindingInfo, Metadata, Product
+from ocsf_semtools_v1_9_0 import DetectionFinding
+from ocsf_semtools_v1_9_0.classes.detection_finding import DetectionFindingActivityId
+from ocsf_semtools_v1_9_0.enums import SeverityId
+from ocsf_semtools_v1_9_0.objects import FindingInfo, Metadata, Product
 
-from ocsf_toolkit import build, parse
+from ocsf_semtools import build, parse
 
 
 def built() -> DetectionFinding:

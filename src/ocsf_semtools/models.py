@@ -12,7 +12,7 @@ from importlib import resources
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, cast, overload
 
-from ocsf_toolkit.engine import (
+from ocsf_semtools.engine import (
     LENIENT,
     MAX_NODES,
     REPAIR,
@@ -26,7 +26,7 @@ from ocsf_toolkit.engine import (
     run,
     select,
 )
-from ocsf_toolkit.schema import ResolvedSchema, load_ir, resolve
+from ocsf_semtools.schema import ResolvedSchema, load_ir, resolve
 
 if TYPE_CHECKING:  # imported where used: reading a schema never loads the modelling layer
     import msgspec
@@ -208,12 +208,12 @@ def _schema(package: str, digest: str, profiles: frozenset[str]) -> ResolvedSche
     extensions = cast(tuple[str, ...], module.__ocsf_extensions__)
     bundled = resources.files(package).joinpath(_BUNDLED_IR)
     if not bundled.is_file():
-        raise ValueError(f"{package} has no {_BUNDLED_IR}; regenerate it with this ocsf-toolkit")
+        raise ValueError(f"{package} has no {_BUNDLED_IR}; regenerate it with this ocsf-semtools")
     schema = resolve(load_ir(bundled.read_bytes()), profiles=profiles, extensions=extensions)
     if schema.digest != digest:
         raise ValueError(
             f"{package} was generated from IR {digest}, but its {_BUNDLED_IR} is IR"
-            f" {schema.digest}; regenerate it with this ocsf-toolkit"
+            f" {schema.digest}; regenerate it with this ocsf-semtools"
         )
     return schema
 

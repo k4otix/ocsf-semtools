@@ -5,6 +5,6 @@ this one hold the pieces: ``layout`` (which module each item goes in), ``naming`
 ``types`` (annotations), ``emit`` (source text) and ``generate`` (the projection itself).
 """
 
-from ocsf_toolkit.codegen.generate import IR_FILE, generate, render
+from ocsf_semtools.codegen.generate import IR_FILE, generate, render
 
 __all__ = ["IR_FILE", "generate", "render"]

@@ -4,7 +4,7 @@ dist/
 *.egg-info/
 
 # written by hatch-vcs at build time
-src/ocsf_toolkit/_version.py
+src/ocsf_semtools/_version.py
 
 # environments and caches
 .venv/

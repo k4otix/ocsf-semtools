@@ -1,4 +1,4 @@
-"""``ocsf-toolkit models check`` / ``models record``: regeneration gate 3, the generated trees against the lockfile."""
+"""``ocsf-semtools models check`` / ``models record``: regeneration gate 3, the generated trees against the lockfile."""
 
 import shutil
 from dataclasses import replace
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import lock, main, models, trees
+from ocsf_semtools.cli import lock, main, models, trees
 from tests.conftest import ROOT
 
 
@@ -26,7 +26,7 @@ def _run(path: Path, action: str, *args: str) -> int:
 
 
 def test_package_name() -> None:
-    assert trees.package_name("1.10.0") == "ocsf_toolkit_v1_10_0"
+    assert trees.package_name("1.10.0") == "ocsf_semtools_v1_10_0"
 
 
 def test_files_sha256_covers_paths_and_bytes() -> None:
@@ -57,7 +57,7 @@ def test_check_refuses_a_version_outside_the_window(lockfile: Path, capsys: pyte
 
 def test_check_compares_a_built_dist(lockfile: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(lockfile, "record") == 0
-    package = lockfile.parent / "dists" / "ocsf_toolkit_v1_9_0" / "ocsf_toolkit_v1_9_0"
+    package = lockfile.parent / "dists" / "ocsf_semtools_v1_9_0" / "ocsf_semtools_v1_9_0"
     for name, data in models.tree("1.9.0").items():
         (package / name).parent.mkdir(parents=True, exist_ok=True)
         (package / name).write_bytes(data)

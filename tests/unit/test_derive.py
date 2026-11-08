@@ -6,11 +6,11 @@ from typing import Any, cast
 
 import pytest
 
-from ocsf_toolkit.derive import rfc3339
-from ocsf_toolkit.engine import LENIENT, REPAIR, STRICT, ConformanceError, Policy, Report, run
-from ocsf_toolkit.models import build
-from ocsf_toolkit.schema import ResolvedSchema, load
-from ocsf_toolkit.walk import Kind, Path
+from ocsf_semtools.derive import rfc3339
+from ocsf_semtools.engine import LENIENT, REPAIR, STRICT, ConformanceError, Policy, Report, run
+from ocsf_semtools.models import build
+from ocsf_semtools.schema import ResolvedSchema, load
+from ocsf_semtools.walk import Kind, Path
 from tests.fixtures.events import CLASS, T0, base_detection_finding, caption, minimal_fields
 
 

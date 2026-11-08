@@ -3,13 +3,13 @@
 import argparse
 from pathlib import Path
 
-from ocsf_toolkit.cli import _upstream, lock
-from ocsf_toolkit.cli._common import AddParser, Options, source_ir
-from ocsf_toolkit.cli.trees import files_sha256, read_tree
-from ocsf_toolkit.codegen import generate
-from ocsf_toolkit.ir import Provenance, SchemaIR
-from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.schema import load
+from ocsf_semtools.cli import _upstream, lock
+from ocsf_semtools.cli._common import AddParser, Options, source_ir
+from ocsf_semtools.cli.trees import files_sha256, read_tree
+from ocsf_semtools.codegen import generate
+from ocsf_semtools.ir import Provenance, SchemaIR
+from ocsf_semtools.loader import load_compiled
+from ocsf_semtools.schema import load
 
 
 def register(add_parser: AddParser, shared: Options) -> None:

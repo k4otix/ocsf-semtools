@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import build_parser, check, main
-from ocsf_toolkit.schema import load
+from ocsf_semtools.cli import build_parser, check, main
+from ocsf_semtools.schema import load
 from tests.fixtures.events import base_detection_finding, error_fixtures
 
 
@@ -104,7 +104,7 @@ def test_reports_do_not_depend_on_the_hash_seed(events: Path) -> None:
     outputs: list[str] = []
     for seed in ("1", "2"):
         argv = ["check", "--version", "1.9.0", "--json", str(events)]
-        command = [sys.executable, "-c", f"from ocsf_toolkit.cli import main; raise SystemExit(main({argv!r}))"]
+        command = [sys.executable, "-c", f"from ocsf_semtools.cli import main; raise SystemExit(main({argv!r}))"]
         env = {**os.environ, "PYTHONHASHSEED": seed}
         outputs.append(subprocess.run(command, capture_output=True, text=True, env=env, check=False).stdout)
     assert outputs[0]

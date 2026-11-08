@@ -8,8 +8,8 @@ from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any, cast
 
-from ocsf_toolkit.cli import _upstream
-from ocsf_toolkit.cli._common import AddParser, Options, atomic_write
+from ocsf_semtools.cli import _upstream
+from ocsf_semtools.cli._common import AddParser, Options, atomic_write
 
 UPSTREAM_REPO = "https://github.com/ocsf/ocsf-schema"
 WINDOW = 3  # model dists ship for the newest WINDOW versions
@@ -22,14 +22,14 @@ _REPO = re.compile(r"(https|file)://[^\s]+")
 _TOOL_VERSION = re.compile(r"\d+(\.\d+)*")
 
 _HEADER = """\
-# ocsf.lock: schema pins. Written by `ocsf-toolkit lock`.
-# Edit [toolchain] by hand; add schemas with `ocsf-toolkit lock --add <version>`.
+# ocsf.lock: schema pins. Written by `ocsf-semtools lock`.
+# Edit [toolchain] by hand; add schemas with `ocsf-semtools lock --add <version>`.
 #   version  declared OCSF version; `compile` asserts the compiled schema's "version" equals it
 #   ref      upstream tag or branch as spelled upstream (informational); commit is the pin
 #   compiled_sha256  sha256 of build/compiled/schema-<version>.json, which is the compiler output
 #                    re-serialized as canonical JSON (raw output key order varies by filesystem)
-#   ir_sha256  sha256 of src/ocsf_toolkit/data/ir-<version>.json (`ocsf-toolkit ir export --record`)
-#   models_tree_sha256  sha256 of the generated model package (`ocsf-toolkit models record`)
+#   ir_sha256  sha256 of src/ocsf_semtools/data/ir-<version>.json (`ocsf-semtools ir export --record`)
+#   models_tree_sha256  sha256 of the generated model package (`ocsf-semtools models record`)
 #   ship_models  in the model window: the newest versions get a model dist (`lock --add` moves it)
 """
 

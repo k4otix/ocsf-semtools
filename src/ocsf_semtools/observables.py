@@ -6,9 +6,9 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any, cast, final
 
-from ocsf_toolkit.ir import EnumMember, EnumValue
-from ocsf_toolkit.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
-from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64, shown
+from ocsf_semtools.ir import EnumMember, EnumValue
+from ocsf_semtools.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
+from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64, shown
 
 OBSERVABLES = "observables"  # the class attribute holding an event's observable entries
 _OBSERVABLE = "observable"  # the object type of each entry

@@ -8,8 +8,8 @@
 #
 # PyPI setup (once per project): a trusted publisher bound to this repository and workflow
 # release.yaml, with one GitHub environment per project, because PyPI lets one pending publisher
-# configuration create only one project: ocsf-toolkit -> environment pypi, and each
-# ocsf-toolkit-v<x>-<y>-<z> -> environment pypi-v<x>-<y>-<z>. Each project publishes from its own
+# configuration create only one project: ocsf-semtools -> environment pypi, and each
+# ocsf-semtools-v<x>-<y>-<z> -> environment pypi-v<x>-<y>-<z>. Each project publishes from its own
 # job in its own environment, and only after the `approve` job passes the protected `release`
 # environment.
 #
@@ -90,23 +90,23 @@ jobs:
           HOLD: ${{ vars.RELEASE_HOLD_DISTS }}
         run: |
           mkdir -p upload
-          cp build/wheels/ocsf_toolkit-* upload/
-          projects='[{"project":"ocsf-toolkit","prefix":"ocsf_toolkit-","environment":"pypi"}]'
+          cp build/wheels/ocsf_semtools-* upload/
+          projects='[{"project":"ocsf-semtools","prefix":"ocsf_semtools-","environment":"pypi"}]'
           dists="" held=""
           for v in $(uv run python packaging/version_dist/dist.py unpublished --version "$VERSION"); do
             if [[ " $HOLD " == *" $v "* ]]; then held="$held $v"; else dists="$dists $v"; fi
           done
           dists=${dists# } held=${held# }
           for v in $dists; do
-            cp build/wheels/ocsf_toolkit_v"${v//./_}"-* upload/
+            cp build/wheels/ocsf_semtools_v"${v//./_}"-* upload/
             projects=$(jq -c --arg d "${v//./-}" --arg u "${v//./_}" \
-              '. + [{project: "ocsf-toolkit-v\($d)", prefix: "ocsf_toolkit_v\($u)-",
+              '. + [{project: "ocsf-semtools-v\($d)", prefix: "ocsf_semtools_v\($u)-",
                      environment: "pypi-v\($d)"}]' <<< "$projects")
           done
           echo "projects=$projects" >> "$GITHUB_OUTPUT"
           (cd upload && sha256sum ./* | sed 's| \./| |') > SHA256SUMS
           {
-            echo "### ocsf-toolkit $VERSION"
+            echo "### ocsf-semtools $VERSION"
             echo "model dists to publish: ${dists:-none (every published tree is current)}"
             echo "model dists held back (RELEASE_HOLD_DISTS): ${held:-none}"
             echo '```'

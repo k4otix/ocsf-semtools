@@ -12,7 +12,7 @@ from typing import Any
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from ocsf_toolkit import extract, load, parse, repair
+from ocsf_semtools import extract, load, parse, repair
 from tests.property.strategies import SETTINGS
 
 SCHEMA = load("1.9.0")

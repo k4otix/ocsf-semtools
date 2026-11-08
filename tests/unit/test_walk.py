@@ -4,8 +4,8 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.schema import ResolvedSchema
-from ocsf_toolkit.walk import Finding, Kind, Path, Visit, canonical, dotted, walk
+from ocsf_semtools.schema import ResolvedSchema
+from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, dotted, walk
 from tests.fixtures.notations import CANONICAL, NOTATIONS
 
 

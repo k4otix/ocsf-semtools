@@ -13,9 +13,9 @@ project installs only the versions it produces (`--pre` while the library is in 
 
 | Install | Import |
 |---|---|
-| `pip install --pre ocsf-toolkit-v1-9-0` | `ocsf_toolkit_v1_9_0` |
-| `pip install --pre ocsf-toolkit-v1-8-0` | `ocsf_toolkit_v1_8_0` |
-| `pip install --pre ocsf-toolkit-v1-7-0` | `ocsf_toolkit_v1_7_0` |
+| `pip install --pre ocsf-semtools-v1-9-0` | `ocsf_semtools_v1_9_0` |
+| `pip install --pre ocsf-semtools-v1-8-0` | `ocsf_semtools_v1_8_0` |
+| `pip install --pre ocsf-semtools-v1-7-0` | `ocsf_semtools_v1_7_0` |
 
 Packages for different versions install side by side. Each one bundles the IR it was generated from
 and requires the core minor release it was generated with: patch releases of the core install under
@@ -26,14 +26,14 @@ needs `--pre` for its models.
 **Leaving the window.** When a new OCSF release ships, the oldest package leaves the window and gets
 no further releases, so it stays on the core minor it last required. To use a newer core with that
 OCSF version, move to a newer model package, use the dict API, which covers every shipped release, or
-generate the models yourself: `ocsf-toolkit generate 1.7.0 --package my_models --out src/`.
+generate the models yourself: `ocsf-semtools generate 1.7.0 --package my_models --out src/`.
 
 ```python
-from ocsf_toolkit import build, parse
-from ocsf_toolkit_v1_9_0 import DetectionFinding  # classes from the package root
-from ocsf_toolkit_v1_9_0.enums import SeverityId  # enums shared through the dictionary
-from ocsf_toolkit_v1_9_0.objects import Metadata, Product  # objects
-from ocsf_toolkit_v1_9_0.classes.detection_finding import DetectionFindingActivityId  # class enums
+from ocsf_semtools import build, parse
+from ocsf_semtools_v1_9_0 import DetectionFinding  # classes from the package root
+from ocsf_semtools_v1_9_0.enums import SeverityId  # enums shared through the dictionary
+from ocsf_semtools_v1_9_0.objects import Metadata, Product  # objects
+from ocsf_semtools_v1_9_0.classes.detection_finding import DetectionFindingActivityId  # class enums
 ```
 
 Layout of a package:
@@ -66,7 +66,7 @@ are moved into `unmapped`, since a Struct has no field for them.
 
 `generate(ir, *, package, out, profiles=None, extensions=None)` writes the package `out/<package>`
 and returns its path. It covers an exact profile set, a subset of extensions, or an IR compiled with
-custom extensions (see `ocsf-toolkit generate --ext` in the [CLI docs](cli.md)).
+custom extensions (see `ocsf-semtools generate --ext` in the [CLI docs](cli.md)).
 
 With `profiles`, the classes are exact for that set: an attribute a profile requires is a required
 field.
@@ -74,7 +74,7 @@ field.
 ```pycon
 >>> import sys, tempfile
 >>> from pathlib import Path
->>> from ocsf_toolkit import ConformanceError, build, generate, load
+>>> from ocsf_semtools import ConformanceError, build, generate, load
 >>> tmp = tempfile.TemporaryDirectory()
 >>> path = generate(load("1.9.0").ir, package="acme_models", out=Path(tmp.name), profiles=["cloud"])
 >>> path.name
@@ -104,4 +104,4 @@ True
 
 `generate` replaces an existing `out/<package>` only if every file in it is one the generator writes;
 anything else there stops it with an error and nothing changes. The generated code imports nothing
-from `ocsf_toolkit`; `build` and `parse` find the schema through the package's bundled IR.
+from `ocsf_semtools`; `build` and `parse` find the schema through the package's bundled IR.

@@ -14,7 +14,7 @@ stable uid shows up as one rename. Matching is exact, and the result is data a p
 can act on, such as planning how to migrate events.
 
 ```pycon
->>> from ocsf_toolkit import diff, load
+>>> from ocsf_semtools import diff, load
 >>> changes = diff(load("1.7.0").ir, load("1.9.0").ir)
 >>> changes.old, changes.new, len(changes.changes)
 ('1.7.0', '1.9.0', 1115)
@@ -54,7 +54,7 @@ win/registry_value_info -> win/registry_value_query
 `kind` (`added`, `removed`, `changed` or `renamed`), a `path`, and `before` and `after` values. An
 added or removed subtree is one change. A rename is one change at the old path, after which the
 class is compared under its new key. `to_dict()` renders IR values as plain JSON, which is what
-`ocsf-toolkit diff --json` prints.
+`ocsf-semtools diff --json` prints.
 
 ```pycon
 >>> sorted(changes.to_dict())

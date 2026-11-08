@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.codegen import IR_FILE, generate, render
-from ocsf_toolkit.export import export_ir
-from ocsf_toolkit.ir import SchemaIR
-from ocsf_toolkit.schema import load
+from ocsf_semtools.codegen import IR_FILE, generate, render
+from ocsf_semtools.export import export_ir
+from ocsf_semtools.ir import SchemaIR
+from ocsf_semtools.schema import load
 from tests.conftest import ROOT
 
 IR = load("1.9.0").ir

@@ -8,10 +8,10 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.cli import _upstream, build_parser, generate, main
-from ocsf_toolkit.cli.trees import files_sha256, read_tree
-from ocsf_toolkit.export import load_ir
-from ocsf_toolkit.schema import load
+from ocsf_semtools.cli import _upstream, build_parser, generate, main
+from ocsf_semtools.cli.trees import files_sha256, read_tree
+from ocsf_semtools.export import load_ir
+from ocsf_semtools.schema import load
 from tests.conftest import DATA_DIR
 from tests.fixtures.compiled import compiled
 from tests.unit.cli.support import Upstream, entry, write_lockfile

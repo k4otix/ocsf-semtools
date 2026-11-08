@@ -5,7 +5,7 @@ event lists them in its `observables` array. The library works out that list fro
 event, so producers don't maintain it by hand.
 
 ```pycon
->>> from ocsf_toolkit import build, load
+>>> from ocsf_semtools import build, load
 >>> schema = load("1.9.0")
 >>> event = build(
 ...     (schema, "network_activity"),
@@ -31,7 +31,7 @@ or when the class's own observable path map names it.
 Values are given as strings, the way OCSF writes them, and objects such as endpoints carry no value.
 
 ```pycon
->>> from ocsf_toolkit import extract
+>>> from ocsf_semtools import extract
 >>> found, report = extract(event, schema)
 >>> for observable in found:
 ...     print(observable.name, observable.type_id, observable.type, observable.value)
@@ -71,7 +71,7 @@ event already lists. The caller's entries stay as given, and an entry already pr
 `type_id` and value, isn't added twice:
 
 ```pycon
->>> from ocsf_toolkit import merge
+>>> from ocsf_semtools import merge
 >>> merged = merge(event, found)
 >>> [entry["name"] for entry in merged["observables"]]
 ['dst_endpoint.ip', 'src_endpoint', 'dst_endpoint', 'src_endpoint.ip', 'dst_endpoint.port']

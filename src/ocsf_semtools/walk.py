@@ -1,7 +1,7 @@
 """The one traversal of an event against a schema, and the vocabulary every visitor reports in.
 
 ``Finding``, ``Kind`` and ``RepairAction`` live here because the walk and all three visitors use them;
-``ocsf_toolkit.engine`` re-exports them as the public names.
+``ocsf_semtools.engine`` re-exports them as the public names.
 """
 
 import re
@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Literal, TypeGuard, cast, final
 
-from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
+from ocsf_semtools.ir import Requirement
+from ocsf_semtools.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema
 
 type Path = tuple[str | int, ...]
 type Severity = Literal["error", "warning", "info"]

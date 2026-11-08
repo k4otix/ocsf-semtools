@@ -11,7 +11,7 @@ from typing import Any, cast
 
 import pytest
 
-from ocsf_toolkit.engine import (
+from ocsf_semtools.engine import (
     LENIENT,
     MAX_NODES,
     REPAIR,
@@ -22,9 +22,9 @@ from ocsf_toolkit.engine import (
     run,
     select,
 )
-from ocsf_toolkit.models import build, parse, repair
-from ocsf_toolkit.schema import ResolvedSchema, load, resolve
-from ocsf_toolkit.walk import (
+from ocsf_semtools.models import build, parse, repair
+from ocsf_semtools.schema import ResolvedSchema, load, resolve
+from ocsf_semtools.walk import (
     _SEVERITY,  # pyright: ignore[reportPrivateUsage]
     Finding,
     Kind,

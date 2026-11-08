@@ -4,7 +4,7 @@ docs/*.md, and every page the README links to exists. (The pages' examples run a
 import re
 import tomllib
 
-import ocsf_toolkit
+import ocsf_semtools
 from tests.conftest import ROOT
 
 DOCS = ROOT / "docs"
@@ -17,18 +17,18 @@ def _documented() -> set[str]:
 
 
 def test_every_public_name_has_a_docs_heading() -> None:
-    public = set(ocsf_toolkit.__all__) - {"__version__"}
+    public = set(ocsf_semtools.__all__) - {"__version__"}
     assert sorted(public - _documented()) == []
 
 
 def test_every_docs_heading_is_public() -> None:
     """A heading for a name that left __all__ is a stale page."""
-    public = set(ocsf_toolkit.__all__)
+    public = set(ocsf_semtools.__all__)
     commands = {"check", "diff", "generate"}  # docs/cli.md documents commands the same way
     assert sorted(_documented() - public - commands) == []
 
 
-REPO_FILES = "https://github.com/k4otix/ocsf-toolkit/blob/main/"
+REPO_FILES = "https://github.com/k4otix/ocsf-semtools/blob/main/"
 
 
 def test_readme_links_resolve() -> None:

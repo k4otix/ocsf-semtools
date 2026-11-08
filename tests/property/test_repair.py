@@ -14,10 +14,10 @@ import pytest
 from hypothesis import given, note
 from hypothesis import strategies as st
 
-from ocsf_toolkit import Report, ResolvedItem, ResolvedSchema, load, repair
-from ocsf_toolkit.derive import OTHER
-from ocsf_toolkit.ir import Root
-from ocsf_toolkit.walk import Path, Visit, dotted, walk
+from ocsf_semtools import Report, ResolvedItem, ResolvedSchema, load, repair
+from ocsf_semtools.derive import OTHER
+from ocsf_semtools.ir import Root
+from ocsf_semtools.walk import Path, Visit, dotted, walk
 from tests.property.strategies import SETTINGS, derived, fields, profile_sets
 from tests.property.test_roundtrip import CASES, build_event
 

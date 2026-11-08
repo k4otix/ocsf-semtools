@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli.trees import package_name
+from ocsf_semtools.cli import lock
+from ocsf_semtools.cli.trees import package_name
 from tests.conftest import LOCKFILE, ROOT
 
 SAMPLES = Path(__file__).parent / "samples"  # typed usage of the 1.9.0 dist

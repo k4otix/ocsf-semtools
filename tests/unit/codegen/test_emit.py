@@ -5,7 +5,7 @@ import unicodedata
 
 import pytest
 
-from ocsf_toolkit.codegen.emit import (
+from ocsf_semtools.codegen.emit import (
     _HIDDEN,  # pyright: ignore[reportPrivateUsage]
     WIDTH,
     Field,

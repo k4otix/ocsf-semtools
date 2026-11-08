@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 def package_name(version: str) -> str:
-    """Return the import name of the model dist for an OCSF version: 1.9.0 -> ocsf_toolkit_v1_9_0."""
-    return "ocsf_toolkit_v" + version.replace(".", "_")
+    """Return the import name of the model dist for an OCSF version: 1.9.0 -> ocsf_semtools_v1_9_0."""
+    return "ocsf_semtools_v" + version.replace(".", "_")
 
 
 def files_sha256(files: Mapping[str, bytes]) -> str:

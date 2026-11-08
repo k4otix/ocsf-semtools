@@ -1,7 +1,7 @@
 """IR attribute type -> annotation text; refinements (range, regex, max_len) are never encoded."""
 
-from ocsf_toolkit.ir import Root
-from ocsf_toolkit.schema import ResolvedAttribute
+from ocsf_semtools.ir import Root
+from ocsf_semtools.schema import ResolvedAttribute
 
 OPEN_OBJECT = "object"  # an object_t typed `object` holds free-form JSON
 

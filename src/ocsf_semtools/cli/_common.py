@@ -5,8 +5,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from ocsf_toolkit.ir import SchemaIR
-from ocsf_toolkit.schema import load, load_ir
+from ocsf_semtools.ir import SchemaIR
+from ocsf_semtools.schema import load, load_ir
 
 type AddParser = Callable[..., argparse.ArgumentParser]  # the root's add_parser, which each register calls
 

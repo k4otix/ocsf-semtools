@@ -5,13 +5,13 @@ import hashlib
 from collections.abc import Callable
 from pathlib import Path
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli._common import AddParser, Options, atomic_write
-from ocsf_toolkit.export import IR_VERSION, export_ir
-from ocsf_toolkit.ir import Provenance
-from ocsf_toolkit.loader import load_compiled
+from ocsf_semtools.cli import lock
+from ocsf_semtools.cli._common import AddParser, Options, atomic_write
+from ocsf_semtools.export import IR_VERSION, export_ir
+from ocsf_semtools.ir import Provenance
+from ocsf_semtools.loader import load_compiled
 
-DATA_DIR = "src/ocsf_toolkit/data"
+DATA_DIR = "src/ocsf_semtools/data"
 
 
 def register(add_parser: AddParser, shared: Options) -> None:
@@ -51,10 +51,10 @@ def ir_bytes(entry: lock.SchemaEntry, toolchain: lock.Toolchain, build_dir: Path
         raise ValueError(f"lockfile [toolchain] ir_version is {toolchain.ir_version}, this library writes {IR_VERSION}")
     path = build_dir / "compiled" / f"schema-{entry.version}.json"
     if not path.is_file():
-        raise ValueError(f"{path} is missing; run `ocsf-toolkit compile {entry.version}` first")
+        raise ValueError(f"{path} is missing; run `ocsf-semtools compile {entry.version}` first")
     compiled = path.read_bytes()
     if hashlib.sha256(compiled).hexdigest() != entry.compiled_sha256:
-        raise ValueError(f"{path} does not match compiled_sha256; run `ocsf-toolkit compile {entry.version}`")
+        raise ValueError(f"{path} does not match compiled_sha256; run `ocsf-semtools compile {entry.version}`")
     provenance = Provenance(
         schema_repo=entry.repo,
         ref=entry.ref,

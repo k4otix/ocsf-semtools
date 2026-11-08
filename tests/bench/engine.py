@@ -24,8 +24,8 @@ import msgspec
 from hypothesis import HealthCheck, Phase, given, settings
 from hypothesis import strategies as st
 
-from ocsf_toolkit import ResolvedSchema, build, load, parse, repair
-from ocsf_toolkit.walk import Visit, walk
+from ocsf_semtools import ResolvedSchema, build, load, parse, repair
+from ocsf_semtools.walk import Visit, walk
 from tests.fixtures.packages import generated_class, import_generated
 from tests.property.strategies import WINDOW, fields, profile_sets
 

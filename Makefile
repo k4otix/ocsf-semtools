@@ -37,30 +37,30 @@ bench:
 
 # gates 1 and 2: compile every lockfile schema, then check every committed IR against it
 schema:
-	$(UV) run ocsf-toolkit compile
-	$(UV) run ocsf-toolkit ir check
+	$(UV) run ocsf-semtools compile
+	$(UV) run ocsf-semtools ir check
 
 # rewrite data/ir-<ver>.json for VERSION (default: every entry with an ir_sha256); RECORD=1 accepts a new IR
 ir:
-	$(UV) run ocsf-toolkit ir export $(VERSION) $(if $(RECORD),--record)
+	$(UV) run ocsf-semtools ir export $(VERSION) $(if $(RECORD),--record)
 
 # pin a new OCSF version, ship its IR and move the model window; safe to rerun after a failure
 # (REF= pins a branch or tag of another name)
 lock:
 	@test -n "$(VERSION)" || { echo "usage: make lock VERSION=x.y.z"; exit 2; }
-	$(UV) run ocsf-toolkit lock --add $(VERSION) $(if $(REF),--ref $(REF))
-	$(UV) run ocsf-toolkit ir export $(VERSION) --record
-	$(UV) run ocsf-toolkit models record
+	$(UV) run ocsf-semtools lock --add $(VERSION) $(if $(REF),--ref $(REF))
+	$(UV) run ocsf-semtools ir export $(VERSION) --record
+	$(UV) run ocsf-semtools models record
 
 # The model dist for one OCSF version as an installable project in build/dists/<package>/.
 # Nothing here deletes: `generate` replaces <package>/ only if every file in it is generated,
 # and the rendered project files are overwritten by name. The dist requires the core version
 # building it, up to its next minor release.
 OCSF ?= 1.9.0
-PACKAGE = ocsf_toolkit_v$(subst .,_,$(OCSF))
+PACKAGE = ocsf_semtools_v$(subst .,_,$(OCSF))
 DIST = build/dists/$(PACKAGE)
 # the model-window versions, from the one rule that defines them (cli/lock.py)
-WINDOW = $(shell $(UV) run python -c 'from pathlib import Path; from ocsf_toolkit.cli import lock; \
+WINDOW = $(shell $(UV) run python -c 'from pathlib import Path; from ocsf_semtools.cli import lock; \
 	print(*lock.window(lock.read(Path("ocsf.lock"))))')
 WHEELS = build/wheels
 # Sdists and wheels carry this timestamp and the version of the backend that built them, so a commit
@@ -78,7 +78,7 @@ version:
 generate:
 	@echo "$(OCSF)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "OCSF must be x.y.z"; exit 2; }
 	mkdir -p $(DIST)
-	$(UV) run ocsf-toolkit generate $(OCSF) --package $(PACKAGE) --out $(DIST)
+	$(UV) run ocsf-semtools generate $(OCSF) --package $(PACKAGE) --out $(DIST)
 	version=$$($(VERSION_CMD)) && \
 	$(UV) run python packaging/version_dist/dist.py render --ocsf $(OCSF) --version "$$version" \
 		--out $(DIST)
@@ -86,7 +86,7 @@ generate:
 # every model-window dist, then regeneration gate 3 over the trees on disk
 dists:
 	for v in $(WINDOW); do $(MAKE) --no-print-directory generate OCSF=$$v || exit 1; done
-	$(UV) run ocsf-toolkit models check
+	$(UV) run ocsf-semtools models check
 
 # core and every model-window dist as sdist and wheel in build/wheels/, each wheel checked
 # (WHEELS must not exist yet: wheels left from an earlier commit would be checked too)
@@ -94,7 +94,7 @@ wheels: dists
 	@test ! -e $(WHEELS) || { echo "$(WHEELS) exists; run make clean, or pass WHEELS=<new dir>"; exit 2; }
 	$(UV) build --quiet --out-dir $(WHEELS)
 	for v in $(WINDOW); do \
-		$(UV) build --quiet --out-dir $(WHEELS) build/dists/ocsf_toolkit_v$$(echo $$v | tr . _) \
+		$(UV) build --quiet --out-dir $(WHEELS) build/dists/ocsf_semtools_v$$(echo $$v | tr . _) \
 			|| exit 1; \
 	done
 	$(UV) run python packaging/version_dist/dist.py check-wheels $(WHEELS)/*.whl

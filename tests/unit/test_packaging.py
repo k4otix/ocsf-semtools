@@ -49,11 +49,11 @@ def test_core_range_rejects_junk() -> None:
 def test_render_writes_the_project_files(tmp_path: Path) -> None:
     dist.render("1.10.0", "0.4.0", tmp_path)
     project = tomllib.loads((tmp_path / "pyproject.toml").read_text())["project"]
-    assert project["name"] == "ocsf-toolkit-v1-10-0"
+    assert project["name"] == "ocsf-semtools-v1-10-0"
     assert project["version"] == "0.4.0"
-    assert project["dependencies"] == ["ocsf-toolkit>=0.4.0,<0.5", "msgspec>=0.22,<1"]
+    assert project["dependencies"] == ["ocsf-semtools>=0.4.0,<0.5", "msgspec>=0.22,<1"]
     readme = (tmp_path / "README.md").read_text()
-    assert "from ocsf_toolkit_v1_10_0 import DetectionFinding" in readme
+    assert "from ocsf_semtools_v1_10_0 import DetectionFinding" in readme
     for name in ("pyproject.toml", "README.md"):
         assert "@" not in (tmp_path / name).read_text()  # no placeholder left
     assert (tmp_path / "LICENSE").read_bytes() == (ROOT / "LICENSE").read_bytes()
@@ -82,12 +82,12 @@ def _wheel(requires: str, files: dict[str, bytes], version: str = "0.1.0") -> by
 @pytest.mark.parametrize(
     ("requires", "core", "admitted"),
     [
-        ("ocsf-toolkit<0.2,>=0.1.0", "0.1.5", True),
-        ("ocsf-toolkit<0.2,>=0.1.0", "0.2.0", False),  # pre-1.0: the next minor may break
-        ("ocsf-toolkit>=1.2.0,<2", "1.9.0", True),
-        ("ocsf-toolkit>=1.2.0,<2", "2.0.0", False),
-        ("ocsf-toolkit<2,>=1.2.0", "1.10.0", True),  # numeric, not text, comparison
-        ("ocsf-toolkit==0.1.0", "0.1.0", False),  # an exact pin always means republish
+        ("ocsf-semtools<0.2,>=0.1.0", "0.1.5", True),
+        ("ocsf-semtools<0.2,>=0.1.0", "0.2.0", False),  # pre-1.0: the next minor may break
+        ("ocsf-semtools>=1.2.0,<2", "1.9.0", True),
+        ("ocsf-semtools>=1.2.0,<2", "2.0.0", False),
+        ("ocsf-semtools<2,>=1.2.0", "1.10.0", True),  # numeric, not text, comparison
+        ("ocsf-semtools==0.1.0", "0.1.0", False),  # an exact pin always means republish
     ],
 )
 def test_admits(requires: str, core: str, admitted: bool) -> None:
@@ -97,7 +97,7 @@ def test_admits(requires: str, core: str, admitted: bool) -> None:
 def test_needs_release() -> None:
     files = {"__init__.py": b"x"}
     tree = dist.files_sha256(files)
-    current = _wheel("ocsf-toolkit<0.2,>=0.1.0", files)
+    current = _wheel("ocsf-semtools<0.2,>=0.1.0", files)
     assert dist.needs_release(None, "pkg", tree, "0.1.1")  # never published
     assert not dist.needs_release(current, "pkg", tree, "0.1.1")  # same tree, core admitted
     assert dist.needs_release(current, "pkg", "0" * 64, "0.1.1")  # the tree changed
@@ -116,7 +116,7 @@ def test_needs_release() -> None:
 )
 def test_a_final_core_releases_a_prerelease_dist_again(published: str, core: str, needed: bool) -> None:
     files = {"__init__.py": b"x"}
-    wheel = _wheel("ocsf-toolkit<0.2,>=0.1.0a1", files, version=published)
+    wheel = _wheel("ocsf-semtools<0.2,>=0.1.0a1", files, version=published)
     assert dist.needs_release(wheel, "pkg", dist.files_sha256(files), core) is needed
 
 

@@ -571,7 +571,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ocsf-toolkit"
+name = "ocsf-semtools"
 source = { editable = "." }
 dependencies = [
     { name = "msgspec" },

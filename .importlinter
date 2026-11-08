@@ -3,7 +3,7 @@
 # as layers or anchored on the root package.)
 
 [importlinter]
-root_package = ocsf_toolkit
+root_package = ocsf_semtools
 include_external_packages = True
 
 # ir <- loader/export <- schema <- walk <- derive/conform/observables <- engine <- models,
@@ -12,7 +12,7 @@ include_external_packages = True
 [importlinter:contract:layers]
 name = Core layering (codegen and diff depend on schema only)
 type = layers
-containers = ocsf_toolkit
+containers = ocsf_semtools
 layers =
     cli
     models
@@ -28,19 +28,19 @@ layers =
 name = Only models imports msgspec
 type = forbidden
 source_modules =
-    ocsf_toolkit
+    ocsf_semtools
 forbidden_modules =
     msgspec
 allow_indirect_imports = True
 ignore_imports =
-    ocsf_toolkit.models -> msgspec
+    ocsf_semtools.models -> msgspec
 
 [importlinter:contract:no-generated-packages]
-name = Nothing in ocsf_toolkit imports a generated version package (ocsf_toolkit_v*)
+name = Nothing in ocsf_semtools imports a generated version package (ocsf_semtools_v*)
 type = forbidden
 source_modules =
-    ocsf_toolkit
+    ocsf_semtools
 forbidden_modules =
-    ocsf_toolkit_v1_7_0
-    ocsf_toolkit_v1_8_0
-    ocsf_toolkit_v1_9_0
+    ocsf_semtools_v1_7_0
+    ocsf_semtools_v1_8_0
+    ocsf_semtools_v1_9_0

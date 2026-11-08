@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast, final
 
-from ocsf_toolkit.cli._common import atomic_write
+from ocsf_semtools.cli._common import atomic_write
 
 COMPILE_PYTHON = "3.14"  # what ocsf-schema-compiler runs under, when no lockfile pins it
 

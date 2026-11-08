@@ -7,7 +7,7 @@ the shipped IR rather than written by hand, so a fixture cannot drift from the s
 import copy
 from typing import Any
 
-from ocsf_toolkit.schema import ResolvedSchema
+from ocsf_semtools.schema import ResolvedSchema
 
 T0 = 1_762_000_000_000  # epoch ms, 2025-11-01T12:26:40Z
 CLASS = "detection_finding"

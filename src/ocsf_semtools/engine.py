@@ -7,15 +7,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast, final
 
-from ocsf_toolkit.conform import Checks, as_integer, check
-from ocsf_toolkit.derive import derive
-from ocsf_toolkit.ir import Requirement, SchemaIR
-from ocsf_toolkit.observables import Observable, markers, observe, unfounded
-from ocsf_toolkit.schema import ResolvedItem, ResolvedSchema, load
-from ocsf_toolkit.walk import Finding as Finding  # re-exported: the engine's vocabulary
-from ocsf_toolkit.walk import Kind as Kind
-from ocsf_toolkit.walk import RepairAction as RepairAction
-from ocsf_toolkit.walk import copy_event, is_int, shown, walk
+from ocsf_semtools.conform import Checks, as_integer, check
+from ocsf_semtools.derive import derive
+from ocsf_semtools.ir import Requirement, SchemaIR
+from ocsf_semtools.observables import Observable, markers, observe, unfounded
+from ocsf_semtools.schema import ResolvedItem, ResolvedSchema, load
+from ocsf_semtools.walk import Finding as Finding  # re-exported: the engine's vocabulary
+from ocsf_semtools.walk import Kind as Kind
+from ocsf_semtools.walk import RepairAction as RepairAction
+from ocsf_semtools.walk import copy_event, is_int, shown, walk
 
 FALLBACK_CLASS = "base_event"  # walked when an event names no class this schema knows
 MAX_NODES = 100_000  # attribute visits before a run stops with max_nodes_exceeded; ~250 times a 20 KB event
@@ -24,7 +24,7 @@ MAX_NODES = 100_000  # attribute visits before a run stops with max_nodes_exceed
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Policy:
-    """What a run may change in the event; each entry point in ``ocsf_toolkit.models`` picks one.
+    """What a run may change in the event; each entry point in ``ocsf_semtools.models`` picks one.
 
     Every run reports the same findings; a policy decides only which of them it also acts on.
     """

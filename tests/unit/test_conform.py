@@ -7,11 +7,11 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.engine import LENIENT, ConformanceError, Report, extract, run
-from ocsf_toolkit.ir import Requirement
-from ocsf_toolkit.models import build, parse, repair
-from ocsf_toolkit.schema import ResolvedSchema, load
-from ocsf_toolkit.walk import Kind
+from ocsf_semtools.engine import LENIENT, ConformanceError, Report, extract, run
+from ocsf_semtools.ir import Requirement
+from ocsf_semtools.models import build, parse, repair
+from ocsf_semtools.schema import ResolvedSchema, load
+from ocsf_semtools.walk import Kind
 from tests.fixtures.events import (
     CLASS,
     base_detection_finding,

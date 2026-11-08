@@ -17,11 +17,11 @@ from typing import Any, cast
 from hypothesis import HealthCheck, settings
 from hypothesis import strategies as st
 
-from ocsf_toolkit import ResolvedAttribute, ResolvedItem, ResolvedSchema, load
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.derive import OTHER
-from ocsf_toolkit.ir import Requirement, Root
-from ocsf_toolkit.walk import OPEN_OBJECT
+from ocsf_semtools import ResolvedAttribute, ResolvedItem, ResolvedSchema, load
+from ocsf_semtools.cli import lock
+from ocsf_semtools.derive import OTHER
+from ocsf_semtools.ir import Requirement, Root
+from ocsf_semtools.walk import OPEN_OBJECT
 from tests.conftest import LOCKFILE
 
 WINDOW = lock.window(LOCKFILE)

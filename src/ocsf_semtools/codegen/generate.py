@@ -8,7 +8,7 @@ import tempfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-from ocsf_toolkit.codegen.emit import (
+from ocsf_semtools.codegen.emit import (
     MARKER,
     EnumClass,
     Field,
@@ -20,12 +20,12 @@ from ocsf_toolkit.codegen.emit import (
     string,
     struct_class,
 )
-from ocsf_toolkit.codegen.layout import Place, exports, plan
-from ocsf_toolkit.codegen.naming import checked, class_name, field_name
-from ocsf_toolkit.codegen.types import OPEN_OBJECT, annotation
-from ocsf_toolkit.export import export_ir
-from ocsf_toolkit.ir import ItemDef, Requirement, SchemaIR
-from ocsf_toolkit.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema, resolve
+from ocsf_semtools.codegen.layout import Place, exports, plan
+from ocsf_semtools.codegen.naming import checked, class_name, field_name
+from ocsf_semtools.codegen.types import OPEN_OBJECT, annotation
+from ocsf_semtools.export import export_ir
+from ocsf_semtools.ir import ItemDef, Requirement, SchemaIR
+from ocsf_semtools.schema import ResolvedAttribute, ResolvedItem, ResolvedSchema, resolve
 
 IR_FILE = "ir.json"  # every package carries its IR, so it never depends on core's copy
 _IDENTITY = ("class_uid", "class_name", "category_uid", "category_name")
@@ -61,7 +61,7 @@ def generate(
         raise ValueError(f"{target} is not a generated package directory; not replacing it")
     if target.exists() and (foreign := _foreign(target)):
         shown = ", ".join(str(p) for p in foreign[:3]) + (", ..." if len(foreign) > 3 else "")
-        raise ValueError(f"{target} holds files ocsf-toolkit did not generate ({shown})")
+        raise ValueError(f"{target} holds files ocsf-semtools did not generate ({shown})")
     _install(files, target)
     return target
 

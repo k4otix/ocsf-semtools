@@ -6,12 +6,12 @@ from typing import Any
 
 import pytest
 
-from ocsf_toolkit.engine import LENIENT, REPAIR, extract, run
-from ocsf_toolkit.loader import load_compiled
-from ocsf_toolkit.models import parse, repair
-from ocsf_toolkit.observables import Observable, merge, stringify
-from ocsf_toolkit.schema import ResolvedSchema, load, resolve
-from ocsf_toolkit.walk import Kind
+from ocsf_semtools.engine import LENIENT, REPAIR, extract, run
+from ocsf_semtools.loader import load_compiled
+from ocsf_semtools.models import parse, repair
+from ocsf_semtools.observables import Observable, merge, stringify
+from ocsf_semtools.schema import ResolvedSchema, load, resolve
+from ocsf_semtools.walk import Kind
 from tests.fixtures.compiled import PROVENANCE, compiled, compiled_bytes
 from tests.fixtures.events import CLASS, base_detection_finding, error_fixtures
 from tests.fixtures.notations import NOTATIONS

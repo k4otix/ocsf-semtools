@@ -8,7 +8,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import cast
 
-from ocsf_toolkit.ir import (
+from ocsf_semtools.ir import (
     Attribute,
     Category,
     Constraint,

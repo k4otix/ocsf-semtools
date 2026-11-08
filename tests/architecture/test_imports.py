@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 from importlinter.cli import lint_imports
 
-from ocsf_toolkit.cli import lock
-from ocsf_toolkit.cli.trees import package_name
+from ocsf_semtools.cli import lock
+from ocsf_semtools.cli.trees import package_name
 from tests.architecture.support import PACKAGE, SOURCES
 from tests.conftest import LOCKFILE, ROOT
 
@@ -87,8 +87,8 @@ def test_only_walk_traverses_an_event(name: str) -> None:
 
 def test_engine_run_is_exactly_one_walk(monkeypatch: pytest.MonkeyPatch) -> None:
     """Rule 1, at runtime: one run is one walk, and each attribute is visited once."""
-    from ocsf_toolkit import engine
-    from ocsf_toolkit.schema import load
+    from ocsf_semtools import engine
+    from ocsf_semtools.schema import load
     from tests.fixtures.events import multi_error_fixture
 
     calls: list[list[object]] = []

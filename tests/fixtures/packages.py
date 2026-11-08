@@ -9,8 +9,8 @@ from typing import cast
 
 import msgspec
 
-from ocsf_toolkit.codegen import generate
-from ocsf_toolkit.ir import SchemaIR
+from ocsf_semtools.codegen import generate
+from ocsf_semtools.ir import SchemaIR
 
 
 def import_generated(
