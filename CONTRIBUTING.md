@@ -91,7 +91,7 @@ A new OCSF release ships as a minor release of the library, with a model package
    cause and run `make lock` again; a version already pinned at the same commit is kept.
 2. Add the new package, `ocsf_toolkit_vX_Y_Z`, to `forbidden_modules` in `.importlinter`; a test
    fails until you do.
-3. Update the install line in `README.md` and the package table in `docs/models.md`.
+3. Update the package table in `docs/models.md`.
 4. Set up publishing for the new package, once:
    - on PyPI, a pending trusted publisher for project `ocsf-toolkit-vX-Y-Z`, repository
      `k4otix/ocsf-toolkit`, workflow `release.yaml`, environment `pypi-vX-Y-Z`;

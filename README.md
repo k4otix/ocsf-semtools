@@ -1,10 +1,11 @@
 # ocsf-toolkit
 
-Version-pinned [OCSF](https://schema.ocsf.io/) semantics for Python. Each OCSF release is compiled
-from upstream `ocsf/ocsf-schema` at a pinned commit into a schema you can query as data. On top of
-that schema, the library builds events and derives everything the schema computes, checks events and
-reports every deviation it finds, extracts observables, and diffs two versions. Typed
-[msgspec](https://github.com/msgspec/msgspec) models are generated from the same schema.
+ocsf-toolkit brings the complete rules of [OCSF](https://schema.ocsf.io/) to Python, for every OCSF
+release since 1.0.0. The library builds an event from the fields a producer knows and fills in what
+the schema defines: class and category IDs, `type_uid`, and the label beside every enum. It checks
+events from any source against the same rules and returns every problem in one report, each with a
+path and a severity. It also extracts observables, shows what changed between two OCSF versions, and
+generates typed [msgspec](https://github.com/msgspec/msgspec) models from the same schema.
 
 **Status: alpha.** Minor releases before 1.0 may change the API, and the
 [changelog](https://github.com/k4otix/ocsf-toolkit/blob/main/CHANGELOG.md) lists every change.
@@ -12,9 +13,11 @@ reports every deviation it finds, extracts observables, and diffs two versions. 
 ## Install
 
 ```shell
-pip install --pre ocsf-toolkit          # core: every OCSF release from 1.0.0 to 1.9.0, as data
-pip install --pre ocsf-toolkit-v1-9-0   # optional: typed models for OCSF 1.9.0 (also -v1-8-0, -v1-7-0)
+pip install --pre ocsf-toolkit          # core: every OCSF release since 1.0.0, as data
+pip install --pre ocsf-toolkit-v1-9-0   # optional: typed models for one OCSF version
 ```
+
+[Typed models](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/models.md) lists the packages available.
 
 `ocsf-toolkit generate` builds a model package for any other version or extension set (see
 [Command line](https://github.com/k4otix/ocsf-toolkit/blob/main/docs/cli.md)).
@@ -86,7 +89,7 @@ metadata is required and absent
 ## Check an event you received
 
 `parse` returns the event with a report of findings, each with a kind, an indexed path and a
-severity. You decide which findings are fatal.
+severity. The caller decides which findings are fatal.
 
 ```pycon
 >>> from ocsf_toolkit import parse
@@ -134,7 +137,7 @@ same, report = parse(msgspec.json.decode(wire), as_=DetectionFinding)
 assert same == finding and report.ok()
 ```
 
-The models pass pyright in strict mode, and importing one class loads only that class's module.
+The models type-check under strict pyright, and importing one class loads only that class's module.
 
 ## More
 
@@ -150,36 +153,33 @@ The models pass pyright in strict mode, and importing one class loads only that 
 
 ## How versions work
 
-Every OCSF release is pinned by upstream commit in [`ocsf.lock`](https://github.com/k4otix/ocsf-toolkit/blob/main/ocsf.lock) and compiled with the
-official `ocsf-schema-compiler`. CI recompiles each one and checks its canonical sha256 against the
-lockfile. Core ships the schema of every release, so you can check, repair and diff events of any of
-them and extract their observables. Typed models ship for the newest three releases, one package
-each, so you install only the versions you produce.
+Each OCSF release is compiled with the official `ocsf-schema-compiler` from an exact upstream commit,
+recorded in [`ocsf.lock`](https://github.com/k4otix/ocsf-toolkit/blob/main/ocsf.lock). CI recompiles every release and confirms
+that the shipped schema still matches the upstream compiler's output. The core package carries every
+release, so events of any version can be checked, repaired, diffed and mined for observables. Typed
+models come as one package per release for the newest three, so a project installs only the versions
+it produces.
 
-The library's own version follows SemVer on its API; before 1.0, a minor release may change it.
-Support for a new OCSF release ships as a minor release of the library. A model package requires the
-core minor it was generated with, so patch releases of the core install under it unchanged.
+The library follows SemVer on its own API, and before 1.0 a minor release may change it. Support for
+a new OCSF release arrives in a minor release. A model package accepts every core release up to the
+next minor, so core bugfixes install under it unchanged.
 
-## Why not an existing library?
+## Other Python OCSF libraries
 
-We installed and ran each Python OCSF package we could find. These results are from 2026-11-02,
-against the versions named:
+Several Python packages cover parts of OCSF. [pydantic-ocsf](https://pypi.org/project/pydantic-ocsf/)
+offers Pydantic models across OCSF versions, and its computed `type_uid` and sibling-label checks
+shaped ideas here. [py-ocsf-models](https://pypi.org/project/py-ocsf-models/) provides models for
+finding classes. [ocsf-lib](https://pypi.org/project/ocsf-lib/) provides schema tooling for
+compiling, diffing and compatibility checks.
 
-- **pydantic-ocsf** (3.0.0) is the closest relative and the one we learned the most from: multiple
-  OCSF versions side by side, sibling-label checks and computed `type_uid`. It builds its models
-  from the schema's *source* files, which leave profiles unresolved, so profile attributes such as
-  `actor` or `action_id` are missing or untyped. Against the official compiler's output for
-  OCSF 1.7.0, about a third of its integer enums differ; for example, `device.type_id=2`
-  ("Desktop") is rejected.
-- **py-ocsf-models** (0.10.0, Prowler) is a hand-written model set for three finding classes at
-  OCSF 1.5.0. It silently drops attributes it doesn't model.
-- **ocsf-lib** (0.10.4) is useful schema tooling (compile, diff, compatibility checks), but it has
-  no event models or validation. It can't read the official `ocsf-schema-compiler` output, and its
-  own compiler disagrees with upstream on profile gating.
+ocsf-toolkit fills the gaps between them:
 
-This library exists for four things those packages lack: OCSF knowledge as data you can query
-without building a model, a conformance report that lists every problem in an event, observables
-derived from the schema, and profiles treated as part of an event's identity.
+- The schema comes from the official compiler with profiles resolved, so every attribute and enum
+  matches upstream.
+- The schema is data a program can query without building a model.
+- One report lists every problem in an event.
+- Observables are derived from the schema.
+- Profiles are part of an event's identity.
 
 ## License
 
