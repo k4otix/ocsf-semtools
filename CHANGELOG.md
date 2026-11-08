@@ -6,6 +6,12 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Changed
+
+- The project is now ocsf-semtools: `pip install ocsf-semtools`, `import ocsf_semtools`, the
+  `ocsf-semtools` command, and model packages such as `ocsf-semtools-v1-9-0`. Releases up to 0.1.0a3
+  were published as `ocsf-toolkit`, a name the Go project `ocsf/ocsf-toolkit` also uses.
+
 ## 0.1.0a3 (2026-11-07)
 
 The model packages are unchanged: their releases on PyPI run on this core.
