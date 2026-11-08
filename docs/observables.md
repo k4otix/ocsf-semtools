@@ -2,7 +2,7 @@
 
 OCSF marks some attributes as observables: IP addresses, hostnames, file hashes, users and so on. An
 event lists them in its `observables` array. The library works out that list from the schema and the
-event, so you don't maintain it by hand.
+event, so producers don't maintain it by hand.
 
 ```pycon
 >>> from ocsf_toolkit import build, load

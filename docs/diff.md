@@ -1,13 +1,17 @@
 # Schema diff
 
+OCSF changes between releases: classes are added and renamed, requirements shift, and enum members
+are added and deprecated. `diff` lists every such change between two versions, as data a migration
+script or a reviewer can act on.
+
 ## Comparing two versions
 
 ### `diff`
 
 `diff(old, new)` compares two [IRs](schema.md#the-ir) field by field and returns every difference,
 keyed by its path in the IR. Classes are matched by `class_uid`, then by key, so a class renamed at a
-stable uid shows up as one rename. Matching is exact, and the result is data for you to read or act
-on, such as deciding how to migrate your own events.
+stable uid shows up as one rename. Matching is exact, and the result is data a program or a reviewer
+can act on, such as planning how to migrate events.
 
 ```pycon
 >>> from ocsf_toolkit import diff, load

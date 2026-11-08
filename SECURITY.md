@@ -1,6 +1,6 @@
 # Security policy
 
-ocsf-toolkit sits inside security telemetry pipelines, so reports are taken seriously.
+ocsf-toolkit runs inside security telemetry pipelines and reads events from untrusted sources.
 
 ## Reporting a vulnerability
 

@@ -1,14 +1,15 @@
 # Typed models
 
-The models are a projection of the schema: every class and object as a
-[msgspec](https://github.com/msgspec/msgspec) Struct, every enum as an `IntEnum` or `StrEnum` whose
-members are the OCSF captions. They are generated from the same IR the rest of the library uses, so
-the dict API and the typed API always agree.
+Each model package turns one OCSF version into typed Python: every class and object is a
+[msgspec](https://github.com/msgspec/msgspec) Struct, and every enum is an `IntEnum` or `StrEnum`
+named by its OCSF captions. Type checkers and editors see every attribute and its type, and msgspec
+encodes and decodes the events. The packages are generated from the same schema as the rest of the
+library, so the typed API and the dict API always agree.
 
 ## Model packages
 
-One package per OCSF version, for the newest three releases. Install the ones you produce (`--pre`
-while the library is in alpha):
+Model packages ship for the newest three OCSF releases, called the window, one package each, so a
+project installs only the versions it produces (`--pre` while the library is in alpha):
 
 | Install | Import |
 |---|---|
@@ -64,8 +65,8 @@ are moved into `unmapped`, since a Struct has no field for them.
 ### `generate`
 
 `generate(ir, *, package, out, profiles=None, extensions=None)` writes the package `out/<package>`
-and returns its path. Use it for an exact profile set, a subset of extensions, or an IR compiled with
-your own extensions (see `ocsf-toolkit generate --ext` in the [CLI docs](cli.md)).
+and returns its path. It covers an exact profile set, a subset of extensions, or an IR compiled with
+custom extensions (see `ocsf-toolkit generate --ext` in the [CLI docs](cli.md)).
 
 With `profiles`, the classes are exact for that set: an attribute a profile requires is a required
 field.

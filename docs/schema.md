@@ -9,7 +9,7 @@ profile gating and class identity.
 ### `load`
 
 `load(version, *, profiles=(), extensions=())` returns the `ResolvedSchema` for an OCSF version that
-ships with the library. Every release from 1.0.0 to 1.9.0 ships.
+ships with the library. Every OCSF release since 1.0.0 ships.
 
 ```pycon
 >>> from ocsf_toolkit import load
@@ -138,7 +138,7 @@ IRs give identical bytes on every platform. `load_ir(export_ir(ir)) == ir`.
 
 ### `resolve`
 
-`resolve(ir, *, profiles=(), extensions=())` resolves any IR, including one compiled with your own
+`resolve(ir, *, profiles=(), extensions=())` resolves any IR, including one compiled with custom
 extensions, the way `load` resolves a shipped one:
 
 ```pycon

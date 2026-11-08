@@ -1,9 +1,9 @@
 # Building and checking events
 
-Three entry points share one engine and one traversal of the event, so they find the same problems
-in it. They differ in what they change: `build` fills in what the schema derives, `parse` changes
-nothing, and `repair` also corrects what it safely can. Each returns or raises a `Report` that holds
-every finding.
+Three functions handle events. `build` creates one from known fields and fills in what the schema
+derives, `parse` checks one as received and changes nothing, and `repair` returns a corrected copy.
+All three run the same checks, so an event gets the same findings from each, and each returns or
+raises a `Report` holding every finding.
 
 ```pycon
 >>> import json
@@ -44,8 +44,8 @@ checks an event and returns `(event, report)`: the same dict it was given, uncha
 every problem in it. The OCSF version, profiles, extensions and class default
 to what the event says about itself: `metadata.version`, `metadata.profiles`, the names in
 `metadata.extensions`, and `class_uid` (then `type_uid`). An event that names no class this schema
-knows is checked as `base_event`. `schema=` reads the event against a schema you resolved yourself,
-such as one with your own extension, in place of `version` and `profiles`. With `as_=` a generated
+knows is checked as `base_event`. `schema=` reads the event against a schema the caller resolved,
+such as one with a custom extension, in place of `version` and `profiles`. With `as_=` a generated
 class, it returns an instance of that class, or `None` if the event has errors; the class then fixes
 the schema, so `version`, `class_key` and `schema` are a `TypeError`.
 

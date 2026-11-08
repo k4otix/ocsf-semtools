@@ -74,8 +74,8 @@ whose provenance records each extension directory's hash (hidden files such as `
 
 ## The schema pipeline
 
-These commands maintain `ocsf.lock` and the shipped IRs, and are what CI runs. You need them for
-custom extensions or to work on the library itself; using the library needs none of them.
+These commands maintain `ocsf.lock` and the shipped IRs, and CI runs them. They matter for custom
+extensions and for work on the library itself; using the library needs none of them.
 
 | Command | What it does |
 |---|---|
