@@ -6,6 +6,11 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.1.0a4 (2026-11-08)
+
+The model packages `ocsf-semtools-v1-8-0` and `ocsf-semtools-v1-9-0` ship with this release, and
+`ocsf-semtools-v1-7-0` with the next.
+
 ### Changed
 
 - The project is now ocsf-semtools: `pip install ocsf-semtools`, `import ocsf_semtools`, the
