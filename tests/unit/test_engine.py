@@ -77,6 +77,36 @@ def test_build_by_reference_raises_with_the_whole_report(schema: ResolvedSchema)
     assert str(raised.value).startswith("3 conformance error(s) in detection_finding: ")
 
 
+SECRET = "Hunter2"  # stands for any value an event carries: a password, a token, a user name
+NUMBER = 8675309
+
+
+def test_messages_carry_no_event_values(schema: ResolvedSchema) -> None:
+    event = base_detection_finding(schema) | {
+        "count": f"{SECRET}!",  # type_mismatch
+        "duration": str(NUMBER),  # coerced by repair
+        "status_id": NUMBER,  # enum_out_of_range
+        "severity": SECRET,  # sibling_conflict
+        "resources": [{"uid": "r-1"}],
+        "observables": [{"name": "resources[0].uid", "type_id": 10, "value": SECRET}],  # observable_mismatch
+    }
+    findings = [
+        *parse(event)[1].findings,
+        *repair(event)[1].findings,
+        *parse(event | {"class_uid": NUMBER})[1].findings,
+    ]
+    kinds = {f.kind for f in findings}
+    assert {Kind.TYPE_MISMATCH, Kind.COERCED, Kind.ENUM_OUT_OF_RANGE, Kind.SIBLING_CONFLICT} <= kinds
+    assert Kind.OBSERVABLE_MISMATCH in kinds
+    leaked = [f.message for f in findings if SECRET in f.message or str(NUMBER) in f.message]
+    assert leaked == []
+    assert any(f.actual == SECRET for f in findings)  # the value is still there for a caller who asks
+    with pytest.raises(ConformanceError) as raised:
+        build((schema, CLASS), **minimal_fields(count=SECRET, status_id=NUMBER, severity=SECRET))
+    assert SECRET not in str(raised.value)
+    assert str(NUMBER) not in str(raised.value)
+
+
 def test_build_does_not_raise_on_warnings(schema: ResolvedSchema) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
@@ -421,7 +451,7 @@ def test_unshipped_and_malformed_extension_entries_are_skipped_and_reported() ->
     _, report = parse(_prefetch(extensions=declared))
     assert report.schema.extensions == frozenset({"win"})
     assert report.class_key == "win/prefetch_query"
-    assert "metadata.extensions[2] is str 'x'; expected an extension" in [f.message for f in report.errors()]
+    assert "metadata.extensions[2] is a str; expected an extension" in [f.message for f in report.errors()]
 
 
 def test_without_metadata_extensions_the_class_is_unknown() -> None:

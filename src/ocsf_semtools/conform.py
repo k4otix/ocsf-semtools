@@ -216,7 +216,7 @@ def _element(
             ra,
             Kind.COERCED,
             path,
-            f"{dotted(path)} coerced from {shown(value)} to {shown(new)}",
+            f"{dotted(path)} coerced from {_article(type(value).__name__)} to {ra.type}",
             expected=ra.type,
             actual=value,
             repair=RepairAction(action="coerce", before=value, after=new),
@@ -230,7 +230,7 @@ def _element(
             ra,
             Kind.ENUM_OUT_OF_RANGE,
             path,
-            f"{dotted(path)} is {shown(value)}, not one of {sorted(ra.enum, key=_enum_order)}",
+            f"{dotted(path)} is not one of {sorted(ra.enum, key=_enum_order)}",
             expected=sorted(ra.enum, key=_enum_order),
             actual=value,
         )
@@ -325,7 +325,7 @@ def _mismatch(visit: Visit, ra: ResolvedAttribute, path: Path, value: object, wh
         ra,
         Kind.TYPE_MISMATCH,
         path,
-        f"{dotted(path)} is {type(value).__name__} {shown(value)}; expected {what}",
+        f"{dotted(path)} is {_article(type(value).__name__)}; expected {what}",
         expected=ra.type,
         actual=value,
     )

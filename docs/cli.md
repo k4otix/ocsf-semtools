@@ -24,7 +24,7 @@ ocsf-semtools check --version 1.9.0 --profiles cloud,host --json events.jsonl
 ```
 
 ```text
-events.jsonl:1: error enum_out_of_range severity_id: severity_id is 9, not one of [0, 1, 2, 3, 4, 5, 6, 99]
+events.jsonl:1: error enum_out_of_range severity_id: severity_id is not one of [0, 1, 2, 3, 4, 5, 6, 99]
 events.jsonl:1: warning missing_recommended confidence_id: confidence_id is recommended and absent
 ```
 

@@ -6,6 +6,12 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Changed
+
+- Finding messages, and so `ConformanceError`'s text, no longer contain the event's values, which
+  may be secrets or personal data sent to logs. A message names the path, the value's type and what
+  the schema expects; `Finding.actual` still holds the value.
+
 ## 0.1.0a4 (2026-11-08)
 
 The model packages `ocsf-semtools-v1-8-0` and `ocsf-semtools-v1-9-0` ship with this release, and

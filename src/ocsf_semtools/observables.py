@@ -8,7 +8,7 @@ from typing import Any, cast, final
 
 from ocsf_semtools.ir import EnumMember, EnumValue
 from ocsf_semtools.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
-from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64, shown
+from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64
 
 OBSERVABLES = "observables"  # the class attribute holding an event's observable entries
 _OBSERVABLE = "observable"  # the object type of each entry
@@ -161,10 +161,10 @@ def _problem(candidates: list[Observable], type_id: int, value: object) -> str |
     typed = [o for o in candidates if o.type_id == type_id]
     if not typed:
         expected = sorted({o.type_id for o in candidates})
-        return f"type_id {type_id}; the schema marks this attribute {expected}"
+        return f"the schema marks this attribute as type_id {expected}"
     if value is None or any(o.value == value for o in typed):
         return None
-    return f"value {shown(value)} does not occur at that name"
+    return "value does not occur at that name"
 
 
 def _key(entry: Mapping[str, Any]) -> tuple[str, object, object]:

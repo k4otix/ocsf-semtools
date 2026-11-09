@@ -251,7 +251,8 @@ def test_coercion_stays_within_64_bits(schema: ResolvedSchema) -> None:
 def test_an_integer_too_long_to_print_is_still_reported(schema: ResolvedSchema) -> None:
     report = _check(base_detection_finding(schema) | {"duration": 10**5000, "bogus": [10**5000]})
     assert {f.kind for f in report.errors()} == {Kind.TYPE_MISMATCH, Kind.UNKNOWN_ATTRIBUTE}
-    assert "<int too large to show>" in report.by_kind(Kind.TYPE_MISMATCH)[0].message
+    [mismatch] = report.by_kind(Kind.TYPE_MISMATCH)
+    assert mismatch.message == "duration is an int; expected long_t within the signed 64-bit range"
     json.dumps(report.to_dict(), allow_nan=False)
 
 

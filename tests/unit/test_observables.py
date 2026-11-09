@@ -131,7 +131,7 @@ def test_caller_entries_match_in_any_notation(schema: ResolvedSchema, name: str)
     ("entry", "problem"),
     [
         ({"name": "nowhere.uid", "type_id": 10}, "names no observable attribute"),
-        ({"name": "resources.uid", "type_id": 4, "value": "r-1"}, "type_id 4; the schema marks"),
+        ({"name": "resources.uid", "type_id": 4, "value": "r-1"}, "the schema marks this attribute as type_id"),
         ({"name": "resources[0].uid", "type_id": 10, "value": "r-9"}, "does not occur"),
     ],
 )

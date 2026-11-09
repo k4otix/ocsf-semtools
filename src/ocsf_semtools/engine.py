@@ -247,7 +247,7 @@ def _root_class(
                         kind=Kind.ENUM_OUT_OF_RANGE,
                         path=(attr,),
                         owner=FALLBACK_CLASS,
-                        message=f"{attr} {value} names no class in OCSF {schema.version}; checked as {FALLBACK_CLASS}",
+                        message=f"{attr} names no class in OCSF {schema.version}; checked as {FALLBACK_CLASS}",
                         tier=Requirement.REQUIRED,
                         actual=value,
                     )

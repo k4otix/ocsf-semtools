@@ -51,8 +51,8 @@ the schema, so `version`, `class_key` and `schema` are a `TypeError`.
 
 ```pycon
 >>> _, report = parse(dict(event, severity="Low"))
->>> [finding.message for finding in report.errors()]
-["severity is 'Low'; the schema derives 'High'"]
+>>> [(f.message, f.actual, f.expected) for f in report.errors()]
+[('severity differs from the value the schema derives', 'Low', 'High')]
 >>> with_cloud = dict(event, metadata=dict(event["metadata"], profiles=["cloud"]))
 >>> [finding.message for finding in parse(with_cloud)[1].errors()]
 ["cloud is required under profiles ['cloud'] and absent"]
@@ -133,6 +133,10 @@ One deviation, located by an indexed path such as `("resources", 0, "uid")`: `ki
 `owner` (the class or object it belongs to), `message`, `tier` (the attribute's requirement),
 `profiles`, `expected`, `actual`, `repair` (set when `repair` changed something) and `severity`
 (`error`, `warning` or `info`, determined by the kind).
+
+A message names the path, the value's type and what the schema expects. It leaves out the event's
+values, so logging messages or a `ConformanceError` copies no event content; `actual` holds the
+value for a caller that wants it. A path can still hold an unknown attribute's key.
 
 ```pycon
 >>> from ocsf_semtools import Kind
