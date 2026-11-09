@@ -181,6 +181,27 @@ ocsf-semtools fills the gaps between them:
 - Observables are derived from the schema.
 - Profiles are part of an event's identity.
 
+The table compares major features as of 2026-11-08, one release per column, and includes the Go
+library [ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit).
+
+● full · ◕ mostly · ◑ partial · ◔ minimal · ○ none · ? not tested
+
+| | ocsf-semtools 0.1.0a4 | ocsf/ocsf-toolkit v0.9.0 (Go) | pydantic-ocsf 3.0.0 | py-ocsf-models 0.10.0 | ocsf-lib 0.10.4 |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Schema matches the official compiler | ● | ● | ◔ | ◔ | ◑ |
+| Several OCSF versions side by side | ● | ◑ | ◕ | ○ | ● |
+| Profiles | ● | ● | ○ | ○ | ◔ |
+| Schema queryable as data | ● | ○ | ◔ | ○ | ● |
+| Complete validation report | ● | ● | ◔ | ◔ | ○ |
+| Per-check severity control | ◑ | ● | ○ | ○ | ○ |
+| Type constraints (pattern, length, range) | ○ | ● | ? | ? | ○ |
+| Fills derived fields (`type_uid`, labels) | ● | ◑ | ◑ | ○ | ○ |
+| Observables from the schema | ● | ● | ○ | ○ | ○ |
+| Removes enrichment | ○ | ● | ○ | ○ | ○ |
+| Diff between OCSF versions | ● | ○ | ○ | ○ | ● |
+| Typed models | ● | ○ | ◑ | ◔ | ○ |
+| Custom extensions | ● | ● | ○ | ○ | ● |
+
 ## License
 
 Apache-2.0. The bundled schema data is compiled from the [OCSF schema](https://github.com/ocsf/ocsf-schema),
