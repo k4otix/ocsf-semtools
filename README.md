@@ -164,25 +164,17 @@ The library follows SemVer on its own API, and before 1.0 a minor release may ch
 a new OCSF release arrives in a minor release. A model package accepts every core release up to the
 next minor, so core bugfixes install under it unchanged.
 
-## Other Python OCSF libraries
+## Other OCSF libraries
 
 Several Python packages cover parts of OCSF. [pydantic-ocsf](https://pypi.org/project/pydantic-ocsf/)
 offers Pydantic models across OCSF versions, and its computed `type_uid` and sibling-label checks
 shaped ideas here. [py-ocsf-models](https://pypi.org/project/py-ocsf-models/) provides models for
 finding classes. [ocsf-lib](https://pypi.org/project/ocsf-lib/) provides schema tooling for
-compiling, diffing and compatibility checks.
+compiling, diffing and compatibility checks. The Go library
+[ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit) enriches and validates events against a
+compiled schema.
 
-ocsf-semtools fills the gaps between them:
-
-- The schema comes from the official compiler with profiles resolved, so every attribute and enum
-  matches upstream.
-- The schema is data a program can query without building a model.
-- One report lists every problem in an event.
-- Observables are derived from the schema.
-- Profiles are part of an event's identity.
-
-The table compares major features as of 2026-11-08, one release per column, and includes the Go
-library [ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit).
+The table compares major features as of 2026-11-08, one release per column.
 
 ● full · ◕ mostly · ◑ partial · ◔ minimal · ○ none · ? not tested
 
