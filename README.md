@@ -178,7 +178,7 @@ The table compares major features as of 2026-11-08, one release per column.
 
 ● full · ◕ mostly · ◑ partial · ◔ minimal · ○ none · ? not tested
 
-| | ocsf-semtools 0.1.0a4 | ocsf/ocsf-toolkit v0.9.0 (Go) | pydantic-ocsf 3.0.0 | py-ocsf-models 0.10.0 | ocsf-lib 0.10.4 |
+| | ocsf-semtools 0.1.0a5 | ocsf/ocsf-toolkit v0.9.0 (Go) | pydantic-ocsf 3.0.0 | py-ocsf-models 0.10.0 | ocsf-lib 0.10.4 |
 |---|:-:|:-:|:-:|:-:|:-:|
 | Schema matches the official compiler | ● | ● | ◔ | ◔ | ◑ |
 | Several OCSF versions side by side | ● | ◑ | ◕ | ○ | ● |

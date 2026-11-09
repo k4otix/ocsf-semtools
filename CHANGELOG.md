@@ -6,6 +6,10 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.1.0a5 (2026-11-08)
+
+Publishes the model package `ocsf-semtools-v1-7-0`; the other model packages are unchanged.
+
 ### Changed
 
 - Finding messages, and so `ConformanceError`'s text, no longer contain the event's values, which
