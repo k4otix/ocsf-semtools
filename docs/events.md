@@ -167,6 +167,12 @@ walked once. `parse`, `repair` and `extract` stop after `max_nodes` attribute vi
 default, `None` for no limit) with a `max_nodes_exceeded` finding, and `build` stops at the same
 default, so no event can make a run hang.
 
+An OCSF data type can carry a pattern (`regex`), a maximum length (`max_len`), a numeric `range` or
+a list of allowed `values`. The library loads them with the schema, in `ResolvedSchema.types`, and
+conformance doesn't check them yet: in every OCSF release so far, some of these patterns accept
+invalid IP and email addresses and some limits reject valid values. A later release adds the check
+as a finding kind once an OCSF release ships corrected patterns.
+
 ```pycon
 >>> len(Kind), Kind("missing_required") is Kind.MISSING_REQUIRED
 (17, True)
