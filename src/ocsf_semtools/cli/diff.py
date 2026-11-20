@@ -22,7 +22,7 @@ def register(add_parser: AddParser, shared: Options) -> None:
     output.add_argument(
         "--semver",
         action="store_true",
-        help="print only the release category for re-pinning OLD as NEW: patch, minor or major",
+        help="print the release category that re-pinning OLD as NEW calls for: patch, minor or major",
     )
     parser.set_defaults(run=run)
 

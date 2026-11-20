@@ -86,7 +86,7 @@ class ResolvedItem:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResolvedSchema:
-    """One OCSF version under an active profile and extension set; equal and hashable by those."""
+    """One OCSF version under an active profile and extension set; equal and hashable by those and the IR digest."""
 
     version: str
     profiles: frozenset[str]

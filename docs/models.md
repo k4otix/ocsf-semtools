@@ -26,7 +26,7 @@ needs `--pre` for its models.
 **Leaving the window.** When a new OCSF release ships, the oldest package leaves the window and gets
 no further releases, so it stays on the core minor it last required. To use a newer core with that
 OCSF version, move to a newer model package, use the dict API, which covers every shipped release, or
-generate the models yourself: `ocsf-semtools generate 1.7.0 --package my_models --out src/`.
+generate the models locally: `ocsf-semtools generate 1.7.0 --package my_models --out src/`.
 
 ```python
 from ocsf_semtools import build, parse
@@ -60,7 +60,7 @@ attribute any profile adds is present and optional, and `build` enforces what th
 `ConformanceError`. `parse(event, as_=Class)` returns `(instance or None, report)`; unknown attributes
 are moved into `unmapped`, since a Struct has no field for them.
 
-## Generating your own
+## Generating a package
 
 ### `generate`
 

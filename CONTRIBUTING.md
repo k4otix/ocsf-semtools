@@ -112,7 +112,7 @@ changes every hash:
 ```shell
 uv run ocsf-semtools compile --record    # every compiled_sha256
 make ir RECORD=1                         # every ir_sha256 and data/ir-*.json
-uv run ocsf-semtools models record        # every models_tree_sha256
+uv run ocsf-semtools models record       # every models_tree_sha256
 ```
 
 Review the IR diffs (`ocsf-semtools diff OLD.json NEW.json`), since a compiler change can change the

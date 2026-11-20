@@ -2,8 +2,9 @@
 
 Three functions handle events. `build` creates one from known fields and fills in what the schema
 derives, `parse` checks one as received and changes nothing, and `repair` returns a corrected copy.
-All three run the same checks, so an event gets the same findings from each, and each returns or
-raises a `Report` holding every finding.
+All three run the same checks, so an event gets the same findings from each. `parse` and `repair`
+return a `Report` holding every finding, and `build` raises one inside `ConformanceError` when the
+event has errors.
 
 ```pycon
 >>> import json
@@ -175,7 +176,8 @@ An OCSF data type can carry a pattern (`regex`), a maximum length (`max_len`), a
 a list of allowed `values`. The library loads them with the schema, in `ResolvedSchema.types`, and
 conformance doesn't check them yet: in every OCSF release so far, some of these patterns accept
 invalid IP and email addresses and some limits reject valid values. A later release adds the check
-as a finding kind once an OCSF release ships corrected patterns.
+as a finding kind once an OCSF release ships corrected patterns. `constraint_violated` is a class's
+`at_least_one` and `just_one` rules.
 
 ```pycon
 >>> len(Kind), Kind("missing_required") is Kind.MISSING_REQUIRED

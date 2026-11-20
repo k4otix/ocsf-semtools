@@ -147,7 +147,7 @@ The models type-check under strict pyright, and importing one class loads only t
   and reports.
 - [Observables](https://github.com/k4otix/ocsf-semtools/blob/main/docs/observables.md): extracting and merging the observables an event carries.
 - [Schema diff](https://github.com/k4otix/ocsf-semtools/blob/main/docs/diff.md): what changed between two OCSF versions, renames included.
-- [Typed models](https://github.com/k4otix/ocsf-semtools/blob/main/docs/models.md): the model packages, and generating your own (custom extensions
+- [Typed models](https://github.com/k4otix/ocsf-semtools/blob/main/docs/models.md): the model packages, and generating a package (custom extensions
   and exact profile sets).
 - [Command line](https://github.com/k4otix/ocsf-semtools/blob/main/docs/cli.md): `check`, `diff`, `generate` and the schema pipeline.
 
@@ -156,7 +156,8 @@ The models type-check under strict pyright, and importing one class loads only t
 Each OCSF release is compiled with the official `ocsf-schema-compiler` from an exact upstream commit,
 recorded in [`ocsf.lock`](https://github.com/k4otix/ocsf-semtools/blob/main/ocsf.lock). CI recompiles every release and confirms
 that the shipped schema still matches the upstream compiler's output. The core package carries every
-release, so events of any version can be checked, repaired, diffed and mined for observables. Typed
+release, so events of any version can be checked, repaired and mined for observables, and any two versions
+diffed. Typed
 models come as one package per release for the newest three, so a project installs only the versions
 it produces.
 
@@ -168,8 +169,8 @@ next minor, so core bugfixes install under it unchanged.
 
 Several Python packages cover parts of OCSF. [pydantic-ocsf](https://pypi.org/project/pydantic-ocsf/)
 offers Pydantic models across OCSF versions, and its computed `type_uid` and sibling-label checks
-shaped ideas here. [py-ocsf-models](https://pypi.org/project/py-ocsf-models/) provides models for
-finding classes. [ocsf-lib](https://pypi.org/project/ocsf-lib/) provides schema tooling for
+shaped ideas here. [py-ocsf-models](https://pypi.org/project/py-ocsf-models/) has models for
+finding classes, and [ocsf-lib](https://pypi.org/project/ocsf-lib/) provides schema tooling for
 compiling, diffing and compatibility checks. The Go library
 [ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit) enriches and validates events against a
 compiled schema.

@@ -10,8 +10,7 @@ script or a reviewer can act on.
 
 `diff(old, new)` compares two [IRs](schema.md#the-ir) field by field and returns every difference,
 keyed by its path in the IR. Classes are matched by `class_uid`, then by key, so a class renamed at a
-stable uid shows up as one rename. Matching is exact, and the result is data a program or a reviewer
-can act on, such as planning how to migrate events.
+stable uid shows up as one rename. Matching is exact.
 
 ```pycon
 >>> from ocsf_semtools import diff, load

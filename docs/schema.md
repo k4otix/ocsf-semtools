@@ -37,7 +37,7 @@ False
 ```
 
 An unknown profile or extension name raises `KeyError`. Schemas are cached, equal and hashable by
-version, profiles and extensions.
+version, profiles, extensions and IR digest.
 
 ### `ResolvedSchema`
 
