@@ -22,6 +22,7 @@ def annotation(a: ResolvedAttribute, named: str | None) -> str:
     elif a.object_type == OPEN_OBJECT:
         value = "dict[str, Any]"
     else:
-        assert a.root is not None, f"{a.owner}.{a.name} names no object and has no root"
+        if a.root is None:
+            raise ValueError(f"{a.owner}.{a.name} names no object and has no root type")
         value = _ROOTS[a.root]
     return f"list[{value}]" if a.is_array else value

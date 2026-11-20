@@ -29,6 +29,12 @@ def test_annotation(owner: str, attr: str, expected: str) -> None:
     assert annotation(a, "X" if a.object_type not in (None, "object") else None) == expected
 
 
+def test_annotation_refuses_an_attribute_with_no_type() -> None:
+    a = dataclasses.replace(S.classes["detection_finding"].attributes["message"], root=None)
+    with pytest.raises(ValueError, match=r"detection_finding\.message names no object and has no root type"):
+        annotation(a, None)
+
+
 def test_places_and_imports() -> None:
     ir = S.ir
     process = place(ir.objects["process"])

@@ -6,6 +6,12 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Fixed
+
+- `generate()` reported an attribute with neither an object nor a root type as an
+  `AssertionError`, and as a `KeyError` under `python -O`; it raises `ValueError` naming the
+  attribute.
+
 ## 0.1.0 (2026-11-20)
 
 The first release out of alpha. The model packages `ocsf-semtools-v1-7-0`,
