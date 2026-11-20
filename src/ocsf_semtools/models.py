@@ -26,7 +26,7 @@ from ocsf_semtools.engine import (
     run,
     select,
 )
-from ocsf_semtools.schema import ResolvedSchema, load_ir, resolve
+from ocsf_semtools.schema import SCHEMAS_KEPT, ResolvedSchema, load_ir, resolve
 
 if TYPE_CHECKING:  # imported where used: reading a schema never loads the modelling layer
     import msgspec
@@ -47,7 +47,7 @@ def build(ref: Any, /, *args: Any, **fields: Any) -> Any:
     ``ref`` is a generated class (returns an instance of it) or a ``(schema, class key)`` pair
     (returns a dict). Raises ConformanceError carrying the full report when any error remains,
     and emits a DeprecationWarning for each deprecated attribute or value used. The walk stops
-    after ``engine.MAX_NODES`` attribute visits; the fields are the event's own, so there is no
+    after 100,000 attribute visits; the fields are the event's own, so there is no
     keyword to change that.
     """
     import msgspec
@@ -198,7 +198,7 @@ def _package(cls: type[msgspec.Struct]) -> ModuleType:
     raise TypeError(f"{cls.__name__} has __ocsf__ but no generated package around it")
 
 
-@functools.lru_cache(maxsize=32)
+@functools.lru_cache(maxsize=SCHEMAS_KEPT)
 def _schema(package: str, digest: str, profiles: frozenset[str]) -> ResolvedSchema:
     """Return the schema a generated package was made from: its bundled IR, checked against its digest.
 
@@ -229,9 +229,5 @@ def _wire(cls: type[msgspec.Struct], fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _fatal(report: Report, exact: bool) -> tuple[Finding, ...]:
-    """Return what stops an event becoming an instance.
-
-    That is its errors and, for an exact class, any attribute or declared profile outside its
-    profile set (it has no field for them).
-    """
+    """Return what stops an event becoming an instance: its errors and, for an exact class, profile_mismatch."""
     return report.errors() + (report.by_kind(Kind.PROFILE_MISMATCH) if exact else ())

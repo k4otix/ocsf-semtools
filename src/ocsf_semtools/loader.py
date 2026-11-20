@@ -260,7 +260,7 @@ class _Node(JsonObject):
         self._account.read.update((self.ctx, key) for key in keys)
 
     def peek_text(self, key: str) -> str | None:
-        """Read without recording (for lookahead; the real read happens later)."""
+        """Return a string value without recording the read, for lookahead."""
         value = self._data.get(key)
         return value if isinstance(value, str) else None
 

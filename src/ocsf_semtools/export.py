@@ -37,9 +37,10 @@ _MAJOR, _MINOR = (int(part) for part in IR_VERSION.split("."))
 
 # Encoding rules: object keys sorted, one-space indent (so a git diff shows what changed),
 # UTF-8, trailing newline. A field that is None or an empty collection is omitted, except
-# provenance.extensions, which is always written as a list; booleans are always written. A name
-# that is already the key of its mapping is not repeated inside the entry. Frozensets are written
-# as sorted lists.
+# provenance.extensions, which is always written as a list; booleans are always written. Categories,
+# types, dictionary attributes and enum members don't repeat the key they are stored under; classes,
+# objects, profiles and extensions write their name, since an extension item's key is scoped.
+# Frozensets are written as sorted lists.
 
 
 def export_ir(ir: SchemaIR) -> bytes:
@@ -289,7 +290,7 @@ class _Reader:
         path = f"{owner.path}.{key}"
         raw = owner.value(key)
         table = self._table({} if raw is None else raw, path)
-        return frozen_sorted({name: decode(name, table[name], f"{path}.{name}") for name in sorted(table)})
+        return frozen_sorted({name: decode(name, table[name], f"{path}.{name}") for name in table})
 
     def _deprecation(self, raw: object, path: str) -> Deprecation | None:
         if raw is None:

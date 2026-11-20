@@ -51,8 +51,8 @@ class _Plan:
 class Checks:
     """What the conformance visitor needs for one run.
 
-    That is the event, the changes the policy allows, and the node plans that every run against the
-    schema shares: held here so that no node's close has to hash the schema to find them.
+    The node plans, shared by every run against the schema, are held here so that no node's close
+    has to hash the schema to find them.
     """
 
     schema: ResolvedSchema

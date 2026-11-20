@@ -26,7 +26,8 @@ MAX_NODES = 100_000  # attribute visits before a run stops with max_nodes_exceed
 class Policy:
     """What a run may change in the event; each entry point in ``ocsf_semtools.models`` picks one.
 
-    Every run reports the same findings; a policy decides only which of them it also acts on.
+    Every run finds the same deviations; a policy decides which of them it also fixes, and a fixed
+    one is reported as its repair.
     """
 
     fill: bool  # derive identity, siblings, *_dt, metadata.version; accept datetime timestamps
@@ -284,7 +285,7 @@ def _finding_dict(f: Finding) -> dict[str, Any]:
 
 
 def _jsonable(value: object) -> object:
-    """Return a value as plain JSON data; NaN and the infinities become the strings JSON lacks words for."""
+    """Return a value as plain JSON data; NaN and the infinities become "NaN", "Infinity" and "-Infinity"."""
     try:
         return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False, allow_nan=False))
     except (ValueError, RecursionError):

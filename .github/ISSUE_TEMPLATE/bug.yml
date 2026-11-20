@@ -3,11 +3,11 @@ description: A wrong or missing finding, a crash, or anything else that behaves 
 labels: [bug]
 body:
   - type: input
-    id: toolkit
+    id: semtools-version
     attributes:
       label: ocsf-semtools version
       description: The output of `ocsf-semtools --version`, and the model package and its version if you use one.
-      placeholder: ocsf-semtools 0.1.0a3; ocsf-semtools-v1-9-0 0.1.0a2
+      placeholder: ocsf-semtools 0.1.0; ocsf-semtools-v1-9-0 0.1.0
     validations:
       required: true
   - type: input

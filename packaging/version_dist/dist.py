@@ -48,7 +48,7 @@ def dist_name(version: str) -> str:
 
 
 def render(ocsf: str, version: str, out: Path) -> None:
-    """Write pyproject.toml, README.md and LICENSE into a dist directory."""
+    """Write pyproject.toml, README.md, LICENSE and NOTICE into a dist directory."""
     values = {
         "@DIST@": dist_name(ocsf),
         "@PACKAGE@": package_name(ocsf),
@@ -78,7 +78,7 @@ def _window() -> list[lock.SchemaEntry]:
 
 
 def check_wheels(wheels: list[Path]) -> None:
-    """Every model-window dist has exactly one wheel here, holding the tree the lockfile pins."""
+    """Check that every model-window dist has exactly one wheel here, holding the tree the lockfile pins."""
     for entry in _window():
         package = package_name(entry.version)
         found = [w for w in wheels if w.name.startswith(f"{package}-")]
@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", required=True, type=Path)
     c = actions.add_parser("check-wheels", help="assert the built wheels hold the pinned trees")
     c.add_argument("wheels", nargs="+", type=Path)
-    u = actions.add_parser("unpublished", help="print the model-window versions PyPI lacks for this core release")
+    u = actions.add_parser("unpublished", help="print the model-window versions this core release must publish")
     u.add_argument("--version", required=True, help="the core version being released")
     k = actions.add_parser("compat", help="run each released dist against this core")
     k.add_argument("--version", required=True, help="the version of the core in this checkout")
