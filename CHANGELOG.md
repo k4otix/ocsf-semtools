@@ -6,6 +6,10 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.1.1 (2026-11-20)
+
+The model packages are unchanged: their 0.1.0 releases run on this core.
+
 ### Added
 
 - `Change`, the type of each entry in `SchemaDiff.changes`, is importable from `ocsf_semtools`.
