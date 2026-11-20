@@ -202,6 +202,26 @@ def test_merge_refuses_a_non_array(schema: ResolvedSchema) -> None:
         merge({"observables": "x"}, ())
 
 
+def test_merge_reads_null_observables_as_absent(schema: ResolvedSchema) -> None:
+    found, _ = extract({"device": {"hostname": "h"}}, schema, CLASS)
+    assert merge({"observables": None}, found)["observables"] == [o.to_dict() for o in found]
+
+
+def test_merge_refuses_an_event_that_is_not_a_dict() -> None:
+    with pytest.raises(TypeError, match="an event is a dict"):
+        merge("abc", ())  # type: ignore[arg-type]
+
+
+def test_merge_copies_an_event_nested_past_the_recursion_limit() -> None:
+    event: dict[str, Any] = {}
+    node = event
+    for _ in range(5_000):
+        node["x"] = node = {}
+    merged = merge(event, ())
+    assert merged["observables"] == []
+    assert merged["x"] is not event["x"]
+
+
 def test_merged_event_is_conformant(schema: ResolvedSchema) -> None:
     device = {"hostname": "h", "ip": "10.0.0.1", "type_id": 2}
     event = base_detection_finding(schema) | {"device": device}

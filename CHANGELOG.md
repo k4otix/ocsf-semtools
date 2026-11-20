@@ -12,6 +12,12 @@ line here, written for users, in the commit that makes it.
   with no value. [Observables](docs/observables.md) shows how to keep other selections, such as
   chosen `type_id`s, and merge them.
 
+### Fixed
+
+- `merge()` raised `ValueError` for `"observables": null`, which it now reads as absent, and
+  `RecursionError` for an event nested past Python's recursion limit. An event that isn't a dict is
+  a `TypeError`, as for `parse`.
+
 ## 0.1.0a5 (2026-11-08)
 
 Publishes the model package `ocsf-semtools-v1-7-0`; the other model packages are unchanged.

@@ -1,6 +1,5 @@
 """Observables visitor: which visited values the schema marks as observables, and their entries."""
 
-import copy
 import functools
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
@@ -8,7 +7,7 @@ from typing import Any, cast, final
 
 from ocsf_semtools.ir import EnumMember, EnumValue
 from ocsf_semtools.schema import SCHEMAS_KEPT, ResolvedItem, ResolvedSchema
-from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, dotted, is_int, is_int64
+from ocsf_semtools.walk import Finding, Kind, Path, Visit, canonical, copy_event, dotted, is_int, is_int64
 
 OBSERVABLES = "observables"  # the class attribute holding an event's observable entries
 _OBSERVABLE = "observable"  # the object type of each entry
@@ -139,11 +138,16 @@ def unfounded(event: Mapping[str, Any], found: Iterable[Observable]) -> list[Fin
 def merge(event: Mapping[str, Any], found: Iterable[Observable]) -> dict[str, Any]:
     """Return a copy of the event with found observables appended to the caller's, which stay as given.
 
-    An entry already present, matched on (canonical name, type_id, value), is not added twice. An
-    ``observables`` attribute that is not an array is a ValueError.
+    An entry already present, matched on (canonical name, type_id, value), is not added twice. A
+    null ``observables`` reads as absent; any other non-array is a ValueError, and an event that is
+    not a dict a TypeError.
     """
-    out = copy.deepcopy(dict(event))
-    entries = out.setdefault(OBSERVABLES, [])
+    if not isinstance(event, dict):
+        raise TypeError(f"an event is a dict (a JSON object); got {type(event).__name__}")
+    out = copy_event(event)
+    if out.get(OBSERVABLES) is None:
+        out[OBSERVABLES] = []
+    entries = out[OBSERVABLES]
     if not isinstance(entries, list):
         raise ValueError(f"{OBSERVABLES} is {type(entries).__name__}, not an array")
     existing = cast(list[object], entries)
