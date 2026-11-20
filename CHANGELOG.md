@@ -21,6 +21,8 @@ line here, written for users, in the commit that makes it.
   profiles; it raises `TypeError`, as `parse` without `as_` does.
 - `load_ir` read `0`, `false` or `[]` in place of a nested table such as `associations` as an empty
   table; it refuses them, naming the key path.
+- `ocsf-semtools check --class` and `--profiles` refused an extension's class or profile, such as
+  `win/registry_key_query`, that `parse` accepts for an event declaring the extension.
 
 ## 0.1.0a5 (2026-11-08)
 

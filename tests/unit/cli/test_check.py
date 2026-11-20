@@ -72,6 +72,15 @@ def test_profiles_and_class_options(events: Path, capsys: pytest.CaptureFixture[
 
 
 @pytest.mark.parametrize(
+    "option", [["--class", "win/registry_key_query"], ["--profiles", "linux/linux_users", "--class", "file_activity"]]
+)
+def test_extension_class_and_profile_options(tmp_path: Path, option: list[str]) -> None:
+    path = tmp_path / "events.jsonl"
+    path.write_text(json.dumps({"metadata": {"version": "1.9.0", "extensions": [{"name": "win"}, {"name": "linux"}]}}))
+    assert main(["check", "--version", "1.9.0", *option, str(path)]) == 1  # checked: the event has errors
+
+
+@pytest.mark.parametrize(
     ("option", "message"),
     [
         (["--profiles", "nope"], "unknown profiles ['nope']"),

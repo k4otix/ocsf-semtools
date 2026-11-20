@@ -41,10 +41,9 @@ def register(add_parser: AddParser, shared: Options) -> None:
 def run(args: argparse.Namespace) -> int:
     """Check each event and print its findings; return 1 if any event has an error."""
     profiles = None if args.profiles is None else [p for p in args.profiles.split(",") if p]
-    try:  # a bad selection fails once, before any event is read
-        schema = load(args.version, profiles=profiles or ())
-    except KeyError as exc:
-        raise ValueError(exc.args[0]) from None
+    # a bad selection fails once, before any event is read; an event's own extensions decide which
+    # of the version's extensions it is read with, so the names are checked against all of them
+    schema = load(args.version, profiles=profiles or (), extensions=load(args.version).ir.extensions)
     if args.class_key is not None and args.class_key not in schema.classes:
         raise ValueError(f"no class {args.class_key!r} in OCSF {args.version}")
     failed = sum(not _check_event(f"{name}:{line}", text, args, profiles) for name, line, text in _lines(args.files))
