@@ -24,14 +24,14 @@ event, so producers don't maintain it by hand.
 
 ### `extract`
 
-`extract(event, schema, class_key=None, *, max_nodes=100_000)` returns `(observables, report)` in the
+`extract(event, schema, class_key=None, *, max_nodes=100_000, objects=True)` returns `(observables, report)` in the
 order the event is walked, and leaves the event unchanged. An attribute is an observable when the
 schema marks its type, its dictionary entry, its object, or the attribute within its class or object,
 or when the class's own observable path map names it.
 Values are given as strings, the way OCSF writes them, and objects such as endpoints carry no value.
 
 ```pycon
->>> from ocsf_semtools import extract
+>>> from ocsf_semtools import extract, merge
 >>> found, report = extract(event, schema)
 >>> for observable in found:
 ...     print(observable.name, observable.type_id, observable.type, observable.value)
@@ -47,6 +47,32 @@ The report holds an `observable_mismatch` warning for each entry the event alrea
 attribute in the event backs. `max_nodes` caps the number of attribute visits; past it the walk stops
 and reports a `max_nodes_exceeded` finding, and the result is partial. `max_nodes=None` walks the
 whole event.
+
+### Choosing which observables to keep
+
+`objects=False` leaves out the observables whose attribute is an object, such as an endpoint or a
+process, which carry no value. The attributes inside those objects are still returned.
+
+```pycon
+>>> found_scalars, _ = extract(event, schema, objects=False)
+>>> [observable.name for observable in found_scalars]
+['src_endpoint.ip', 'dst_endpoint.ip', 'dst_endpoint.port']
+
+```
+
+Any other selection is a filter over the result, by `type_id` or by name. The result is a tuple of
+`Observable`, so the filtered list goes to `merge` as it is:
+
+```pycon
+>>> addresses = [observable for observable in found if observable.type_id == 2]
+>>> [entry["name"] for entry in merge(event, addresses)["observables"]]
+['dst_endpoint.ip', 'src_endpoint.ip']
+
+```
+
+The report doesn't depend on the selection. `extract` checks the event's own entries against every
+observable it finds, so an entry for an object stays backed under `objects=False`, and filtering the
+result afterwards can't make one look unbacked.
 
 ## The entries
 
@@ -71,7 +97,6 @@ event already lists. The caller's entries stay as given, and an entry already pr
 `type_id` and value, isn't added twice:
 
 ```pycon
->>> from ocsf_semtools import merge
 >>> merged = merge(event, found)
 >>> [entry["name"] for entry in merged["observables"]]
 ['dst_endpoint.ip', 'src_endpoint', 'dst_endpoint', 'src_endpoint.ip', 'dst_endpoint.port']

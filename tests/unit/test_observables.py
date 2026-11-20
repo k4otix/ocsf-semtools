@@ -160,6 +160,17 @@ def test_extract_reports_unfounded_entries_too(schema: ResolvedSchema) -> None:
     assert [f.kind for f in report.findings] == [Kind.OBSERVABLE_MISMATCH]
 
 
+def test_extract_without_objects_keeps_scalars_and_still_backs_object_entries(schema: ResolvedSchema) -> None:
+    process = {"name": "p", "file": {"name": "f"}}
+    entry = {"name": "evidences[0].process", "type_id": 25}
+    event = {"class_uid": 2004, "evidences": [{"process": process}], "observables": [entry]}
+    found, report = extract(event, schema, objects=False)
+    assert _names(found) == [("evidences[0].process.name", 9, "p"), ("evidences[0].process.file.name", 7, "f")]
+    assert report.by_kind(Kind.OBSERVABLE_MISMATCH) == ()  # filtered out, still checked
+    every, _ = extract(event, schema)
+    assert found == tuple(o for o in every if o.value is not None)
+
+
 # --- merge ----------------------------------------------------------------------------------
 
 

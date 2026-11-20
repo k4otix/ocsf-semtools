@@ -6,6 +6,12 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Added
+
+- `extract(..., objects=False)` leaves out the observables whose attribute is an object, the ones
+  with no value. [Observables](docs/observables.md) shows how to keep other selections, such as
+  chosen `type_id`s, and merge them.
+
 ## 0.1.0a5 (2026-11-08)
 
 Publishes the model package `ocsf-semtools-v1-7-0`; the other model packages are unchanged.
