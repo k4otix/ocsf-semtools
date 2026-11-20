@@ -436,8 +436,8 @@ class _Fields(JsonObject):
 
     def _child(self, key: str) -> "_Fields | None":
         raw: object = self._data.get(key)
-        if not raw:
-            return None  # absent, or an empty table
+        if raw is None:
+            return None  # absent
         path = f"{self.path}.{key}"
         if not isinstance(raw, dict):
             return _Fields(raw, path, set(), self._ignored)  # raises: expected an object

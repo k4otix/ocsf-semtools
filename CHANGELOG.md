@@ -19,6 +19,8 @@ line here, written for users, in the commit that makes it.
   a `TypeError`, as for `parse`.
 - `parse(as_=...)` split a bare string of profiles into letters and reported them as unknown
   profiles; it raises `TypeError`, as `parse` without `as_` does.
+- `load_ir` read `0`, `false` or `[]` in place of a nested table such as `associations` as an empty
+  table; it refuses them, naming the key path.
 
 ## 0.1.0a5 (2026-11-08)
 

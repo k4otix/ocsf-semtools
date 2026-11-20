@@ -188,6 +188,14 @@ def test_a_table_of_the_wrong_kind_is_refused(ir: SchemaIR) -> None:
         load_ir(_with(ir, IR_VERSION, schema__classes=False))
 
 
+@pytest.mark.parametrize("value", [0, False, []])
+def test_a_falsy_non_object_for_a_nested_table_is_refused(ir: SchemaIR, value: object) -> None:
+    doc = json.loads(export_ir(ir))
+    next(iter(doc["schema"]["classes"].values()))["associations"] = value
+    with pytest.raises(ValueError, match=r"\.associations: expected an object"):
+        load_ir(json.dumps(doc).encode())
+
+
 def test_an_enum_on_a_non_scalar_type_is_refused(ir: SchemaIR) -> None:
     doc = json.loads(export_ir(ir))
     attribute = next(iter(doc["schema"]["classes"]["finding"]["attributes"].values()))
