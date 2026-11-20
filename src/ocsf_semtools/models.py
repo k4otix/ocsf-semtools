@@ -168,6 +168,8 @@ def _target(
     cls: type[msgspec.Struct], profiles: Iterable[str] | None, event: dict[str, Any]
 ) -> tuple[ResolvedSchema, str, bool]:
     """Return (schema, class key, exact) for a generated class; an exact class fixes its profiles."""
+    if isinstance(profiles, str):
+        raise TypeError(f"profiles must be an iterable of names, not the string {profiles!r}")
     _, key = cast(tuple[str, str], vars(cls)["__ocsf__"])
     package = _package(cls)
     digest = cast(str, package.__schema_digest__)

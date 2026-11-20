@@ -17,6 +17,8 @@ line here, written for users, in the commit that makes it.
 - `merge()` raised `ValueError` for `"observables": null`, which it now reads as absent, and
   `RecursionError` for an event nested past Python's recursion limit. An event that isn't a dict is
   a `TypeError`, as for `parse`.
+- `parse(as_=...)` split a bare string of profiles into letters and reported them as unknown
+  profiles; it raises `TypeError`, as `parse` without `as_` does.
 
 ## 0.1.0a5 (2026-11-08)
 

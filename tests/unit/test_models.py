@@ -187,6 +187,11 @@ def test_parse_as_fixes_version_and_class(v1_9_0: ModuleType) -> None:
         parse({}, as_=v1_9_0.DetectionFinding, version="1.9.0")  # type: ignore[call-overload]
 
 
+def test_parse_as_refuses_a_bare_string_of_profiles(v1_9_0: ModuleType) -> None:
+    with pytest.raises(TypeError, match="not the string 'datetime'"):
+        parse({}, as_=v1_9_0.DetectionFinding, profiles="datetime")
+
+
 # --- exact classes --------------------------------------------------------------------------
 
 
