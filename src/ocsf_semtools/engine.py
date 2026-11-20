@@ -142,11 +142,14 @@ def extract(
     class_key: str | None = None,
     *,
     max_nodes: int | None = MAX_NODES,
+    objects: bool = True,
 ) -> tuple[tuple[Observable, ...], Report]:
     """Return the observables the schema derives from the event, in walk order; the event is unchanged.
 
-    The report holds observable_mismatch for caller entries nothing backs, and max_nodes_exceeded
-    (with a partial result) when the walk passes max_nodes attribute visits; None walks everything.
+    objects=False leaves out the observables whose attribute is an object, the ones with no value.
+    The report holds observable_mismatch for caller entries nothing backs, checked against every
+    observable found, and max_nodes_exceeded (with a partial result) when the walk passes max_nodes
+    attribute visits; None walks everything.
     """
     require_event(event)
     item, _, findings = _root_class(event, schema, class_key)
@@ -161,6 +164,8 @@ def extract(
             found += observe(visit, marks)
     if not truncated:
         findings += unfounded(event, found)
+    if not objects:
+        found = [o for o in found if o.value is not None]
     return tuple(found), Report(schema=schema, class_key=item.key, findings=tuple(findings))
 
 
