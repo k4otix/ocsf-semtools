@@ -28,7 +28,8 @@ def register(add_parser: AddParser, shared: Options) -> None:
         ("check", "assert each generated tree is stable and matches models_tree_sha256", check),
         ("record", "write each generated tree's sha256 to the lockfile as models_tree_sha256", record),
     ):
-        action = actions.add_parser(name, parents=parents, help=help_text, description=help_text)
+        description = f"{help_text[0].upper()}{help_text[1:]}."
+        action = actions.add_parser(name, parents=parents, help=help_text, description=description)
         action.add_argument(
             "versions",
             nargs="*",

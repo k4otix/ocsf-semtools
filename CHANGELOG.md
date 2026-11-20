@@ -6,6 +6,11 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Changed
+
+- The `ir` and `models` subcommands' help pages describe each action in a sentence, and every
+  command names the file placeholder `<version>`.
+
 ### Fixed
 
 - `generate()` reported an attribute with neither an object nor a root type as an

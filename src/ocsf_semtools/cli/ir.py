@@ -19,16 +19,17 @@ def register(add_parser: AddParser, shared: Options) -> None:
     parser = add_parser(
         "ir",
         help="export or check canonical IR JSON",
-        description="Build the IR from build/compiled and write or check data/ir-<ver>.json.",
+        description="Build the IR from build/compiled and write or check data/ir-<version>.json.",
     )
     parents = [shared.lockfile, shared.build]
     actions = parser.add_subparsers(dest="ir_action", required=True, metavar="ACTION")
     run: Callable[[argparse.Namespace], int]
     for name, help_text, run in (
-        ("export", "write data/ir-<ver>.json from build/compiled/schema-<ver>.json", export),
+        ("export", "write data/ir-<version>.json from build/compiled/schema-<version>.json", export),
         ("check", "assert the IR rebuilt from build/compiled matches ir_sha256 and data/", check),
     ):
-        action = actions.add_parser(name, parents=parents, help=help_text, description=help_text)
+        description = f"{help_text[0].upper()}{help_text[1:]}."
+        action = actions.add_parser(name, parents=parents, help=help_text, description=description)
         action.add_argument(
             "versions",
             nargs="*",

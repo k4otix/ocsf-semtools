@@ -1,4 +1,4 @@
-"""The ``compile`` subcommand: rebuild ``build/compiled/schema-<ver>.json`` for lockfile entries."""
+"""The ``compile`` subcommand: rebuild ``build/compiled/schema-<version>.json`` for lockfile entries."""
 
 import argparse
 from pathlib import Path
@@ -13,8 +13,8 @@ def register(add_parser: AddParser, shared: Options) -> None:
         "compile",
         parents=shared.compiling,
         help="compile lockfile schemas and check their hashes",
-        description="Clone each pinned commit, compile it with ocsf-schema-compiler under "
-        "Python 3.14, and assert compiled_sha256 and the compiled version.",
+        description="Clone each pinned commit, compile it with ocsf-schema-compiler under the "
+        "lockfile's python-compile, and assert compiled_sha256 and the compiled version.",
     )
     parser.add_argument(
         "versions",
