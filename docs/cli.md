@@ -5,7 +5,7 @@
 | Exit status | Meaning |
 |---|---|
 | 0 | done: the events are clean, the IRs are equal, the gates pass |
-| 1 | `check` found an error in an event, or `diff` found a difference |
+| 1 | `check` found an error in an event, `diff` found a difference, or the reader of the output closed it early (`\| head`) |
 | 2 | the command couldn't do its job: a usage error, a missing file, an unknown version, profile or class, or a schema pipeline gate that failed |
 
 A failure prints one line, `ocsf-semtools: error: ...`, to stderr, and the exit status lets a
