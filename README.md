@@ -7,14 +7,14 @@ events from any source against the same rules and returns every problem in one r
 path and a severity. It also extracts observables, shows what changed between two OCSF versions, and
 generates typed [msgspec](https://github.com/msgspec/msgspec) models from the same schema.
 
-**Status: alpha.** Minor releases before 1.0 may change the API, and the
+**Status: beta.** Minor releases before 1.0 may change the API, and the
 [changelog](https://github.com/k4otix/ocsf-semtools/blob/main/CHANGELOG.md) lists every change.
 
 ## Install
 
 ```shell
-pip install --pre ocsf-semtools          # core: every OCSF release since 1.0.0, as data
-pip install --pre ocsf-semtools-v1-9-0   # optional: typed models for one OCSF version
+pip install ocsf-semtools          # core: every OCSF release since 1.0.0, as data
+pip install ocsf-semtools-v1-9-0   # optional: typed models for one OCSF version
 ```
 
 [Typed models](https://github.com/k4otix/ocsf-semtools/blob/main/docs/models.md) lists the packages available.
@@ -174,11 +174,11 @@ compiling, diffing and compatibility checks. The Go library
 [ocsf/ocsf-toolkit](https://github.com/ocsf/ocsf-toolkit) enriches and validates events against a
 compiled schema.
 
-The table compares major features as of 2026-11-08, one release per column.
+The table compares major features as of 2026-11-20, one release per column.
 
 ● full · ◕ mostly · ◑ partial · ◔ minimal · ○ none · ? not tested
 
-| | ocsf-semtools 0.1.0a5 | ocsf/ocsf-toolkit v0.9.0 (Go) | pydantic-ocsf 3.0.0 | py-ocsf-models 0.10.0 | ocsf-lib 0.10.4 |
+| | ocsf-semtools 0.1.0 | ocsf/ocsf-toolkit v0.9.0 (Go) | pydantic-ocsf 3.0.0 | py-ocsf-models 0.10.0 | ocsf-lib 0.10.4 |
 |---|:-:|:-:|:-:|:-:|:-:|
 | Schema matches the official compiler | ● | ● | ◔ | ◔ | ◑ |
 | Several OCSF versions side by side | ● | ◑ | ◕ | ○ | ● |

@@ -6,6 +6,11 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.1.0 (2026-11-20)
+
+The first release out of alpha. The model packages `ocsf-semtools-v1-7-0`,
+`ocsf-semtools-v1-8-0` and `ocsf-semtools-v1-9-0` republish as 0.1.0, so none needs `--pre`.
+
 ### Added
 
 - `extract(..., objects=False)` leaves out the observables whose attribute is an object, the ones
