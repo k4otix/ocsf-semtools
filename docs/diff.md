@@ -49,14 +49,18 @@ win/registry_value_info -> win/registry_value_query
 
 ### `SchemaDiff`
 
-`SchemaDiff(old, new, changes)`: the two versions and the changes, sorted by path. Each change has a
-`kind` (`added`, `removed`, `changed` or `renamed`), a `path`, and `before` and `after` values. An
-added or removed subtree is one change. A rename is one change at the old path, after which the
-class is compared under its new key. `to_dict()` renders IR values as plain JSON, which is what
-`ocsf-semtools diff --json` prints.
+`SchemaDiff(old, new, changes)`: the two versions and the changes, sorted by path. `to_dict()`
+renders IR values as plain JSON, which is what `ocsf-semtools diff --json` prints.
 
 ```pycon
 >>> sorted(changes.to_dict())
 ['changes', 'new', 'old']
 
 ```
+
+### `Change`
+
+`Change(kind, path, before, after)`: one difference. `kind` is `added`, `removed`, `changed` or
+`renamed`, and `path` is a tuple of IR keys. An added or removed subtree is one change, with `None`
+on the side where it is absent. A rename is one change at the old path, with the old and new keys as
+`before` and `after`, after which the class is compared under its new key.

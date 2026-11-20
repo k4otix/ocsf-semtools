@@ -6,6 +6,10 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Added
+
+- `Change`, the type of each entry in `SchemaDiff.changes`, is importable from `ocsf_semtools`.
+
 ### Changed
 
 - The `ir` and `models` subcommands' help pages describe each action in a sentence, and every

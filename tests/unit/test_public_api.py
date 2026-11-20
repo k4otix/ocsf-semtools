@@ -8,6 +8,7 @@ from tests.conftest import DATA_DIR
 
 def test_all_is_exact() -> None:
     assert sorted(ocsf_semtools.__all__) == [
+        "Change",
         "ConformanceError",
         "Finding",
         "Kind",

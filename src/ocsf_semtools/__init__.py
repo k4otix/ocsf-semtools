@@ -2,7 +2,7 @@
 
 from ocsf_semtools._version import __version__
 from ocsf_semtools.codegen import generate
-from ocsf_semtools.diff import SchemaDiff, diff
+from ocsf_semtools.diff import Change, SchemaDiff, diff
 from ocsf_semtools.engine import (
     ConformanceError,
     Finding,
@@ -25,6 +25,7 @@ from ocsf_semtools.schema import (
 )
 
 __all__ = [
+    "Change",
     "ConformanceError",
     "Finding",
     "Kind",
