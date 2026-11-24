@@ -6,6 +6,19 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+### Added
+
+- OCSF 1.10.0: `load("1.10.0")`, `ocsf-semtools check --version 1.10.0` and the model package
+  `ocsf-semtools-v1-10-0`. It is pinned to upstream commit `2d209039` (release tag `1.10`); upstream
+  tag `v1.10.0` points at the version bump after the release, which reports `1.11.0-dev`
+  ([ocsf/ocsf-schema#1845](https://github.com/ocsf/ocsf-schema/issues/1845)).
+
+### Removed
+
+- `ocsf-semtools-v1-7-0` leaves the model window and gets no further releases; its 0.1.0 release
+  stays installable with core 0.1.x. OCSF 1.7.0 itself stays supported through the dict API, and
+  [Typed models](docs/models.md) lists the options for typed models of it.
+
 ## 0.1.1 (2026-11-20)
 
 The model packages are unchanged: their 0.1.0 releases run on this core.
