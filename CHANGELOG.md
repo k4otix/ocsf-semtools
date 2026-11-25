@@ -6,6 +6,11 @@ line here, written for users, in the commit that makes it.
 
 ## Unreleased
 
+## 0.2.0 (2026-11-24)
+
+The model packages `ocsf-semtools-v1-8-0` and `ocsf-semtools-v1-9-0` republish as 0.2.0, with
+unchanged trees, and `ocsf-semtools-v1-10-0` is new.
+
 ### Added
 
 - OCSF 1.10.0: `load("1.10.0")`, `ocsf-semtools check --version 1.10.0` and the model package
