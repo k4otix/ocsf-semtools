@@ -13,9 +13,9 @@ project installs only the versions it produces:
 
 | Install | Import |
 |---|---|
+| `pip install ocsf-semtools-v1-10-0` | `ocsf_semtools_v1_10_0` |
 | `pip install ocsf-semtools-v1-9-0` | `ocsf_semtools_v1_9_0` |
 | `pip install ocsf-semtools-v1-8-0` | `ocsf_semtools_v1_8_0` |
-| `pip install ocsf-semtools-v1-7-0` | `ocsf_semtools_v1_7_0` |
 
 Packages for different versions install side by side. Each one bundles the IR it was generated from
 and requires the core minor release it was generated with: patch releases of the core install under
